@@ -1,13 +1,22 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { RootStackParamList, BottomTabParamList } from '../types/navigation';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AuthStackParamList, AppStackParamList, BottomTabParamList } from '../types/navigation';
 
 // Import screens
-import { HomeScreen, ProfileScreen, SettingsScreen, HomeTabScreen, ProfileTabScreen } from '../screens';
+import {
+  ProfileScreen,
+  SettingsScreen,
+  HomeTabScreen,
+  ProfileTabScreen,
+  LoginScreen,
+  JobseekerSignupScreen
+} from '../screens';
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
+const AuthStack = createNativeStackNavigator<AuthStackParamList>();
+const AppStack = createNativeStackNavigator<AppStackParamList>();
 const Tab = createBottomTabNavigator<BottomTabParamList>();
 
 function BottomTabNavigator() {
@@ -37,37 +46,67 @@ function BottomTabNavigator() {
   );
 }
 
-export default function AppNavigator() {
+function AuthNavigator() {
+  return (
+    <AuthStack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <AuthStack.Screen
+        name="Login"
+        component={LoginScreen}
+      />
+      <AuthStack.Screen
+        name="Signup"
+        component={JobseekerSignupScreen}
+      />
+    </AuthStack.Navigator>
+  );
+}
+
+function AppNavigatorStack() {
+  return (
+    <AppStack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: '#007AFF',
+        },
+        headerTintColor: '#fff',
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
+      }}
+    >
+      <AppStack.Screen
+        name="Dashboard"
+        component={BottomTabNavigator}
+        options={{ headerShown: false }}
+      />
+      <AppStack.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{ title: 'Profile' }}
+      />
+      <AppStack.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{ title: 'Settings' }}
+      />
+    </AppStack.Navigator>
+  );
+}
+
+interface AppNavigatorProps {
+  isUserLoggedIn: boolean;
+}
+
+function RootNavigator({ isUserLoggedIn }: AppNavigatorProps) {
   return (
     <NavigationContainer>
-      <Stack.Navigator
-        initialRouteName="Home"
-        screenOptions={{
-          headerStyle: {
-            backgroundColor: '#007AFF',
-          },
-          headerTintColor: '#fff',
-          headerTitleStyle: {
-            fontWeight: 'bold',
-          },
-        }}
-      >
-        <Stack.Screen
-          name="Home"
-          component={BottomTabNavigator}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="Profile"
-          component={ProfileScreen}
-          options={{ title: 'Profile' }}
-        />
-        <Stack.Screen
-          name="Settings"
-          component={SettingsScreen}
-          options={{ title: 'Settings' }}
-        />
-      </Stack.Navigator>
+      {isUserLoggedIn ? <AppNavigatorStack /> : <AuthNavigator />}
     </NavigationContainer>
   );
 }
+
+export default RootNavigator;
