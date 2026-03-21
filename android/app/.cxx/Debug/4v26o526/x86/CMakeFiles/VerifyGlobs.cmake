@@ -5,6 +5,145 @@ cmake_policy(SET CMP0009 NEW)
 # input_SRC at /Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native/ReactAndroid/cmake-utils/ReactNative-application.cmake:55 (file)
 file(GLOB NEW_GLOB LIST_DIRECTORIES true "/Users/pavankarthik/InterviewHighway_mobile/android/app/build/generated/autolinking/src/main/jni/*.cpp")
 set(OLD_GLOB
+  "/Users/pavankarthik/InterviewHighway_mobile/android/app/build/generated/autolinking/src/main/jni/autolinking.cpp"
+  )
+if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
+  message("-- GLOB mismatch!")
+  file(TOUCH_NOCREATE "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86/CMakeFiles/cmake.verify_globs")
+endif()
+
+# LIB_CUSTOM_SRCS at /Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-safe-area-context/android/src/main/jni/CMakeLists.txt:12 (file)
+file(GLOB NEW_GLOB LIST_DIRECTORIES true "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-safe-area-context/android/src/main/jni/*.cpp")
+set(OLD_GLOB
+  )
+if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
+  message("-- GLOB mismatch!")
+  file(TOUCH_NOCREATE "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86/CMakeFiles/cmake.verify_globs")
+endif()
+
+# LIB_CUSTOM_SRCS at /Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-safe-area-context/android/src/main/jni/CMakeLists.txt:12 (file)
+file(GLOB NEW_GLOB LIST_DIRECTORIES true "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-safe-area-context/android/src/main/jni/../../../../common/cpp/react/renderer/components/safeareacontext/*.cpp")
+set(OLD_GLOB
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-safe-area-context/android/src/main/jni/../../../../common/cpp/react/renderer/components/safeareacontext/RNCSafeAreaViewShadowNode.cpp"
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-safe-area-context/android/src/main/jni/../../../../common/cpp/react/renderer/components/safeareacontext/RNCSafeAreaViewState.cpp"
+  )
+if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
+  message("-- GLOB mismatch!")
+  file(TOUCH_NOCREATE "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86/CMakeFiles/cmake.verify_globs")
+endif()
+
+# LIB_CODEGEN_SRCS at /Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-safe-area-context/android/src/main/jni/CMakeLists.txt:13 (file)
+file(GLOB NEW_GLOB LIST_DIRECTORIES true "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-safe-area-context/android/src/main/jni/../../../build/generated/source/codegen/jni/*.cpp")
+set(OLD_GLOB
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-safe-area-context/android/src/main/jni/../../../build/generated/source/codegen/jni/safeareacontext-generated.cpp"
+  )
+if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
+  message("-- GLOB mismatch!")
+  file(TOUCH_NOCREATE "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86/CMakeFiles/cmake.verify_globs")
+endif()
+
+# LIB_CODEGEN_SRCS at /Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-safe-area-context/android/src/main/jni/CMakeLists.txt:13 (file)
+file(GLOB NEW_GLOB LIST_DIRECTORIES true "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-safe-area-context/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/safeareacontext/*.cpp")
+set(OLD_GLOB
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-safe-area-context/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/safeareacontext/ComponentDescriptors.cpp"
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-safe-area-context/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/safeareacontext/EventEmitters.cpp"
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-safe-area-context/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/safeareacontext/Props.cpp"
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-safe-area-context/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/safeareacontext/ShadowNodes.cpp"
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-safe-area-context/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/safeareacontext/States.cpp"
+  )
+if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
+  message("-- GLOB mismatch!")
+  file(TOUCH_NOCREATE "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86/CMakeFiles/cmake.verify_globs")
+endif()
+
+# LIB_CUSTOM_SRCS at /Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-screens/android/src/main/jni/CMakeLists.txt:23 (file)
+file(GLOB NEW_GLOB LIST_DIRECTORIES true "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-screens/android/src/main/jni/*.cpp")
+set(OLD_GLOB
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-screens/android/src/main/jni/rnscreens.cpp"
+  )
+if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
+  message("-- GLOB mismatch!")
+  file(TOUCH_NOCREATE "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86/CMakeFiles/cmake.verify_globs")
+endif()
+
+# LIB_CUSTOM_SRCS at /Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-screens/android/src/main/jni/CMakeLists.txt:23 (file)
+file(GLOB NEW_GLOB LIST_DIRECTORIES true "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/*.cpp")
+set(OLD_GLOB
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSFullWindowOverlayShadowNode.cpp"
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSModalScreenShadowNode.cpp"
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSSafeAreaViewShadowNode.cpp"
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSSafeAreaViewState.cpp"
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSScreenShadowNode.cpp"
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSScreenShadowNodeCommitHook.cpp"
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSScreenStackHeaderConfigShadowNode.cpp"
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSScreenStackHeaderConfigState.cpp"
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSScreenStackHeaderSubviewShadowNode.cpp"
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSScreenStackHeaderSubviewState.cpp"
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSScreenState.cpp"
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSSplitViewScreenShadowNode.cpp"
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSTabsBottomAccessoryShadowNode.cpp"
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSTabsHostShadowNode.cpp"
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/RNSTabsHostState.cpp"
+  )
+if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
+  message("-- GLOB mismatch!")
+  file(TOUCH_NOCREATE "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86/CMakeFiles/cmake.verify_globs")
+endif()
+
+# LIB_CUSTOM_SRCS at /Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-screens/android/src/main/jni/CMakeLists.txt:23 (file)
+file(GLOB NEW_GLOB LIST_DIRECTORIES true "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-screens/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnscreens/utils/*.cpp")
+set(OLD_GLOB
+  )
+if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
+  message("-- GLOB mismatch!")
+  file(TOUCH_NOCREATE "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86/CMakeFiles/cmake.verify_globs")
+endif()
+
+# LIB_CODEGEN_SRCS at /Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-screens/android/src/main/jni/CMakeLists.txt:24 (file)
+file(GLOB NEW_GLOB LIST_DIRECTORIES true "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-screens/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/rnscreens/*.cpp")
+set(OLD_GLOB
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-screens/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/rnscreens/ComponentDescriptors.cpp"
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-screens/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/rnscreens/EventEmitters.cpp"
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-screens/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/rnscreens/Props.cpp"
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-screens/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/rnscreens/ShadowNodes.cpp"
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-screens/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/rnscreens/States.cpp"
+  )
+if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
+  message("-- GLOB mismatch!")
+  file(TOUCH_NOCREATE "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86/CMakeFiles/cmake.verify_globs")
+endif()
+
+# rnsvg_SRCS at /Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-svg/android/src/main/jni/CMakeLists.txt:10 (file)
+file(GLOB NEW_GLOB LIST_DIRECTORIES true "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-svg/android/src/main/jni/*.cpp")
+set(OLD_GLOB
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-svg/android/src/main/jni/rnsvg.cpp"
+  )
+if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
+  message("-- GLOB mismatch!")
+  file(TOUCH_NOCREATE "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86/CMakeFiles/cmake.verify_globs")
+endif()
+
+# rnsvg_SRCS at /Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-svg/android/src/main/jni/CMakeLists.txt:10 (file)
+file(GLOB NEW_GLOB LIST_DIRECTORIES true "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-svg/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnsvg/*.cpp")
+set(OLD_GLOB
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-svg/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnsvg/RNSVGImageShadowNode.cpp"
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-svg/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnsvg/RNSVGImageState.cpp"
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-svg/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnsvg/RNSVGLayoutableShadowNode.cpp"
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-svg/android/src/main/jni/../../../../common/cpp/react/renderer/components/rnsvg/RNSVGShadowNodes.cpp"
+  )
+if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
+  message("-- GLOB mismatch!")
+  file(TOUCH_NOCREATE "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86/CMakeFiles/cmake.verify_globs")
+endif()
+
+# rnsvg_codegen_SRCS at /Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-svg/android/src/main/jni/CMakeLists.txt:11 (file)
+file(GLOB NEW_GLOB LIST_DIRECTORIES true "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-svg/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/rnsvg/*cpp")
+set(OLD_GLOB
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-svg/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/rnsvg/ComponentDescriptors.cpp"
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-svg/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/rnsvg/EventEmitters.cpp"
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-svg/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/rnsvg/Props.cpp"
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-svg/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/rnsvg/ShadowNodes.cpp"
+  "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-svg/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/rnsvg/States.cpp"
   )
 if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
   message("-- GLOB mismatch!")

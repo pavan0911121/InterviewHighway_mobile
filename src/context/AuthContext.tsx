@@ -1,11 +1,11 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
-import { authUtils } from '../utils/auth';
+// import { authUtils } from '../utils/auth';
 
 interface AuthContextType {
   isLoggedIn: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
+  // logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
 }
 
@@ -26,8 +26,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const checkAuth = async () => {
     try {
-      const isAuthenticated = await authUtils.isAuthenticated();
-      setIsLoggedIn(isAuthenticated);
+      // const isAuthenticated = await authUtils.isAuthenticated();
+      setIsLoggedIn(true);
     } catch (error) {
       console.error('Error checking authentication:', error);
       setIsLoggedIn(false);
@@ -46,10 +46,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const mockToken = `token_${email}_${Date.now()}`;
 
       // Save token
-      await authUtils.saveToken(mockToken);
+      // await authUtils.saveToken(mockToken);
       
       // Save user data
-      await authUtils.saveUserData({ email });
+      // await authUtils.saveUserData({ email });
 
       setIsLoggedIn(true);
     } catch (error) {
@@ -60,24 +60,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const logout = async () => {
-    try {
-      setIsLoading(true);
-      await authUtils.logout();
-      setIsLoggedIn(false);
-    } catch (error) {
-      console.error('Logout error:', error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // const logout = async () => {
+  //   try {
+  //     setIsLoading(true);
+  //     await authUtils.logout();
+  //     setIsLoggedIn(false);
+  //   } catch (error) {
+  //     console.error('Logout error:', error);
+  //     throw error;
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
   const value: AuthContextType = {
     isLoggedIn,
     isLoading,
     login,
-    logout,
+    // logout,
     checkAuth,
   };
 
