@@ -1,14 +1,14 @@
 import { StyleSheet, Text, View } from 'react-native'
 import React from 'react'
 
-const JobSeekerOrEmployerSignup = () => {
+const MyApplicationsTabScreen = () => {
   return (
     <View>
-      <Text>JobSeekerOrEmployerSignup</Text>
+      <Text>MyApplicationsTabScreen</Text>
     </View>
   )
 }
 
-export default JobSeekerOrEmployerSignup
+export default MyApplicationsTabScreen
 
 const styles = StyleSheet.create({})

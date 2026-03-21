@@ -56,18 +56,18 @@ const LoginScreen: React.FC = () => {
   };
 
   const handleLogin = async () => {
-    if (!handleValidation()) {
-      return;
-    }
+    // if (!handleValidation()) {
+    //   return;
+    // }
 
-    try {
-      setLoginError('');
-      await login(form.email, form.password);
-      // Navigation will happen automatically when isLoggedIn changes in the app
-    } catch (error) {
-      console.error('Login error:', error);
-      setLoginError('Login failed. Please check your credentials and try again.');
-    }
+    // try {
+    //   setLoginError('');
+    //   await login(form.email, form.password);
+    //   // Navigation will happen automatically when isLoggedIn changes in the app
+    // } catch (error) {
+    //   console.error('Login error:', error);
+    //   setLoginError('Login failed. Please check your credentials and try again.');
+    // }
   };
 
   const handleForgotPassword = () => {
@@ -76,7 +76,7 @@ const LoginScreen: React.FC = () => {
   };
 
   const handleSignUp = () => {
-    navigation.navigate('Signup');
+    navigation.navigate('AccountTypeSelection');
     // TODO: Implement sign up navigation
     console.log('Sign up pressed');
   };
@@ -94,7 +94,7 @@ const LoginScreen: React.FC = () => {
           {/* Header Section */}
           <View style={styles.headerContainer}>
             <View style={styles.topBar} />
-            <Text style={styles.welcomeText}>Welcome Back</Text>
+            <Text style={styles.welcomeText}>Welcome Backgg</Text>
             <Text style={styles.subtitleText}>Login to your account</Text>
           </View>
 
@@ -270,7 +270,15 @@ const styles = StyleSheet.create({
   },
   welcomeText: {
     fontSize: 28,
-    fontWeight: '700',
+    fontFamily: 'Roboto-VariableFont_wght',
+    // fontWeight: '700',
+    color: '#000',
+    marginBottom: 8,
+  },
+  welcomeText1: {
+    fontFamily: 'Geist-VariableFont_wght',
+    fontSize: 28,
+    // fontWeight: '700',
     color: '#000',
     marginBottom: 8,
   },

@@ -48,7 +48,7 @@ function AppContent() {
   return (
     <>
       <StatusBar barStyle="dark-content" />
-      <AppNavigator isUserLoggedIn={isLoggedIn} />
+      <AppNavigator isUserLoggedIn={false} />
     </>
   );
 }

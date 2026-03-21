@@ -1,0 +1,17 @@
+{
+  "migIndex": 1,
+  "data": [
+    {
+      "path": "assets/fonts/Geist-VariableFont_wght.ttf",
+      "sha1": "28d65e8e3bc0decd426ed5b3cab3f7bfa20c58eb"
+    },
+    {
+      "path": "assets/fonts/OFL.txt",
+      "sha1": "638350f72e80a5df29b7b71762f7434cbb9705b4"
+    },
+    {
+      "path": "assets/fonts/README.txt",
+      "sha1": "897e504549320d2acfebc847e8375161112a4678"
+    }
+  ]
+}

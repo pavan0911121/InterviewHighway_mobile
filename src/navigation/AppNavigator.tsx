@@ -7,13 +7,17 @@ import { AuthStackParamList, AppStackParamList, BottomTabParamList } from '../ty
 
 // Import screens
 import {
-  ProfileScreen,
-  SettingsScreen,
+  // ProfileScreen,
+  // SettingsScreen,
   HomeTabScreen,
   ProfileTabScreen,
   LoginScreen,
-  JobseekerSignupScreen
+  CoursesTabScreen,
+  MyApplicationsTabScreen
 } from '../screens';
+import PaymentsTabScreen from '../screens/Payments/PaymentsTabScreen';
+import AccountSelectionPage from '../screens/Auth/AccountSelectionPage';
+import Signup from '../screens/Auth/Signup';
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 const AppStack = createNativeStackNavigator<AppStackParamList>();
@@ -36,6 +40,27 @@ function BottomTabNavigator() {
         }}
       />
       <Tab.Screen
+        name="CoursesTab"
+        component={CoursesTabScreen}
+        options={{
+          title: 'Courses',
+        }}
+      />
+      <Tab.Screen
+        name="MyApplicationsTab"
+        component={MyApplicationsTabScreen}
+        options={{
+          title: 'My Applications',
+        }}
+      />
+      <Tab.Screen
+        name="PaymentsTab"
+        component={PaymentsTabScreen}
+        options={{
+          title: 'Payments',
+        }}
+      />
+      <Tab.Screen
         name="ProfileTab"
         component={ProfileTabScreen}
         options={{
@@ -49,6 +74,7 @@ function BottomTabNavigator() {
 function AuthNavigator() {
   return (
     <AuthStack.Navigator
+    initialRouteName='Login'
       screenOptions={{
         headerShown: false,
       }}
@@ -58,9 +84,14 @@ function AuthNavigator() {
         component={LoginScreen}
       />
       <AuthStack.Screen
-        name="Signup"
-        component={JobseekerSignupScreen}
+        name="AccountTypeSelection"
+        component={AccountSelectionPage}
       />
+      <AuthStack.Screen
+        name="Signup"
+        component={Signup}
+      />
+
     </AuthStack.Navigator>
   );
 }
@@ -83,7 +114,7 @@ function AppNavigatorStack() {
         component={BottomTabNavigator}
         options={{ headerShown: false }}
       />
-      <AppStack.Screen
+      {/* <AppStack.Screen
         name="Profile"
         component={ProfileScreen}
         options={{ title: 'Profile' }}
@@ -92,7 +123,7 @@ function AppNavigatorStack() {
         name="Settings"
         component={SettingsScreen}
         options={{ title: 'Settings' }}
-      />
+      /> */}
     </AppStack.Navigator>
   );
 }

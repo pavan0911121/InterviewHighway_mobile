@@ -1,6 +1,7 @@
 export type AuthStackParamList = {
   Login: undefined;
   Signup: undefined;
+  AccountTypeSelection: undefined;
 };
 
 export type AppStackParamList = {
@@ -11,6 +12,9 @@ export type AppStackParamList = {
 
 export type BottomTabParamList = {
   HomeTab: undefined;
+  CoursesTab: undefined;
+  MyApplicationsTab: undefined;
+  PaymentsTab: undefined;
   ProfileTab: undefined;
 };
 
