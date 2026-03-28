@@ -11,7 +11,7 @@ const AccountSelectionPage = () => {
   const [selectedType, setSelectedType] = useState<'jobseeker' | 'employer' | null>(null)
   const navigation = useNavigation<AccountSelectionNavigationProp>();
   const handleSignIn = () => {
-    navigation.navigate('Signup');
+    navigation.navigate('JobSeekerSignup');
     // TODO: Implement sign in navigation
     console.log('Sign in pressed');
   };

@@ -48,7 +48,7 @@ function AppContent() {
   return (
     <>
       <StatusBar barStyle="dark-content" />
-      <AppNavigator isUserLoggedIn={false} />
+      <AppNavigator isUserLoggedIn={true} userType="employer" />
     </>
   );
 }

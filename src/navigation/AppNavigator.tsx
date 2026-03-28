@@ -3,78 +3,177 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { AuthStackParamList, AppStackParamList, BottomTabParamList } from '../types/navigation';
+import { createDrawerNavigator } from '@react-navigation/drawer';
+import { AuthStackParamList, AppStackParamList, JobSeekerBottomTabParamList, EmployerBottomTabParamList } from '../types/navigation';
 
 // Import screens
 import {
-  // ProfileScreen,
-  // SettingsScreen,
   HomeTabScreen,
   ProfileTabScreen,
   LoginScreen,
+  EmployerSignup,
+  JobSeekerSignup,
   CoursesTabScreen,
-  MyApplicationsTabScreen
+  MyApplicationsTabScreen,
+  EmployerDashboard,
+  AnalyticsScreen,
+  JobsScreen,
+  ApplicationsScreen,
+  CreditsScreen,
+  CompanyProfileScreen
 } from '../screens';
-import PaymentsTabScreen from '../screens/Payments/PaymentsTabScreen';
+import PaymentsTabScreen from '../screens/JobSeekerApp/Payments/PaymentsTabScreen';
 import AccountSelectionPage from '../screens/Auth/AccountSelectionPage';
-import Signup from '../screens/Auth/Signup';
+import SideMenu from '../components/SideMenu';
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 const AppStack = createNativeStackNavigator<AppStackParamList>();
-const Tab = createBottomTabNavigator<BottomTabParamList>();
+const JobSeekerTab = createBottomTabNavigator<JobSeekerBottomTabParamList>();
+const EmployerTab = createBottomTabNavigator<EmployerBottomTabParamList>();
+const JobSeekerDrawer = createDrawerNavigator();
+const EmployerDrawer = createDrawerNavigator();
 
-function BottomTabNavigator() {
+function JobSeekerBottomTabNavigator() {
   return (
-    <Tab.Navigator
+    <JobSeekerTab.Navigator
       screenOptions={{
         tabBarActiveTintColor: '#007AFF',
         tabBarInactiveTintColor: '#8E8E93',
         headerShown: false,
       }}
     >
-      <Tab.Screen
+      <JobSeekerTab.Screen
         name="HomeTab"
         component={HomeTabScreen}
         options={{
           title: 'Home',
         }}
       />
-      <Tab.Screen
+      <JobSeekerTab.Screen
         name="CoursesTab"
         component={CoursesTabScreen}
         options={{
           title: 'Courses',
         }}
       />
-      <Tab.Screen
+      <JobSeekerTab.Screen
         name="MyApplicationsTab"
         component={MyApplicationsTabScreen}
         options={{
           title: 'My Applications',
         }}
       />
-      <Tab.Screen
+      <JobSeekerTab.Screen
         name="PaymentsTab"
         component={PaymentsTabScreen}
         options={{
           title: 'Payments',
         }}
       />
-      <Tab.Screen
+      <JobSeekerTab.Screen
         name="ProfileTab"
         component={ProfileTabScreen}
         options={{
           title: 'Profile',
         }}
       />
-    </Tab.Navigator>
+    </JobSeekerTab.Navigator>
+  );
+}
+
+function JobSeekerDrawerNavigator() {
+  return (
+    <JobSeekerDrawer.Navigator
+      drawerContent={(props) => <SideMenu {...props} />}
+      screenOptions={{
+        headerShown: false,
+        drawerType: 'slide',
+      }}
+    >
+      <JobSeekerDrawer.Screen
+        name="JobSeekerTabs"
+        component={JobSeekerBottomTabNavigator}
+      />
+    </JobSeekerDrawer.Navigator>
+  );
+}
+
+function EmployerBottomTabNavigator() {
+  return (
+    <EmployerTab.Navigator
+      screenOptions={{
+        tabBarActiveTintColor: '#165DFC',
+        tabBarInactiveTintColor: '#8E8E93',
+        headerShown: false,
+      }}
+    >
+      <EmployerTab.Screen
+        name="EmployerDashboardTab"
+        component={EmployerDashboard}
+        options={{
+          title: 'Dashboard',
+        }}
+      />
+      <EmployerTab.Screen
+        name="EmployerJobsTab"
+        component={JobsScreen}
+        options={{
+          title: 'Jobs',
+        }}
+      />
+      <EmployerTab.Screen
+        name="EmployerApplicationsTab"
+        component={ApplicationsScreen}
+        options={{
+          title: 'Applications',
+        }}
+      />
+      <EmployerTab.Screen
+        name="EmployerAnalyticsTab"
+        component={AnalyticsScreen}
+        options={{
+          title: 'Analytics',
+        }}
+      />
+      <EmployerTab.Screen
+        name="EmployerCreditsTab"
+        component={CreditsScreen}
+        options={{
+          title: 'Credits',
+        }}
+      />
+      <EmployerTab.Screen
+        name="EmployerProfileTab"
+        component={CompanyProfileScreen}
+        options={{
+          title: 'Company Profile',
+        }}
+      />
+    </EmployerTab.Navigator>
+  );
+}
+
+function EmployerDrawerNavigator() {
+  return (
+    <EmployerDrawer.Navigator
+      drawerContent={(props) => <SideMenu {...props} />}
+      screenOptions={{
+        headerShown: false,
+        drawerType: 'slide',
+      }}
+    >
+      <EmployerDrawer.Screen
+        name="EmployerTabs"
+        component={EmployerBottomTabNavigator}
+      />
+    </EmployerDrawer.Navigator>
   );
 }
 
 function AuthNavigator() {
   return (
     <AuthStack.Navigator
-    initialRouteName='Login'
+    initialRouteName='JobSeekerSignup'
       screenOptions={{
         headerShown: false,
       }}
@@ -88,54 +187,43 @@ function AuthNavigator() {
         component={AccountSelectionPage}
       />
       <AuthStack.Screen
-        name="Signup"
-        component={Signup}
+        name="JobSeekerSignup"
+        component={JobSeekerSignup}
+      />
+      <AuthStack.Screen
+        name="EmployerSignup"
+        component={EmployerSignup}
       />
 
     </AuthStack.Navigator>
   );
 }
 
-function AppNavigatorStack() {
-  return (
-    <AppStack.Navigator
-      screenOptions={{
-        headerStyle: {
-          backgroundColor: '#007AFF',
-        },
-        headerTintColor: '#fff',
-        headerTitleStyle: {
-          fontWeight: 'bold',
-        },
-      }}
-    >
-      <AppStack.Screen
-        name="Dashboard"
-        component={BottomTabNavigator}
-        options={{ headerShown: false }}
-      />
-      {/* <AppStack.Screen
-        name="Profile"
-        component={ProfileScreen}
-        options={{ title: 'Profile' }}
-      />
-      <AppStack.Screen
-        name="Settings"
-        component={SettingsScreen}
-        options={{ title: 'Settings' }}
-      /> */}
-    </AppStack.Navigator>
-  );
+function JobSeekerAppNavigator() {
+  return <JobSeekerDrawerNavigator />;
+}
+
+function EmployerAppNavigator() {
+  return <EmployerDrawerNavigator />;
 }
 
 interface AppNavigatorProps {
   isUserLoggedIn: boolean;
+  userType?: 'jobseeker' | 'employer';
 }
 
-function RootNavigator({ isUserLoggedIn }: AppNavigatorProps) {
+function RootNavigator({ isUserLoggedIn, userType }: AppNavigatorProps) {
   return (
     <NavigationContainer>
-      {isUserLoggedIn ? <AppNavigatorStack /> : <AuthNavigator />}
+      {isUserLoggedIn ? (
+        userType === 'jobseeker' ? (
+          <EmployerAppNavigator />
+        ) : (
+          <JobSeekerAppNavigator />
+        )
+      ) : (
+        <AuthNavigator />
+      )}
     </NavigationContainer>
   );
 }

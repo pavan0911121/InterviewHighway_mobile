@@ -94,7 +94,7 @@ const LoginScreen: React.FC = () => {
           {/* Header Section */}
           <View style={styles.headerContainer}>
             <View style={styles.topBar} />
-            <Text style={styles.welcomeText}>Welcome Backgg</Text>
+            <Text style={styles.welcomeText}>Welcome Back</Text>
             <Text style={styles.subtitleText}>Login to your account</Text>
           </View>
 
@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
   welcomeText: {
     fontSize: 28,
     fontFamily: 'Roboto-VariableFont_wght',
-    // fontWeight: '700',
+    fontWeight: '700',
     color: '#000',
     marginBottom: 8,
   },
