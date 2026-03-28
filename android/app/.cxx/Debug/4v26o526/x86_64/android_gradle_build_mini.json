@@ -1,6 +1,7 @@
 {
   "buildFiles": [
     "/Users/pavankarthik/InterviewHighway_mobile/node_modules/@react-native-async-storage/async-storage/android/build/generated/source/codegen/jni/CMakeLists.txt",
+    "/Users/pavankarthik/InterviewHighway_mobile/node_modules/@react-native-community/netinfo/android/build/generated/source/codegen/jni/CMakeLists.txt",
     "/Users/pavankarthik/InterviewHighway_mobile/node_modules/@react-native-picker/picker/android/src/main/jni/CMakeLists.txt",
     "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-gesture-handler/android/build/generated/source/codegen/jni/CMakeLists.txt",
     "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni/CMakeLists.txt",
@@ -84,6 +85,11 @@
         "/private/var/root/.gradle/caches/9.0.0/transforms/df62f4a3c6818dc3cc09553936c6f2fd/transformed/react-android-0.84.1-debug/prefab/modules/jsi/libs/android.x86_64/libjsi.so",
         "/private/var/root/.gradle/caches/9.0.0/transforms/6cb94eb4240b26bae55579cb79d8f81a/transformed/fbjni-0.7.0/prefab/modules/fbjni/libs/android.x86_64/libfbjni.so"
       ]
+    },
+    "react_codegen_RNCNetInfoSpec::@c36c96bfd5b5770618a5": {
+      "artifactName": "react_codegen_RNCNetInfoSpec",
+      "abi": "x86_64",
+      "runtimeFiles": []
     },
     "react_codegen_rnworklets::@68f58d84d4754f193387": {
       "artifactName": "react_codegen_rnworklets",
