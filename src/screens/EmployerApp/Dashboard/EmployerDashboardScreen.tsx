@@ -1,8 +1,11 @@
 import { StyleSheet, Text, TouchableOpacity, View, ScrollView } from 'react-native'
 import React, { useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useNavigation } from '@react-navigation/native'
+import { DrawerNavigationProp } from '@react-navigation/drawer'
 
 const EmployerDashboardScreen = () => {
+  const navigation = useNavigation()
   // Sample data - replace with API data later
   const [companyData] = useState({
     companyName: 'Test Company Ltd',
@@ -21,7 +24,10 @@ const EmployerDashboardScreen = () => {
     <SafeAreaView style={styles.container}>
       {/* Sticky Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.menuButton}>
+        <TouchableOpacity 
+          style={styles.menuButton}
+          onPress={() => (navigation.getParent() as DrawerNavigationProp<any>)?.openDrawer()}
+        >
           <Text style={styles.menuIcon}>☰</Text>
         </TouchableOpacity>
       </View>
@@ -113,6 +119,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+    
   },
   header: {
     flexDirection: 'row',

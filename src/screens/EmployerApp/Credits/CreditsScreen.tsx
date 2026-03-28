@@ -2,8 +2,11 @@ import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-nati
 import React, { useState } from 'react'
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useNavigation } from '@react-navigation/native'
+import { DrawerNavigationProp } from '@react-navigation/drawer'
 
 const CreditsScreen = () => {
+  const navigation = useNavigation()
   const [credits] = useState({
     available: 0,
     used: 0,
@@ -13,6 +16,16 @@ const CreditsScreen = () => {
   const [selectedPlan, setSelectedPlan] = useState('free')
   return (
     <SafeAreaView style={styles.container}>
+      {/* Sticky Header */}
+      <View style={styles.header}>
+        <TouchableOpacity 
+          style={styles.menuButton}
+          onPress={() => (navigation.getParent() as DrawerNavigationProp<any>)?.openDrawer()}
+        >
+          <Text style={styles.menuIcon}>☰</Text>
+        </TouchableOpacity>
+      </View>
+      
       <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Header Section */}
         <View style={styles.headerContainer}>
@@ -510,6 +523,25 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f8f8',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#F3F4F6',
+    gap: 12,
+  },
+  menuButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  menuIcon: {
+    fontSize: 24,
+    color: '#363535',
+    fontFamily: 'Geist-VariableFont_wght',
   },
   scrollContent: {
     flex: 1,
