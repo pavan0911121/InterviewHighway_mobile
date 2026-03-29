@@ -13,6 +13,8 @@ import {
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import SplashScreen from './src/screens/SplashScreen';
+import { Provider } from 'react-redux';
+import { store } from './src/Redux';
 
 function AppContent() {
   const { isLoggedIn, isLoading: authLoading } = useAuth();
@@ -48,18 +50,20 @@ function AppContent() {
   return (
     <>
       <StatusBar barStyle="dark-content" />
-      <AppNavigator isUserLoggedIn={true} userType="employer" />
+      <AppNavigator isUserLoggedIn={false} userType="employer" />
     </>
   );
 }
 
 function App() {
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
-    </SafeAreaProvider>
+    <Provider store={store}>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </SafeAreaProvider>
+    </Provider>
   );
 }
 

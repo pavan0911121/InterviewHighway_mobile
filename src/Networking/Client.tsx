@@ -49,31 +49,32 @@ export const client = async (
   isValidate: boolean = true
 ): Promise<any> => {
   // Check network connectivity
-  const netState = await NetInfo.fetch();
+  // const netState = await NetInfo.fetch();
   
-  if (netState.isConnected !== true) {
-    if (!isNetworkDialogOpen) {
-      isNetworkDialogOpen = true;
-      Alert.alert('Network Error', 'Please check your internet connection', [
-        {
-          text: 'OK',
-          onPress: () => {
-            isNetworkDialogOpen = false;
-          },
-        },
-      ]);
-    }
-    return Promise.reject('No internet connection');
-  }
+  // if (netState.isConnected !== true) {
+  //   if (!isNetworkDialogOpen) {
+  //     isNetworkDialogOpen = true;
+  //     Alert.alert('Network Error', 'Please check your internet connection', [
+  //       {
+  //         text: 'OK',
+  //         onPress: () => {
+  //           isNetworkDialogOpen = false;
+  //         },
+  //       },
+  //     ]);
+  //   }
+  //   return Promise.reject('No internet connection');
+  // }
 
-  // Check for 2G network
-  if (netState.type === 'cellular' && netState.details?.cellularGeneration === '2g') {
-    console.warn('Poor network detected - 2G connection');
-  }
+  // // Check for 2G network
+  // if (netState.type === 'cellular' && netState.details?.cellularGeneration === '2g') {
+  //   console.warn('Poor network detected - 2G connection');
+  // }
 
   const headers: HeadersConfig = {
     Accept: 'application/json',
     'Content-Type': 'application/json',
+    'apikey': 'sb_publishable_tY1AthKjAKBTZP0TxJ1KfQ_PCL8VdIk',
     ...customConfig,
   };
 
@@ -94,27 +95,27 @@ export const client = async (
     let response = await fetch(url, config);
 
     // Handle 401 Unauthorized
-    if (response.status === 401 && isValidate) {
-      if (!isTokenRefreshInProgress) {
-        isTokenRefreshInProgress = true;
-        const refreshed = await refreshAccessToken();
-        isTokenRefreshInProgress = false;
+    // if (response.status === 401 && isValidate) {
+    //   if (!isTokenRefreshInProgress) {
+    //     isTokenRefreshInProgress = true;
+    //     const refreshed = await refreshAccessToken();
+    //     isTokenRefreshInProgress = false;
 
-        if (refreshed) {
-          // Retry the original request with new token
-          const newToken = await getData(Keys.USER_TOKEN);
-          if (newToken) {
-            headers['Authorization'] = `Bearer ${newToken}`;
-            config.headers = headers;
-            response = await fetch(url, config);
-          }
-        } else {
-          // Force logout if token refresh failed
-          await handleLogout();
-          return Promise.reject('Session expired. Please login again.');
-        }
-      }
-    }
+    //     if (refreshed) {
+    //       // Retry the original request with new token
+    //       const newToken = await getData(Keys.USER_TOKEN);
+    //       if (newToken) {
+    //         headers['Authorization'] = `Bearer ${newToken}`;
+    //         config.headers = headers;
+    //         response = await fetch(url, config);
+    //       }
+    //     } else {
+    //       // Force logout if token refresh failed
+    //       await handleLogout();
+    //       return Promise.reject('Session expired. Please login again.');
+    //     }
+    //   }
+    // }
 
     // Handle 401 for login API (invalid credentials)
     if (response.status === 401 && !isValidate) {
@@ -142,44 +143,46 @@ export const client = async (
  * Refresh access token using refresh token
  */
 const refreshAccessToken = async (): Promise<boolean> => {
-  try {
-    const refreshToken = await getData(Keys.USER_TOKEN);
+  // try {
+  //   const refreshToken = await getData(Keys.USER_TOKEN);
 
-    if (!refreshToken) {
-      return false;
-    }
+  //   if (!refreshToken) {
+  //     return false;
+  //   }
 
-    const headers: HeadersConfig = {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    };
+  //   const headers: HeadersConfig = {
+  //     Accept: 'application/json',
+  //     'Content-Type': 'application/json',
+  //     'apikey': 'sb_publishable_tY1AthKjAKBTZP0TxJ1KfQ_PCL8VdIk',
+  //   };
 
-    const config: RequestConfig = {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ refreshToken }),
-    };
+  //   const config: RequestConfig = {
+  //     method: 'POST',
+  //     headers,
+  //     body: JSON.stringify({ refreshToken }),
+  //   };
 
-    const response = await fetch(`${API_BASE_URL}/auth/v1/refresh`, config);
-    const responseData = await response.clone().json();
+  //   const response = await fetch(`${API_BASE_URL}/auth/v1/refresh`, config);
+  //   const responseData = await response.clone().json();
 
-    if (response.status === 200) {
-      // Store new tokens
-      if (responseData.accessToken) {
-        await storeData(Keys.USER_TOKEN, responseData.accessToken);
-      }
-      if (responseData.refreshToken) {
-        await storeData(Keys.USER_TOKEN, responseData.refreshToken);
-      }
-      return true;
-    } else {
-      return false;
-    }
-  } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : 'Token refresh failed';
-    console.error('Token Refresh Error:', errorMessage);
-    return false;
-  }
+  //   if (response.status === 200) {
+  //     // Store new tokens
+  //     if (responseData.accessToken) {
+  //       await storeData(Keys.USER_TOKEN, responseData.accessToken);
+  //     }
+  //     if (responseData.refreshToken) {
+  //       await storeData(Keys.USER_TOKEN, responseData.refreshToken);
+  //     }
+  //     return true;
+  //   } else {
+  //     return false;
+  //   }
+  // } catch (err) {
+  //   const errorMessage = err instanceof Error ? err.message : 'Token refresh failed';
+  //   console.error('Token Refresh Error:', errorMessage);
+  //   return false;
+  // }
+  return  true;
 };
 
 /**
@@ -209,8 +212,10 @@ client.get = async function (endpoint: string, customConfig: HeadersConfig = {},
  * POST request
  */
 client.post = async function (endpoint: string, body: any, customConfig: HeadersConfig = {}, isValidate: boolean = true): Promise<APIResponse> {
-  const token = await getData(Keys.USER_TOKEN);
-  const response = await client(token, endpoint, 'POST', body, customConfig, isValidate);
+  // const token = await getData(Keys.USER_TOKEN);
+  // const response = await client(token, endpoint, 'POST', body, customConfig, isValidate);
+  const response = await client("", endpoint, 'POST', body, customConfig, isValidate);
+
   return parseAPIResponse(response);
 };
 
@@ -218,8 +223,9 @@ client.post = async function (endpoint: string, body: any, customConfig: Headers
  * PUT request
  */
 client.put = async function (endpoint: string, body: any, customConfig: HeadersConfig = {}, isValidate: boolean = true): Promise<APIResponse> {
-  const token = await getData(Keys.USER_TOKEN);
-  const response = await client(token, endpoint, 'PUT', body, customConfig, isValidate);
+  // const token = await getData(Keys.USER_TOKEN);
+  // const response = await client(token, endpoint, 'PUT', body, customConfig, isValidate);
+    const response = await client("", endpoint, 'PUT', body, customConfig, isValidate);
   return parseAPIResponse(response);
 };
 
@@ -227,8 +233,9 @@ client.put = async function (endpoint: string, body: any, customConfig: HeadersC
  * DELETE request
  */
 client.delete = async function (endpoint: string, body: any = null, customConfig: HeadersConfig = {}, isValidate: boolean = true): Promise<APIResponse> {
-  const token = await getData(Keys.USER_TOKEN);
-  const response = await client(token, endpoint, 'DELETE', body, customConfig, isValidate);
+  // const token = await getData(Keys.USER_TOKEN);
+  // const response = await client(token, endpoint, 'DELETE', body, customConfig, isValidate);
+    const response = await client("", endpoint, 'DELETE', body, customConfig, isValidate);
   return parseAPIResponse(response);
 };
 

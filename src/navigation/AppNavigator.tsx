@@ -173,7 +173,6 @@ function EmployerDrawerNavigator() {
 function AuthNavigator() {
   return (
     <AuthStack.Navigator
-    initialRouteName='JobSeekerSignup'
       screenOptions={{
         headerShown: false,
       }}

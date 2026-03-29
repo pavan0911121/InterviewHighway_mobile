@@ -15,6 +15,9 @@ import { useAuth } from '../../context/AuthContext';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../../types/navigation';
 import { useNavigation } from '@react-navigation/native';
+import { postUserData } from '../../Redux/slices/loginSlice';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '../../Redux';
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 
@@ -30,6 +33,7 @@ const LoginScreen: React.FC = () => {
   const [errors, setErrors] = useState<Partial<LoginForm>>({});
   const [loginError, setLoginError] = useState<string>('');
   const navigation = useNavigation<LoginScreenNavigationProp>();
+  const dispatch = useDispatch<AppDispatch>();
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -68,6 +72,14 @@ const LoginScreen: React.FC = () => {
     //   console.error('Login error:', error);
     //   setLoginError('Login failed. Please check your credentials and try again.');
     // }
+    
+     const data={
+      email:"pavankarthik0911@gmail.com",
+      password:"Pavan1raviteja@",
+      gotrue_meta_security:{}
+    }
+    
+    await dispatch(postUserData(data) as any);
   };
 
   const handleForgotPassword = () => {
@@ -77,6 +89,7 @@ const LoginScreen: React.FC = () => {
 
   const handleSignUp = () => {
     navigation.navigate('AccountTypeSelection');
+   
     // TODO: Implement sign up navigation
     console.log('Sign up pressed');
   };
