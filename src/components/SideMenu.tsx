@@ -1,27 +1,27 @@
 import React from 'react'
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView } from 'react-native'
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Linking } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { DrawerNavigationProp, DrawerContentComponentProps } from '@react-navigation/drawer'
 
 interface MenuItem {
   id: string
   label: string
-  screen: string
+  url: string
 }
 
 const SideMenu: React.FC<DrawerContentComponentProps> = ({ navigation }) => {
   const insets = useSafeAreaInsets()
 
-//   const menuItems: MenuItem[] = [
-//     { id: '1', label: 'Dashboard', screen: 'HomeTab' },
-//     { id: '2', label: 'Courses', screen: 'CoursesTab' },
-//     { id: '3', label: 'My Applications', screen: 'MyApplicationsTab' },
-//     { id: '4', label: 'Profile', screen: 'ProfileTab' },
-//     { id: '5', label: 'Payments', screen: 'PaymentsTab' },
-//   ]
+  const menuItems: MenuItem[] = [
+    { id: '1', label: 'About us', url: 'https://interviewhighway.com/about' },
+    { id: '2', label: 'Acceptable Use Policy', url: 'https://interviewhighway.com/acceptable-use' },
+    { id: '3', label: 'Employer Service Agreement', url: 'https://interviewhighway.com/employer-agreement' },
+    { id: '4', label: 'Terms of Use', url: 'https://interviewhighway.com/terms' },
+    { id: '5', label: 'Privacy Policy', url: 'https://interviewhighway.com/privacy' },
+  ]
 
-  const handleMenuItemPress = (screen: string) => {
-    navigation.navigate(screen)
+  const handleMenuItemPress = (url: string) => {
+    Linking.openURL(url);
     navigation.closeDrawer()
   }
 
@@ -50,19 +50,19 @@ const SideMenu: React.FC<DrawerContentComponentProps> = ({ navigation }) => {
       </View>
 
       {/* Menu Items */}
-      {/* <View style={styles.menuItemsContainer}>
+      <View style={styles.menuItemsContainer}>
         {menuItems.map((item) => (
           <TouchableOpacity
             key={item.id}
             style={styles.menuItem}
-            onPress={() => handleMenuItemPress(item.screen)}
+            onPress={() => handleMenuItemPress(item.url)}
           >
             <Text style={styles.menuItemText}>
               {item.label}
             </Text>
           </TouchableOpacity>
         ))}
-      </View> */}
+      </View>
 
       {/* Sign Out Button */}
       <View style={styles.signOutContainer}>

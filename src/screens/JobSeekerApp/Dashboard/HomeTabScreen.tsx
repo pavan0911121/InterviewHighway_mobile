@@ -55,14 +55,14 @@ export default function HomeTabScreen({ navigation }: Props) {
           <Text style={styles.menuIcon}>☰</Text>
         </TouchableOpacity>
         <View style={styles.searchContainer}>
-          <Search size={18}/>
+          <Search size={18} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search for 'job title'"
             placeholderTextColor="#797979"
           />
         </View>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.filterButton}
           onPress={() => setShowFilterModal(true)}
         >
@@ -205,21 +205,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 8,
     borderColor: '#EAEBEE',
-     borderRadius: 8,
+    borderRadius: 8,
     flex: 1,
   },
   searchInput: {
-   
+
     height: 40,
     fontSize: 14,
     color: '#363535',
     fontFamily: 'Geist-VariableFont_wght',
     paddingHorizontal: 12,
     // backgroundColor: '#FFFFFF',
-   
+
     borderWidth: 1,
     borderColor: 'transparent',
-    
+
   },
   filterButton: {
     width: 40,

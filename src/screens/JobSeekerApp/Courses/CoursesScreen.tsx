@@ -1,71 +1,87 @@
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView } from 'react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
+import { Funnel } from 'lucide-react-native/icons';
+import FilterModal from '../Dashboard/FilterModal';
+import { getCourses } from '../../../Redux/slices/coursesSlice';
+import { useDispatch, useSelector } from 'react-redux';
 
 const CoursesScreen = () => {
   const navigation = useNavigation();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const dispatch = useDispatch();
+    const selector = useSelector((state: any) => state.courses);
 
+  useEffect(() => {
+    getCoursesData();
+  }, []);
+  const getCoursesData = async () => {
+    try {
+      // Make API call to fetch courses
+      const response = await dispatch(getCourses() as any);
+      console.log('Courses Response:', response);
+    } catch (error) {
+      console.log('Error fetching courses:', error);
+    }
+  };
+  console.log(selector?.courses, "selectororororororo");
   const stats = [
-    { number: '8', label: 'Total Courses', color: '#165DFC' },
-    { number: '8', label: 'Our Courses', color: '#22C55E' },
+    { number: selector?.courses?.length || 0, label: 'Total Courses', color: '#165DFC' },
+    { number: selector?.courses?.length || 0, label: 'Our Courses', color: '#22C55E' },
     { number: '0', label: 'Partner Courses', color: '#A855F7' },
     { number: '0', label: 'My Enrolled', color: '#F97316' },
   ];
 
-  const courses = [
-    {
-      id: 1,
-      title: 'pythonadvance2',
-      instructor: 'by devpy',
-      code: 'dfaff',
-      level: 'Beginner',
-      courseId: 'INR999',
-    },
-    {
-      id: 2,
-      title: 'pythonadvance2',
-      instructor: 'by devpy',
-      code: 'dfaff',
-      level: 'Beginner',
-      courseId: 'INR999',
-    },
-    {
-      id: 3,
-      title: 'pythonadvance2',
-      instructor: 'by devpy',
-      code: 'dfaff',
-      level: 'Beginner',
-      courseId: 'INR999',
-    },
-  ];
-
+  const courses = selector?.courses
+  const handleApplyFilters = (filters: any) => {
+    console.log('Applied Filters:', filters);
+    // You can dispatch an action here to filter jobs based on the selected filters
+  };
   return (
     <SafeAreaView style={styles.container}>
       {/* Sticky Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.menuButton}
           onPress={() => (navigation.getParent() as DrawerNavigationProp<any>)?.openDrawer()}
         >
           <Text style={styles.menuIcon}>☰</Text>
         </TouchableOpacity>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search Courses...."
-          placeholderTextColor="#797979"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-        <TouchableOpacity style={styles.filterButton}>
-          <Text style={styles.filterIcon}>⚙️</Text>
+        <TouchableOpacity
+          style={styles.filterButton}
+          onPress={() => setShowFilterModal(true)}
+        >
+          <Funnel size={15} />
         </TouchableOpacity>
       </View>
 
       {/* Stats Section */}
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        {/* Header Section */}
+        <View style={styles.headerSection}>
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>My Learning Hub</Text>
+            <Text style={styles.headerSubtitle}>
+              Continue your enrolled courses or discover new ones to advance your career
+            </Text>
+          </View>
+
+          <View style={styles.marketplaceSection}>
+            <View style={styles.marketplaceIcon}>
+              <Text style={styles.marketplaceIconText}>🔍</Text>
+            </View>
+            <View style={styles.marketplaceContent}>
+              <Text style={styles.marketplaceTitle}>Course Marketplace</Text>
+              <Text style={styles.marketplaceSubtitle}>
+                Discover new courses to advance your skills
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Stats Grid */}
         <View style={styles.statsGrid}>
           {stats.map((stat, index) => (
             <View key={index} style={styles.statCard}>
@@ -79,24 +95,24 @@ const CoursesScreen = () => {
 
         {/* Courses List */}
         <View style={styles.coursesContainer}>
-          {courses.map((course) => (
-            <View key={course.id} style={styles.courseCard}>
+          {courses?.map((course:any) => (
+            <View key={course?.id} style={styles.courseCard}>
               <View style={styles.courseHeader}>
                 <View>
-                  <Text style={styles.courseTitle}>{course.title}</Text>
-                  <Text style={styles.courseInstructor}>{course.instructor}</Text>
-                  <Text style={styles.courseCode}>{course.code}</Text>
+                  <Text style={styles.courseTitle}>{course?.title}</Text>
+                  <Text style={styles.courseInstructor}>{course?.instructor_name}</Text>
+                  <Text style={styles.courseCode}>{course?.slug}</Text>
                 </View>
               </View>
 
               <View style={styles.courseMeta}>
                 <View style={styles.levelBadge}>
-                  <Text style={styles.levelText}>{course.level}</Text>
+                  <Text style={styles.levelText}>{course?.level}</Text>
                 </View>
               </View>
 
               <View style={styles.courseFooter}>
-                <Text style={styles.courseId}>{course.courseId}</Text>
+                <Text style={styles.courseId}>{course?.currency}{course?.price}</Text>
                 <TouchableOpacity style={styles.viewButton}>
                   <Text style={styles.viewButtonIcon}>▶</Text>
                   <Text style={styles.viewButtonText}>View Course</Text>
@@ -106,6 +122,12 @@ const CoursesScreen = () => {
           ))}
         </View>
       </ScrollView>
+      {/* Filter Modal */}
+      <FilterModal
+        visible={showFilterModal}
+        onClose={() => setShowFilterModal(false)}
+        onApply={handleApplyFilters}
+      />
     </SafeAreaView>
   );
 };
@@ -120,6 +142,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: '#F3F4F6',
@@ -161,6 +184,64 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flex: 1,
     paddingHorizontal: 16,
+  },
+  headerSection: {
+    marginTop: 16,
+    marginBottom: 20,
+  },
+  headerContent: {
+    marginBottom: 16,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#000',
+    fontFamily: 'Geist-VariableFont_wght',
+    marginBottom: 8,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#666',
+    fontFamily: 'Geist-VariableFont_wght',
+    lineHeight: 20,
+  },
+  marketplaceSection: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    padding: 12,
+    gap: 12,
+  },
+  marketplaceIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: '#E8F5E9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  marketplaceIconText: {
+    fontSize: 20,
+  },
+  marketplaceContent: {
+    flex: 1,
+  },
+  marketplaceTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#000',
+    fontFamily: 'Geist-VariableFont_wght',
+    marginBottom: 4,
+  },
+  marketplaceSubtitle: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: '#666',
+    fontFamily: 'Geist-VariableFont_wght',
+    lineHeight: 18,
   },
   statsGrid: {
     flexDirection: 'row',
