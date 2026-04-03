@@ -5,6 +5,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { AuthStackParamList, AppStackParamList, JobSeekerBottomTabParamList, EmployerBottomTabParamList } from '../types/navigation';
+import { Home, BookOpen, Briefcase, CreditCard, User, BarChart3, TrendingUp, Building, Inbox } from 'lucide-react-native';
 
 // Import screens
 import {
@@ -47,6 +48,9 @@ function JobSeekerBottomTabNavigator() {
         component={HomeTabScreen}
         options={{
           title: 'Home',
+          tabBarIcon: ({ color, size }) => (
+            <Home color={color} size={size} />
+          ),
         }}
       />
       <JobSeekerTab.Screen
@@ -54,20 +58,29 @@ function JobSeekerBottomTabNavigator() {
         component={CoursesTabScreen}
         options={{
           title: 'Courses',
+          tabBarIcon: ({ color, size }) => (
+            <BookOpen color={color} size={size} />
+          ),
         }}
       />
-      <JobSeekerTab.Screen
+      {/* <JobSeekerTab.Screen
         name="MyApplicationsTab"
         component={MyApplicationsTabScreen}
         options={{
           title: 'My Applications',
+          tabBarIcon: ({ color, size }) => (
+            <Briefcase color={color} size={size} />
+          ),
         }}
-      />
+      /> */}
       <JobSeekerTab.Screen
         name="PaymentsTab"
         component={PaymentsTabScreen}
         options={{
           title: 'Payments',
+          tabBarIcon: ({ color, size }) => (
+            <CreditCard color={color} size={size} />
+          ),
         }}
       />
       <JobSeekerTab.Screen
@@ -75,6 +88,9 @@ function JobSeekerBottomTabNavigator() {
         component={ProfileTabScreen}
         options={{
           title: 'Profile',
+          tabBarIcon: ({ color, size }) => (
+            <User color={color} size={size} />
+          ),
         }}
       />
     </JobSeekerTab.Navigator>
@@ -112,6 +128,9 @@ function EmployerBottomTabNavigator() {
         component={EmployerDashboard}
         options={{
           title: 'Dashboard',
+          tabBarIcon: ({ color, size }) => (
+            <BarChart3 color={color} size={size} />
+          ),
         }}
       />
       <EmployerTab.Screen
@@ -119,6 +138,9 @@ function EmployerBottomTabNavigator() {
         component={JobsScreen}
         options={{
           title: 'Jobs',
+          tabBarIcon: ({ color, size }) => (
+            <Briefcase color={color} size={size} />
+          ),
         }}
       />
       <EmployerTab.Screen
@@ -126,6 +148,9 @@ function EmployerBottomTabNavigator() {
         component={ApplicationsScreen}
         options={{
           title: 'Applications',
+          tabBarIcon: ({ color, size }) => (
+            <Inbox color={color} size={size} />
+          ),
         }}
       />
       <EmployerTab.Screen
@@ -133,6 +158,9 @@ function EmployerBottomTabNavigator() {
         component={AnalyticsScreen}
         options={{
           title: 'Analytics',
+          tabBarIcon: ({ color, size }) => (
+            <TrendingUp color={color} size={size} />
+          ),
         }}
       />
       <EmployerTab.Screen
@@ -140,6 +168,9 @@ function EmployerBottomTabNavigator() {
         component={CreditsScreen}
         options={{
           title: 'Credits',
+          tabBarIcon: ({ color, size }) => (
+            <CreditCard color={color} size={size} />
+          ),
         }}
       />
       <EmployerTab.Screen
@@ -147,6 +178,9 @@ function EmployerBottomTabNavigator() {
         component={CompanyProfileScreen}
         options={{
           title: 'Company Profile',
+          tabBarIcon: ({ color, size }) => (
+            <Building color={color} size={size} />
+          ),
         }}
       />
     </EmployerTab.Navigator>
@@ -208,17 +242,20 @@ function EmployerAppNavigator() {
 
 interface AppNavigatorProps {
   isUserLoggedIn: boolean;
-  userType?: 'jobseeker' | 'employer';
+  userType?: 'jobseeker' | 'employer' | null;
 }
 
 function RootNavigator({ isUserLoggedIn, userType }: AppNavigatorProps) {
+  console.log('AppNavigator - isUserLoggedIn:', isUserLoggedIn, 'userType:', userType);
   return (
     <NavigationContainer>
       {isUserLoggedIn ? (
         userType === 'jobseeker' ? (
+          <JobSeekerAppNavigator />
+        ) : userType === 'employer' ? (
           <EmployerAppNavigator />
         ) : (
-          <JobSeekerAppNavigator />
+          <AuthNavigator />
         )
       ) : (
         <AuthNavigator />

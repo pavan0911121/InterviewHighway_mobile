@@ -76,21 +76,14 @@ const LoginScreen: React.FC = () => {
       };
       
       const result = await dispatch(postUserData(data) as any);
-      console.log(result, "loginResponse");
-      
       // Check if the async thunk was fulfilled or rejected
       if (result.type.includes('fulfilled')) {
-        // Success - login response received
-        console.log('Login successful:', result.payload);
-        // Navigation will happen automatically when isLoggedIn changes in the app
       } else if (result.type.includes('rejected')) {
         // Failed - show error message
         const errorMessage = result.payload?.message || 'Login failed. Please check your credentials and try again.';
         setLoginError(errorMessage);
-        console.log('Login error:', result.payload);
       }
     } catch (error) {
-      console.log('Login error:', error);
       if(error){
         setLoginError('Login failed. Please check your credentials and try again.');
       }
@@ -106,7 +99,6 @@ const LoginScreen: React.FC = () => {
 
   const handleSignUp = () => {
     navigation.navigate('AccountTypeSelection');
-   
     // TODO: Implement sign up navigation
     console.log('Sign up pressed');
   };

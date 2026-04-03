@@ -2,7 +2,7 @@
 	"artifacts" : 
 	[
 		{
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/build/intermediates/cxx/Debug/4v26o526/obj/x86_64/libappmodules.so"
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/build/intermediates/cxx/Debug/4v26o526/obj/armeabi-v7a/libappmodules.so"
 		}
 	],
 	"backtrace" : 3,
@@ -23,6 +23,7 @@
 			"/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native/ReactAndroid/cmake-utils/ReactNative-application.cmake",
 			"CMakeLists.txt",
 			"/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native/ReactCommon/cmake-utils/react-native-flags.cmake",
+			"/Users/pavankarthik/InterviewHighway_mobile/node_modules/@react-native-community/slider/android/src/main/jni/CMakeLists.txt",
 			"/Users/pavankarthik/InterviewHighway_mobile/node_modules/@react-native-picker/picker/android/src/main/jni/CMakeLists.txt",
 			"/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-safe-area-context/android/src/main/jni/CMakeLists.txt",
 			"/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-screens/android/src/main/jni/CMakeLists.txt"
@@ -90,7 +91,7 @@
 			{
 				"command" : 6,
 				"file" : 3,
-				"line" : 81,
+				"line" : 89,
 				"parent" : 10
 			},
 			{
@@ -99,7 +100,7 @@
 			{
 				"command" : 6,
 				"file" : 4,
-				"line" : 62,
+				"line" : 81,
 				"parent" : 12
 			},
 			{
@@ -108,8 +109,17 @@
 			{
 				"command" : 6,
 				"file" : 5,
-				"line" : 63,
+				"line" : 62,
 				"parent" : 14
+			},
+			{
+				"file" : 6
+			},
+			{
+				"command" : 6,
+				"file" : 6,
+				"line" : 63,
+				"parent" : 16
 			}
 		]
 	},
@@ -119,7 +129,7 @@
 			"compileCommandFragments" : 
 			[
 				{
-					"fragment" : "-g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D__BIONIC_NO_PAGE_SIZE_MACRO -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -fno-limit-debug-info  -fPIC"
+					"fragment" : "-g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D__BIONIC_NO_PAGE_SIZE_MACRO -D_FORTIFY_SOURCE=2 -march=armv7-a -mthumb -Wformat -Werror=format-security   -fno-limit-debug-info  -fPIC"
 				},
 				{
 					"backtrace" : 7,
@@ -200,14 +210,18 @@
 				},
 				{
 					"backtrace" : 11,
-					"path" : "/Users/pavankarthik/InterviewHighway_mobile/node_modules/@react-native-picker/picker/android/src/main/jni"
+					"path" : "/Users/pavankarthik/InterviewHighway_mobile/node_modules/@react-native-community/slider/android/src/main/jni"
 				},
 				{
 					"backtrace" : 13,
-					"path" : "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-safe-area-context/android/src/main/jni"
+					"path" : "/Users/pavankarthik/InterviewHighway_mobile/node_modules/@react-native-picker/picker/android/src/main/jni"
 				},
 				{
 					"backtrace" : 15,
+					"path" : "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-safe-area-context/android/src/main/jni"
+				},
+				{
+					"backtrace" : 17,
 					"path" : "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-screens/android/src/main/jni"
 				},
 				{
@@ -225,6 +239,22 @@
 				{
 					"backtrace" : 4,
 					"path" : "/Users/pavankarthik/InterviewHighway_mobile/node_modules/@react-native-community/netinfo/android/build/generated/source/codegen/jni/react/renderer/components/RNCNetInfoSpec"
+				},
+				{
+					"backtrace" : 4,
+					"path" : "/Users/pavankarthik/InterviewHighway_mobile/node_modules/@react-native-community/slider/android/src/main/jni/."
+				},
+				{
+					"backtrace" : 4,
+					"path" : "/Users/pavankarthik/InterviewHighway_mobile/node_modules/@react-native-community/slider/android/src/main/jni/../../../../common/cpp"
+				},
+				{
+					"backtrace" : 4,
+					"path" : "/Users/pavankarthik/InterviewHighway_mobile/node_modules/@react-native-community/slider/android/src/main/jni/../../../build/generated/source/codegen/jni"
+				},
+				{
+					"backtrace" : 4,
+					"path" : "/Users/pavankarthik/InterviewHighway_mobile/node_modules/@react-native-community/slider/android/src/main/jni/../../../build/generated/source/codegen/jni/react/renderer/components/RNCSlider"
 				},
 				{
 					"backtrace" : 4,
@@ -362,6 +392,10 @@
 		},
 		{
 			"backtrace" : 4,
+			"id" : "react_codegen_RNCSlider::@4898bc4726ecf1751b6a"
+		},
+		{
+			"backtrace" : 4,
 			"id" : "react_codegen_rnpicker::@e8bb2e9e833f47d0d516"
 		},
 		{
@@ -399,42 +433,47 @@
 		"commandFragments" : 
 		[
 			{
-				"fragment" : "-Wl,-z,max-page-size=16384 -Wl,--build-id=sha1 -Wl,--no-rosegment -Wl,--no-undefined-version -Wl,--fatal-warnings -Wl,--no-undefined -Qunused-arguments",
+				"fragment" : "-Wl,--build-id=sha1 -Wl,--no-rosegment -Wl,--no-undefined-version -Wl,--fatal-warnings -Wl,--no-undefined -Qunused-arguments",
 				"role" : "flags"
 			},
 			{
 				"backtrace" : 4,
-				"fragment" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/build/intermediates/cxx/Debug/4v26o526/obj/x86_64/libreact_codegen_rnpicker.so",
+				"fragment" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/build/intermediates/cxx/Debug/4v26o526/obj/armeabi-v7a/libreact_codegen_RNCSlider.so",
 				"role" : "libraries"
 			},
 			{
 				"backtrace" : 4,
-				"fragment" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/build/intermediates/cxx/Debug/4v26o526/obj/x86_64/libreact_codegen_safeareacontext.so",
+				"fragment" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/build/intermediates/cxx/Debug/4v26o526/obj/armeabi-v7a/libreact_codegen_rnpicker.so",
 				"role" : "libraries"
 			},
 			{
 				"backtrace" : 4,
-				"fragment" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/build/intermediates/cxx/Debug/4v26o526/obj/x86_64/libreact_codegen_rnscreens.so",
+				"fragment" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/build/intermediates/cxx/Debug/4v26o526/obj/armeabi-v7a/libreact_codegen_safeareacontext.so",
 				"role" : "libraries"
 			},
 			{
 				"backtrace" : 4,
-				"fragment" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/build/intermediates/cxx/Debug/4v26o526/obj/x86_64/libreact_codegen_rnsvg.so",
+				"fragment" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/build/intermediates/cxx/Debug/4v26o526/obj/armeabi-v7a/libreact_codegen_rnscreens.so",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 4,
+				"fragment" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/build/intermediates/cxx/Debug/4v26o526/obj/armeabi-v7a/libreact_codegen_rnsvg.so",
 				"role" : "libraries"
 			},
 			{
 				"backtrace" : 5,
-				"fragment" : "/private/var/root/.gradle/caches/9.0.0/transforms/6cb94eb4240b26bae55579cb79d8f81a/transformed/fbjni-0.7.0/prefab/modules/fbjni/libs/android.x86_64/libfbjni.so",
+				"fragment" : "/private/var/root/.gradle/caches/9.0.0/transforms/6cb94eb4240b26bae55579cb79d8f81a/transformed/fbjni-0.7.0/prefab/modules/fbjni/libs/android.armeabi-v7a/libfbjni.so",
 				"role" : "libraries"
 			},
 			{
 				"backtrace" : 5,
-				"fragment" : "/private/var/root/.gradle/caches/9.0.0/transforms/df62f4a3c6818dc3cc09553936c6f2fd/transformed/react-android-0.84.1-debug/prefab/modules/jsi/libs/android.x86_64/libjsi.so",
+				"fragment" : "/private/var/root/.gradle/caches/9.0.0/transforms/df62f4a3c6818dc3cc09553936c6f2fd/transformed/react-android-0.84.1-debug/prefab/modules/jsi/libs/android.armeabi-v7a/libjsi.so",
 				"role" : "libraries"
 			},
 			{
 				"backtrace" : 5,
-				"fragment" : "/private/var/root/.gradle/caches/9.0.0/transforms/df62f4a3c6818dc3cc09553936c6f2fd/transformed/react-android-0.84.1-debug/prefab/modules/reactnative/libs/android.x86_64/libreactnative.so",
+				"fragment" : "/private/var/root/.gradle/caches/9.0.0/transforms/df62f4a3c6818dc3cc09553936c6f2fd/transformed/react-android-0.84.1-debug/prefab/modules/reactnative/libs/android.armeabi-v7a/libreactnative.so",
 				"role" : "libraries"
 			},
 			{
@@ -525,217 +564,217 @@
 		{
 			"backtrace" : 4,
 			"isGenerated" : true,
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/rnasyncstorage_autolinked_build/CMakeFiles/react_codegen_rnasyncstorage.dir/react/renderer/components/rnasyncstorage/ComponentDescriptors.cpp.o",
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/armeabi-v7a/rnasyncstorage_autolinked_build/CMakeFiles/react_codegen_rnasyncstorage.dir/react/renderer/components/rnasyncstorage/ComponentDescriptors.cpp.o",
 			"sourceGroupIndex" : 1
 		},
 		{
 			"backtrace" : 4,
 			"isGenerated" : true,
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/rnasyncstorage_autolinked_build/CMakeFiles/react_codegen_rnasyncstorage.dir/react/renderer/components/rnasyncstorage/EventEmitters.cpp.o",
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/armeabi-v7a/rnasyncstorage_autolinked_build/CMakeFiles/react_codegen_rnasyncstorage.dir/react/renderer/components/rnasyncstorage/EventEmitters.cpp.o",
 			"sourceGroupIndex" : 1
 		},
 		{
 			"backtrace" : 4,
 			"isGenerated" : true,
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/rnasyncstorage_autolinked_build/CMakeFiles/react_codegen_rnasyncstorage.dir/react/renderer/components/rnasyncstorage/Props.cpp.o",
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/armeabi-v7a/rnasyncstorage_autolinked_build/CMakeFiles/react_codegen_rnasyncstorage.dir/react/renderer/components/rnasyncstorage/Props.cpp.o",
 			"sourceGroupIndex" : 1
 		},
 		{
 			"backtrace" : 4,
 			"isGenerated" : true,
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/rnasyncstorage_autolinked_build/CMakeFiles/react_codegen_rnasyncstorage.dir/react/renderer/components/rnasyncstorage/ShadowNodes.cpp.o",
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/armeabi-v7a/rnasyncstorage_autolinked_build/CMakeFiles/react_codegen_rnasyncstorage.dir/react/renderer/components/rnasyncstorage/ShadowNodes.cpp.o",
 			"sourceGroupIndex" : 1
 		},
 		{
 			"backtrace" : 4,
 			"isGenerated" : true,
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/rnasyncstorage_autolinked_build/CMakeFiles/react_codegen_rnasyncstorage.dir/react/renderer/components/rnasyncstorage/States.cpp.o",
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/armeabi-v7a/rnasyncstorage_autolinked_build/CMakeFiles/react_codegen_rnasyncstorage.dir/react/renderer/components/rnasyncstorage/States.cpp.o",
 			"sourceGroupIndex" : 1
 		},
 		{
 			"backtrace" : 4,
 			"isGenerated" : true,
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/rnasyncstorage_autolinked_build/CMakeFiles/react_codegen_rnasyncstorage.dir/rnasyncstorage-generated.cpp.o",
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/armeabi-v7a/rnasyncstorage_autolinked_build/CMakeFiles/react_codegen_rnasyncstorage.dir/rnasyncstorage-generated.cpp.o",
 			"sourceGroupIndex" : 1
 		},
 		{
 			"backtrace" : 4,
 			"isGenerated" : true,
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/RNCNetInfoSpec_autolinked_build/CMakeFiles/react_codegen_RNCNetInfoSpec.dir/RNCNetInfoSpec-generated.cpp.o",
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/armeabi-v7a/RNCNetInfoSpec_autolinked_build/CMakeFiles/react_codegen_RNCNetInfoSpec.dir/RNCNetInfoSpec-generated.cpp.o",
 			"sourceGroupIndex" : 1
 		},
 		{
 			"backtrace" : 4,
 			"isGenerated" : true,
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/RNCNetInfoSpec_autolinked_build/CMakeFiles/react_codegen_RNCNetInfoSpec.dir/react/renderer/components/RNCNetInfoSpec/ComponentDescriptors.cpp.o",
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/armeabi-v7a/RNCNetInfoSpec_autolinked_build/CMakeFiles/react_codegen_RNCNetInfoSpec.dir/react/renderer/components/RNCNetInfoSpec/ComponentDescriptors.cpp.o",
 			"sourceGroupIndex" : 1
 		},
 		{
 			"backtrace" : 4,
 			"isGenerated" : true,
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/RNCNetInfoSpec_autolinked_build/CMakeFiles/react_codegen_RNCNetInfoSpec.dir/react/renderer/components/RNCNetInfoSpec/EventEmitters.cpp.o",
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/armeabi-v7a/RNCNetInfoSpec_autolinked_build/CMakeFiles/react_codegen_RNCNetInfoSpec.dir/react/renderer/components/RNCNetInfoSpec/EventEmitters.cpp.o",
 			"sourceGroupIndex" : 1
 		},
 		{
 			"backtrace" : 4,
 			"isGenerated" : true,
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/RNCNetInfoSpec_autolinked_build/CMakeFiles/react_codegen_RNCNetInfoSpec.dir/react/renderer/components/RNCNetInfoSpec/Props.cpp.o",
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/armeabi-v7a/RNCNetInfoSpec_autolinked_build/CMakeFiles/react_codegen_RNCNetInfoSpec.dir/react/renderer/components/RNCNetInfoSpec/Props.cpp.o",
 			"sourceGroupIndex" : 1
 		},
 		{
 			"backtrace" : 4,
 			"isGenerated" : true,
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/RNCNetInfoSpec_autolinked_build/CMakeFiles/react_codegen_RNCNetInfoSpec.dir/react/renderer/components/RNCNetInfoSpec/ShadowNodes.cpp.o",
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/armeabi-v7a/RNCNetInfoSpec_autolinked_build/CMakeFiles/react_codegen_RNCNetInfoSpec.dir/react/renderer/components/RNCNetInfoSpec/ShadowNodes.cpp.o",
 			"sourceGroupIndex" : 1
 		},
 		{
 			"backtrace" : 4,
 			"isGenerated" : true,
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/RNCNetInfoSpec_autolinked_build/CMakeFiles/react_codegen_RNCNetInfoSpec.dir/react/renderer/components/RNCNetInfoSpec/States.cpp.o",
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/armeabi-v7a/RNCNetInfoSpec_autolinked_build/CMakeFiles/react_codegen_RNCNetInfoSpec.dir/react/renderer/components/RNCNetInfoSpec/States.cpp.o",
 			"sourceGroupIndex" : 1
 		},
 		{
 			"backtrace" : 4,
 			"isGenerated" : true,
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/rngesturehandler_codegen_autolinked_build/CMakeFiles/react_codegen_rngesturehandler_codegen.dir/react/renderer/components/rngesturehandler_codegen/ComponentDescriptors.cpp.o",
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/armeabi-v7a/rngesturehandler_codegen_autolinked_build/CMakeFiles/react_codegen_rngesturehandler_codegen.dir/react/renderer/components/rngesturehandler_codegen/ComponentDescriptors.cpp.o",
 			"sourceGroupIndex" : 1
 		},
 		{
 			"backtrace" : 4,
 			"isGenerated" : true,
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/rngesturehandler_codegen_autolinked_build/CMakeFiles/react_codegen_rngesturehandler_codegen.dir/react/renderer/components/rngesturehandler_codegen/EventEmitters.cpp.o",
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/armeabi-v7a/rngesturehandler_codegen_autolinked_build/CMakeFiles/react_codegen_rngesturehandler_codegen.dir/react/renderer/components/rngesturehandler_codegen/EventEmitters.cpp.o",
 			"sourceGroupIndex" : 1
 		},
 		{
 			"backtrace" : 4,
 			"isGenerated" : true,
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/rngesturehandler_codegen_autolinked_build/CMakeFiles/react_codegen_rngesturehandler_codegen.dir/react/renderer/components/rngesturehandler_codegen/Props.cpp.o",
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/armeabi-v7a/rngesturehandler_codegen_autolinked_build/CMakeFiles/react_codegen_rngesturehandler_codegen.dir/react/renderer/components/rngesturehandler_codegen/Props.cpp.o",
 			"sourceGroupIndex" : 1
 		},
 		{
 			"backtrace" : 4,
 			"isGenerated" : true,
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/rngesturehandler_codegen_autolinked_build/CMakeFiles/react_codegen_rngesturehandler_codegen.dir/react/renderer/components/rngesturehandler_codegen/ShadowNodes.cpp.o",
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/armeabi-v7a/rngesturehandler_codegen_autolinked_build/CMakeFiles/react_codegen_rngesturehandler_codegen.dir/react/renderer/components/rngesturehandler_codegen/ShadowNodes.cpp.o",
 			"sourceGroupIndex" : 1
 		},
 		{
 			"backtrace" : 4,
 			"isGenerated" : true,
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/rngesturehandler_codegen_autolinked_build/CMakeFiles/react_codegen_rngesturehandler_codegen.dir/react/renderer/components/rngesturehandler_codegen/States.cpp.o",
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/armeabi-v7a/rngesturehandler_codegen_autolinked_build/CMakeFiles/react_codegen_rngesturehandler_codegen.dir/react/renderer/components/rngesturehandler_codegen/States.cpp.o",
 			"sourceGroupIndex" : 1
 		},
 		{
 			"backtrace" : 4,
 			"isGenerated" : true,
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/rngesturehandler_codegen_autolinked_build/CMakeFiles/react_codegen_rngesturehandler_codegen.dir/rngesturehandler_codegen-generated.cpp.o",
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/armeabi-v7a/rngesturehandler_codegen_autolinked_build/CMakeFiles/react_codegen_rngesturehandler_codegen.dir/rngesturehandler_codegen-generated.cpp.o",
 			"sourceGroupIndex" : 1
 		},
 		{
 			"backtrace" : 4,
 			"isGenerated" : true,
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/rnreanimated_autolinked_build/CMakeFiles/react_codegen_rnreanimated.dir/react/renderer/components/rnreanimated/ComponentDescriptors.cpp.o",
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/armeabi-v7a/rnreanimated_autolinked_build/CMakeFiles/react_codegen_rnreanimated.dir/react/renderer/components/rnreanimated/ComponentDescriptors.cpp.o",
 			"sourceGroupIndex" : 1
 		},
 		{
 			"backtrace" : 4,
 			"isGenerated" : true,
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/rnreanimated_autolinked_build/CMakeFiles/react_codegen_rnreanimated.dir/react/renderer/components/rnreanimated/EventEmitters.cpp.o",
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/armeabi-v7a/rnreanimated_autolinked_build/CMakeFiles/react_codegen_rnreanimated.dir/react/renderer/components/rnreanimated/EventEmitters.cpp.o",
 			"sourceGroupIndex" : 1
 		},
 		{
 			"backtrace" : 4,
 			"isGenerated" : true,
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/rnreanimated_autolinked_build/CMakeFiles/react_codegen_rnreanimated.dir/react/renderer/components/rnreanimated/Props.cpp.o",
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/armeabi-v7a/rnreanimated_autolinked_build/CMakeFiles/react_codegen_rnreanimated.dir/react/renderer/components/rnreanimated/Props.cpp.o",
 			"sourceGroupIndex" : 1
 		},
 		{
 			"backtrace" : 4,
 			"isGenerated" : true,
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/rnreanimated_autolinked_build/CMakeFiles/react_codegen_rnreanimated.dir/react/renderer/components/rnreanimated/ShadowNodes.cpp.o",
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/armeabi-v7a/rnreanimated_autolinked_build/CMakeFiles/react_codegen_rnreanimated.dir/react/renderer/components/rnreanimated/ShadowNodes.cpp.o",
 			"sourceGroupIndex" : 1
 		},
 		{
 			"backtrace" : 4,
 			"isGenerated" : true,
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/rnreanimated_autolinked_build/CMakeFiles/react_codegen_rnreanimated.dir/react/renderer/components/rnreanimated/States.cpp.o",
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/armeabi-v7a/rnreanimated_autolinked_build/CMakeFiles/react_codegen_rnreanimated.dir/react/renderer/components/rnreanimated/States.cpp.o",
 			"sourceGroupIndex" : 1
 		},
 		{
 			"backtrace" : 4,
 			"isGenerated" : true,
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/rnreanimated_autolinked_build/CMakeFiles/react_codegen_rnreanimated.dir/rnreanimated-generated.cpp.o",
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/armeabi-v7a/rnreanimated_autolinked_build/CMakeFiles/react_codegen_rnreanimated.dir/rnreanimated-generated.cpp.o",
 			"sourceGroupIndex" : 1
 		},
 		{
 			"backtrace" : 4,
 			"isGenerated" : true,
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/RNVectorIconsSpec_autolinked_build/CMakeFiles/react_codegen_RNVectorIconsSpec.dir/RNVectorIconsSpec-generated.cpp.o",
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/armeabi-v7a/RNVectorIconsSpec_autolinked_build/CMakeFiles/react_codegen_RNVectorIconsSpec.dir/RNVectorIconsSpec-generated.cpp.o",
 			"sourceGroupIndex" : 1
 		},
 		{
 			"backtrace" : 4,
 			"isGenerated" : true,
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/RNVectorIconsSpec_autolinked_build/CMakeFiles/react_codegen_RNVectorIconsSpec.dir/react/renderer/components/RNVectorIconsSpec/ComponentDescriptors.cpp.o",
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/armeabi-v7a/RNVectorIconsSpec_autolinked_build/CMakeFiles/react_codegen_RNVectorIconsSpec.dir/react/renderer/components/RNVectorIconsSpec/ComponentDescriptors.cpp.o",
 			"sourceGroupIndex" : 1
 		},
 		{
 			"backtrace" : 4,
 			"isGenerated" : true,
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/RNVectorIconsSpec_autolinked_build/CMakeFiles/react_codegen_RNVectorIconsSpec.dir/react/renderer/components/RNVectorIconsSpec/EventEmitters.cpp.o",
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/armeabi-v7a/RNVectorIconsSpec_autolinked_build/CMakeFiles/react_codegen_RNVectorIconsSpec.dir/react/renderer/components/RNVectorIconsSpec/EventEmitters.cpp.o",
 			"sourceGroupIndex" : 1
 		},
 		{
 			"backtrace" : 4,
 			"isGenerated" : true,
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/RNVectorIconsSpec_autolinked_build/CMakeFiles/react_codegen_RNVectorIconsSpec.dir/react/renderer/components/RNVectorIconsSpec/Props.cpp.o",
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/armeabi-v7a/RNVectorIconsSpec_autolinked_build/CMakeFiles/react_codegen_RNVectorIconsSpec.dir/react/renderer/components/RNVectorIconsSpec/Props.cpp.o",
 			"sourceGroupIndex" : 1
 		},
 		{
 			"backtrace" : 4,
 			"isGenerated" : true,
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/RNVectorIconsSpec_autolinked_build/CMakeFiles/react_codegen_RNVectorIconsSpec.dir/react/renderer/components/RNVectorIconsSpec/ShadowNodes.cpp.o",
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/armeabi-v7a/RNVectorIconsSpec_autolinked_build/CMakeFiles/react_codegen_RNVectorIconsSpec.dir/react/renderer/components/RNVectorIconsSpec/ShadowNodes.cpp.o",
 			"sourceGroupIndex" : 1
 		},
 		{
 			"backtrace" : 4,
 			"isGenerated" : true,
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/RNVectorIconsSpec_autolinked_build/CMakeFiles/react_codegen_RNVectorIconsSpec.dir/react/renderer/components/RNVectorIconsSpec/States.cpp.o",
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/armeabi-v7a/RNVectorIconsSpec_autolinked_build/CMakeFiles/react_codegen_RNVectorIconsSpec.dir/react/renderer/components/RNVectorIconsSpec/States.cpp.o",
 			"sourceGroupIndex" : 1
 		},
 		{
 			"backtrace" : 4,
 			"isGenerated" : true,
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/rnworklets_autolinked_build/CMakeFiles/react_codegen_rnworklets.dir/react/renderer/components/rnworklets/ComponentDescriptors.cpp.o",
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/armeabi-v7a/rnworklets_autolinked_build/CMakeFiles/react_codegen_rnworklets.dir/react/renderer/components/rnworklets/ComponentDescriptors.cpp.o",
 			"sourceGroupIndex" : 1
 		},
 		{
 			"backtrace" : 4,
 			"isGenerated" : true,
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/rnworklets_autolinked_build/CMakeFiles/react_codegen_rnworklets.dir/react/renderer/components/rnworklets/EventEmitters.cpp.o",
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/armeabi-v7a/rnworklets_autolinked_build/CMakeFiles/react_codegen_rnworklets.dir/react/renderer/components/rnworklets/EventEmitters.cpp.o",
 			"sourceGroupIndex" : 1
 		},
 		{
 			"backtrace" : 4,
 			"isGenerated" : true,
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/rnworklets_autolinked_build/CMakeFiles/react_codegen_rnworklets.dir/react/renderer/components/rnworklets/Props.cpp.o",
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/armeabi-v7a/rnworklets_autolinked_build/CMakeFiles/react_codegen_rnworklets.dir/react/renderer/components/rnworklets/Props.cpp.o",
 			"sourceGroupIndex" : 1
 		},
 		{
 			"backtrace" : 4,
 			"isGenerated" : true,
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/rnworklets_autolinked_build/CMakeFiles/react_codegen_rnworklets.dir/react/renderer/components/rnworklets/ShadowNodes.cpp.o",
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/armeabi-v7a/rnworklets_autolinked_build/CMakeFiles/react_codegen_rnworklets.dir/react/renderer/components/rnworklets/ShadowNodes.cpp.o",
 			"sourceGroupIndex" : 1
 		},
 		{
 			"backtrace" : 4,
 			"isGenerated" : true,
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/rnworklets_autolinked_build/CMakeFiles/react_codegen_rnworklets.dir/react/renderer/components/rnworklets/States.cpp.o",
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/armeabi-v7a/rnworklets_autolinked_build/CMakeFiles/react_codegen_rnworklets.dir/react/renderer/components/rnworklets/States.cpp.o",
 			"sourceGroupIndex" : 1
 		},
 		{
 			"backtrace" : 4,
 			"isGenerated" : true,
-			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/rnworklets_autolinked_build/CMakeFiles/react_codegen_rnworklets.dir/rnworklets-generated.cpp.o",
+			"path" : "/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/armeabi-v7a/rnworklets_autolinked_build/CMakeFiles/react_codegen_rnworklets.dir/rnworklets-generated.cpp.o",
 			"sourceGroupIndex" : 1
 		}
 	],

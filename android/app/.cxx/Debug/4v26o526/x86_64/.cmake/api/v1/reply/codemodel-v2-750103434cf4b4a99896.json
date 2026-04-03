@@ -17,7 +17,8 @@
 						7,
 						8,
 						9,
-						10
+						10,
+						11
 					],
 					"jsonFile" : "directory-.-Debug-f5ebdc15457944623624.json",
 					"minimumCMakeVersion" : 
@@ -43,7 +44,7 @@
 					"source" : "/Users/pavankarthik/InterviewHighway_mobile/node_modules/@react-native-async-storage/async-storage/android/build/generated/source/codegen/jni",
 					"targetIndexes" : 
 					[
-						3
+						4
 					]
 				},
 				{
@@ -62,6 +63,21 @@
 					]
 				},
 				{
+					"build" : "RNCSlider_autolinked_build",
+					"jsonFile" : "directory-RNCSlider_autolinked_build-Debug-f9c1d584e4eaccf1c1f6.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.13"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "/Users/pavankarthik/InterviewHighway_mobile/node_modules/@react-native-community/slider/android/src/main/jni",
+					"targetIndexes" : 
+					[
+						2
+					]
+				},
+				{
 					"build" : "rnpicker_autolinked_build",
 					"jsonFile" : "directory-rnpicker_autolinked_build-Debug-46b240b126d56d79c34c.json",
 					"minimumCMakeVersion" : 
@@ -73,7 +89,7 @@
 					"source" : "/Users/pavankarthik/InterviewHighway_mobile/node_modules/@react-native-picker/picker/android/src/main/jni",
 					"targetIndexes" : 
 					[
-						5
+						6
 					]
 				},
 				{
@@ -88,7 +104,7 @@
 					"source" : "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-gesture-handler/android/build/generated/source/codegen/jni",
 					"targetIndexes" : 
 					[
-						4
+						5
 					]
 				},
 				{
@@ -103,7 +119,7 @@
 					"source" : "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni",
 					"targetIndexes" : 
 					[
-						6
+						7
 					]
 				},
 				{
@@ -118,7 +134,7 @@
 					"source" : "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-safe-area-context/android/src/main/jni",
 					"targetIndexes" : 
 					[
-						10
+						11
 					]
 				},
 				{
@@ -133,7 +149,7 @@
 					"source" : "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-screens/android/src/main/jni",
 					"targetIndexes" : 
 					[
-						7
+						8
 					]
 				},
 				{
@@ -148,7 +164,7 @@
 					"source" : "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-svg/android/src/main/jni",
 					"targetIndexes" : 
 					[
-						8
+						9
 					]
 				},
 				{
@@ -163,7 +179,7 @@
 					"source" : "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-vector-icons/android/build/generated/source/codegen/jni",
 					"targetIndexes" : 
 					[
-						2
+						3
 					]
 				},
 				{
@@ -178,7 +194,7 @@
 					"source" : "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-worklets/android/build/generated/source/codegen/jni",
 					"targetIndexes" : 
 					[
-						9
+						10
 					]
 				}
 			],
@@ -198,7 +214,8 @@
 						7,
 						8,
 						9,
-						10
+						10,
+						11
 					],
 					"name" : "appmodules",
 					"targetIndexes" : 
@@ -213,7 +230,8 @@
 						7,
 						8,
 						9,
-						10
+						10,
+						11
 					]
 				}
 			],
@@ -222,7 +240,7 @@
 				{
 					"directoryIndex" : 0,
 					"id" : "appmodules::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-appmodules-Debug-6d267f21b380aeddaa02.json",
+					"jsonFile" : "target-appmodules-Debug-57767a1ad5c637c836ff.json",
 					"name" : "appmodules",
 					"projectIndex" : 0
 				},
@@ -234,7 +252,14 @@
 					"projectIndex" : 0
 				},
 				{
-					"directoryIndex" : 9,
+					"directoryIndex" : 3,
+					"id" : "react_codegen_RNCSlider::@4898bc4726ecf1751b6a",
+					"jsonFile" : "target-react_codegen_RNCSlider-Debug-96fc57437bd84d06f454.json",
+					"name" : "react_codegen_RNCSlider",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 10,
 					"id" : "react_codegen_RNVectorIconsSpec::@479809fae146501fd34d",
 					"jsonFile" : "target-react_codegen_RNVectorIconsSpec-Debug-e98ad769f6920c70add3.json",
 					"name" : "react_codegen_RNVectorIconsSpec",
@@ -248,49 +273,49 @@
 					"projectIndex" : 0
 				},
 				{
-					"directoryIndex" : 4,
+					"directoryIndex" : 5,
 					"id" : "react_codegen_rngesturehandler_codegen::@39f233abcd2c728bc6ec",
 					"jsonFile" : "target-react_codegen_rngesturehandler_codegen-Debug-dd4cc61edc8032cbfab5.json",
 					"name" : "react_codegen_rngesturehandler_codegen",
 					"projectIndex" : 0
 				},
 				{
-					"directoryIndex" : 3,
+					"directoryIndex" : 4,
 					"id" : "react_codegen_rnpicker::@e8bb2e9e833f47d0d516",
 					"jsonFile" : "target-react_codegen_rnpicker-Debug-6096500d6c24e8373ac3.json",
 					"name" : "react_codegen_rnpicker",
 					"projectIndex" : 0
 				},
 				{
-					"directoryIndex" : 5,
+					"directoryIndex" : 6,
 					"id" : "react_codegen_rnreanimated::@8afabad14bfffa3f8b9a",
 					"jsonFile" : "target-react_codegen_rnreanimated-Debug-fa0ea042729000837013.json",
 					"name" : "react_codegen_rnreanimated",
 					"projectIndex" : 0
 				},
 				{
-					"directoryIndex" : 7,
+					"directoryIndex" : 8,
 					"id" : "react_codegen_rnscreens::@25bcbd507e98d3a854ad",
 					"jsonFile" : "target-react_codegen_rnscreens-Debug-ed905b109cb9fa227e50.json",
 					"name" : "react_codegen_rnscreens",
 					"projectIndex" : 0
 				},
 				{
-					"directoryIndex" : 8,
+					"directoryIndex" : 9,
 					"id" : "react_codegen_rnsvg::@4f40eb209d0c0b4a3b65",
 					"jsonFile" : "target-react_codegen_rnsvg-Debug-bb39bc4f53dc095344e3.json",
 					"name" : "react_codegen_rnsvg",
 					"projectIndex" : 0
 				},
 				{
-					"directoryIndex" : 10,
+					"directoryIndex" : 11,
 					"id" : "react_codegen_rnworklets::@68f58d84d4754f193387",
 					"jsonFile" : "target-react_codegen_rnworklets-Debug-bf913e159de3eb093441.json",
 					"name" : "react_codegen_rnworklets",
 					"projectIndex" : 0
 				},
 				{
-					"directoryIndex" : 6,
+					"directoryIndex" : 7,
 					"id" : "react_codegen_safeareacontext::@7984cd80db47aa7b952a",
 					"jsonFile" : "target-react_codegen_safeareacontext-Debug-9627adf8157b584fdc8c.json",
 					"name" : "react_codegen_safeareacontext",

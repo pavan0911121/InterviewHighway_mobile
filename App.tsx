@@ -25,12 +25,6 @@ function AppContent() {
   const [userData, setUserData] = useState(null);
   const selector = useSelector((state:any) => state.login);
   
-  console.log("Selector data in AppContent:", {
-    token: selector?.token,
-    user: selector?.user,
-    isAuthenticated: selector?.isAuthenticated,
-    isLoading: selector?.isLoading,
-  });
   
   useEffect(() => {
     const isRunningTests = typeof process !== 'undefined' &&
@@ -63,14 +57,12 @@ function AppContent() {
     try {
       const token = await AsyncStore.getData(AsyncStore?.Keys?.USER_TOKEN);
       const userLoggedInData = await AsyncStore.getData(AsyncStore?.Keys?.USER_DATA);
-
       if(token){
         setIsLoggedIn(true);
       }
       if(userLoggedInData){
         const parsedUserData = JSON.parse(userLoggedInData);
         setUserData(parsedUserData);
-        console.log("User data retrieved from local storage:", parsedUserData);
       } else {
         console.log("No user data found in local storage.");
       }
@@ -93,7 +85,7 @@ function AppContent() {
   return (
     <>
       <StatusBar barStyle="dark-content" />
-      <AppNavigator isUserLoggedIn={isLoggedIn} userType="employer" />
+      <AppNavigator isUserLoggedIn={isLoggedIn} userType="jobseeker" />
     </>
   );
 }
