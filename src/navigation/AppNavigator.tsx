@@ -215,7 +215,7 @@ function RootNavigator({ isUserLoggedIn, userType }: AppNavigatorProps) {
   return (
     <NavigationContainer>
       {isUserLoggedIn ? (
-        userType === 'employer' ? (
+        userType === 'jobseeker' ? (
           <EmployerAppNavigator />
         ) : (
           <JobSeekerAppNavigator />

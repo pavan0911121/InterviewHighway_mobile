@@ -5,6 +5,7 @@ export { useAppDispatch, useAppSelector } from './hooks';
 // Auth slice exports
 export {
   postUserData,
+  getRole,
   loginStart,
   loginSuccess,
   loginFailure,

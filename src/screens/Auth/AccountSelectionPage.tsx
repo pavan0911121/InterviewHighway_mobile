@@ -13,7 +13,6 @@ const AccountSelectionPage = () => {
   const handleSignIn = () => {
     navigation.navigate('JobSeekerSignup');
     // TODO: Implement sign in navigation
-    console.log('Sign in pressed');
   };
   return (
     <SafeAreaView style={styles.container}>

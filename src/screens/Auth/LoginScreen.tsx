@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  // CheckBox,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
@@ -27,9 +28,11 @@ interface LoginForm {
 }
 
 const LoginScreen: React.FC = () => {
-  const { login, isLoading } = useAuth();
+  // const { login, isLoading } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
   const [form, setForm] = useState<LoginForm>({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [errors, setErrors] = useState<Partial<LoginForm>>({});
   const [loginError, setLoginError] = useState<string>('');
   const navigation = useNavigation<LoginScreenNavigationProp>();
@@ -60,26 +63,40 @@ const LoginScreen: React.FC = () => {
   };
 
   const handleLogin = async () => {
-    // if (!handleValidation()) {
-    //   return;
-    // }
-
-    // try {
-    //   setLoginError('');
-    //   await login(form.email, form.password);
-    //   // Navigation will happen automatically when isLoggedIn changes in the app
-    // } catch (error) {
-    //   console.error('Login error:', error);
-    //   setLoginError('Login failed. Please check your credentials and try again.');
-    // }
-    
-     const data={
-      email:"pavankarthik0911@gmail.com",
-      password:"Pavan1raviteja@",
-      gotrue_meta_security:{}
+    if (!handleValidation()) {
+      return;
     }
-    
-    await dispatch(postUserData(data) as any);
+    try {
+      setLoginError('');
+      setIsLoading(true);
+      
+      const data = {
+        email: form.email,
+        password: form.password,
+      };
+      
+      const result = await dispatch(postUserData(data) as any);
+      console.log(result, "loginResponse");
+      
+      // Check if the async thunk was fulfilled or rejected
+      if (result.type.includes('fulfilled')) {
+        // Success - login response received
+        console.log('Login successful:', result.payload);
+        // Navigation will happen automatically when isLoggedIn changes in the app
+      } else if (result.type.includes('rejected')) {
+        // Failed - show error message
+        const errorMessage = result.payload?.message || 'Login failed. Please check your credentials and try again.';
+        setLoginError(errorMessage);
+        console.log('Login error:', result.payload);
+      }
+    } catch (error) {
+      console.log('Login error:', error);
+      if(error){
+        setLoginError('Login failed. Please check your credentials and try again.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleForgotPassword = () => {
@@ -106,16 +123,15 @@ const LoginScreen: React.FC = () => {
         >
           {/* Header Section */}
           <View style={styles.headerContainer}>
-            <View style={styles.topBar} />
-            <Text style={styles.welcomeText}>Welcome Back</Text>
-            <Text style={styles.subtitleText}>Login to your account</Text>
+            <Text style={styles.welcomeText}>Welcome</Text>
+            <Text style={styles.subtitleText}>Sign in to your account to continue your career journey</Text>
           </View>
 
           {/* Form Card */}
           <View style={styles.formCard}>
             {/* Email Input */}
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Email Address</Text>
+              <Text style={styles.label}>Email</Text>
               <View
                 style={[
                   styles.inputWrapper,
@@ -124,7 +140,7 @@ const LoginScreen: React.FC = () => {
               >
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter your email"
+                  placeholder="Enter your email address"
                   placeholderTextColor="#999"
                   value={form.email}
                   onChangeText={(text) => {
@@ -166,19 +182,28 @@ const LoginScreen: React.FC = () => {
                   secureTextEntry={!showPassword}
                   editable={!isLoading}
                 />
-                <TouchableOpacity
-                  style={styles.eyeIcon}
-                  onPress={() => setShowPassword(!showPassword)}
-                  disabled={isLoading}
-                >
-                  <Text style={styles.eyeIconText}>
-                    {showPassword ? '👁️' : '👁️‍🗨️'}
-                  </Text>
-                </TouchableOpacity>
               </View>
               {errors.password && (
                 <Text style={styles.errorText}>{errors.password}</Text>
               )}
+            </View>
+
+            {/* Remember Me and Forgot Password Row */}
+            <View style={styles.rememberForgotContainer}>
+              {/* <View style={styles.checkboxContainer}>
+                <CheckBox
+                  value={rememberMe}
+                  onValueChange={setRememberMe}
+                  disabled={isLoading}
+                />
+                <Text style={styles.rememberText}>Remember me</Text>
+              </View> */}
+              <TouchableOpacity
+                onPress={handleForgotPassword}
+                disabled={isLoading}
+              >
+                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+              </TouchableOpacity>
             </View>
 
             {/* Login Error Message */}
@@ -187,15 +212,6 @@ const LoginScreen: React.FC = () => {
                 <Text style={styles.errorMessageText}>{loginError}</Text>
               </View>
             )}
-
-            {/* Forgot Password */}
-            <TouchableOpacity
-              style={styles.forgotPasswordButton}
-              onPress={handleForgotPassword}
-              disabled={isLoading}
-            >
-              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-            </TouchableOpacity>
 
             {/* Login Button */}
             <TouchableOpacity
@@ -210,7 +226,7 @@ const LoginScreen: React.FC = () => {
               {isLoading ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Text style={styles.loginButtonText}>Login</Text>
+                <Text style={styles.loginButtonText}>Sign In</Text>
               )}
             </TouchableOpacity>
 
@@ -221,23 +237,15 @@ const LoginScreen: React.FC = () => {
               <View style={styles.divider} />
             </View>
 
-            {/* Social Login Options */}
-            <View style={styles.socialContainer}>
-              <TouchableOpacity
-                style={styles.socialButton}
-                disabled={isLoading}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.socialButtonText}>Google</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.socialButton}
-                disabled={isLoading}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.socialButtonText}>Apple</Text>
-              </TouchableOpacity>
-            </View>
+            {/* Google Sign In Button */}
+            <TouchableOpacity
+              style={styles.googleButton}
+              disabled={isLoading}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.googleButtonIcon}>🔍</Text>
+              <Text style={styles.googleButtonText}>Continue with google</Text>
+            </TouchableOpacity>
           </View>
 
           {/* Sign Up Link */}
@@ -260,7 +268,7 @@ const LoginScreen: React.FC = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#EAF2FB',
+    backgroundColor: '#FFF',
   },
   container: {
     flex: 1,
@@ -268,66 +276,52 @@ const styles = StyleSheet.create({
   scrollView: {
     flexGrow: 1,
     paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingVertical: 20,
   },
   headerContainer: {
     marginTop: 20,
-    marginBottom: 30,
-  },
-  topBar: {
-    height: 12,
-    width: '90%',
-    backgroundColor: '#1853E9',
-    borderRadius: 6,
-    marginBottom: 15,
+    marginBottom: 40,
+    alignItems: 'center',
   },
   welcomeText: {
-    fontSize: 28,
-    fontFamily: 'Roboto-VariableFont_wght',
+    fontSize: 32,
+    fontFamily: 'Geist-VariableFont_wght',
     fontWeight: '700',
     color: '#000',
-    marginBottom: 8,
-  },
-  welcomeText1: {
-    fontFamily: 'Geist-VariableFont_wght',
-    fontSize: 28,
-    // fontWeight: '700',
-    color: '#000',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   subtitleText: {
     fontSize: 14,
+    fontFamily: 'Geist-VariableFont_wght',
     fontWeight: '400',
     color: '#666',
+    textAlign: 'center',
+    lineHeight: 20,
   },
   formCard: {
     backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: 0,
+    padding: 0,
     marginBottom: 20,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
   },
   inputContainer: {
-    marginBottom: 18,
+    marginBottom: 20,
   },
   label: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
+    fontFamily: 'Geist-VariableFont_wght',
+    fontWeight: '500',
+    color: '#000',
     marginBottom: 8,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: '#E0E0E0',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    backgroundColor: '#F8F9FA',
+    borderColor: '#1853E9',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    backgroundColor: '#FFF',
   },
   inputError: {
     borderColor: '#FF4444',
@@ -335,19 +329,15 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 14,
     fontSize: 14,
+    fontFamily: 'Geist-VariableFont_wght',
     color: '#000',
-    fontWeight: '500',
-  },
-  eyeIcon: {
-    padding: 8,
-  },
-  eyeIconText: {
-    fontSize: 18,
+    fontWeight: '400',
   },
   errorText: {
     fontSize: 12,
+    fontFamily: 'Geist-VariableFont_wght',
     color: '#FF4444',
     marginTop: 6,
   },
@@ -362,38 +352,54 @@ const styles = StyleSheet.create({
   },
   errorMessageText: {
     fontSize: 13,
+    fontFamily: 'Geist-VariableFont_wght',
     fontWeight: '500',
     color: '#FF4444',
   },
-  forgotPasswordButton: {
-    alignSelf: 'flex-end',
-    marginBottom: 20,
+  rememberForgotContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  rememberText: {
+    fontSize: 14,
+    fontFamily: 'Geist-VariableFont_wght',
+    fontWeight: '400',
+    color: '#666',
   },
   forgotPasswordText: {
-    fontSize: 13,
+    fontSize: 14,
+    fontFamily: 'Geist-VariableFont_wght',
     fontWeight: '600',
     color: '#1853E9',
   },
   loginButton: {
     backgroundColor: '#1853E9',
-    borderRadius: 10,
-    paddingVertical: 14,
+    borderRadius: 8,
+    paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 18,
+    marginBottom: 24,
   },
   loginButtonDisabled: {
     opacity: 0.6,
   },
   loginButtonText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Geist-VariableFont_wght',
+    fontWeight: '600',
     color: '#FFF',
   },
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 18,
+    marginVertical: 24,
   },
   divider: {
     flex: 1,
@@ -402,42 +408,47 @@ const styles = StyleSheet.create({
   },
   dividerText: {
     marginHorizontal: 12,
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: 13,
+    fontFamily: 'Geist-VariableFont_wght',
+    fontWeight: '400',
     color: '#999',
   },
-  socialContainer: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  socialButton: {
-    flex: 1,
+  googleButton: {
     borderWidth: 1.5,
     borderColor: '#E0E0E0',
-    borderRadius: 10,
-    paddingVertical: 12,
+    borderRadius: 8,
+    paddingVertical: 14,
     alignItems: 'center',
-    backgroundColor: '#F8F9FA',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    backgroundColor: '#FFF',
+    gap: 10,
   },
-  socialButtonText: {
+  googleButtonIcon: {
+    fontSize: 18,
+  },
+  googleButtonText: {
     fontSize: 14,
+    fontFamily: 'Geist-VariableFont_wght',
     fontWeight: '600',
-    color: '#333',
+    color: '#000',
   },
   signUpContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 10,
+    marginTop: 20,
     marginBottom: 20,
   },
   signUpText: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: 14,
+    fontFamily: 'Geist-VariableFont_wght',
+    fontWeight: '400',
     color: '#666',
   },
   signUpLinkText: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 14,
+    fontFamily: 'Geist-VariableFont_wght',
+    fontWeight: '600',
     color: '#1853E9',
   },
 });

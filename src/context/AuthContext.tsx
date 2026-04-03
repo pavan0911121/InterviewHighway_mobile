@@ -40,10 +40,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setIsLoading(true);
       // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // await new Promise((resolve) => setTimeout(resolve, 1500));
 
-      // Generate mock token (replace with real API call)
-      const mockToken = `token_${email}_${Date.now()}`;
+      // // Generate mock token (replace with real API call)
+      // const mockToken = `token_${email}_${Date.now()}`;
 
       // Save token
       // await authUtils.saveToken(mockToken);

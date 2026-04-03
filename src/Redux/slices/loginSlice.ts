@@ -1,14 +1,15 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import client from '../../Networking/Client';
-import { AUTH_ENDPOINTS } from '../../Networking/EndPoints';
+import { AUTH_ENDPOINTS, USER_ENDPOINTS } from '../../Networking/EndPoints';
 import { getData } from '../../AsyncStore/asyncStorage';
 import { USER_TOKEN } from '../../AsyncStore/keys';
+import * as AsyncStore from "../../AsyncStore";
 
 interface User {
   id: string;
   email: string;
   name: string;
-  role: 'jobseeker' | 'employer';
+  role: string;
 }
 
 interface AuthState {
@@ -28,36 +29,15 @@ const initialState: AuthState = {
   token: null,
   deviceInfoPosted: false,
 };
-
+//Login API call
 export const postUserData = createAsyncThunk(
   "login/postUserData",
   async (payload: any, { rejectWithValue }) => {
     try {
-      // Check if token exists in AsyncStorage
-    //   const token = await getData(USER_TOKEN);
-      
-    //   if (!token) {
-    //     return rejectWithValue({
-    //       message: 'No authentication token found. Please login first.',
-    //       code: 'NO_TOKEN',
-    //     });
-    //   }
-
-    //   // Add token to the payload or headers if needed
-    //   const dataWithToken = {
-    //     ...payload,
-    //     token,
-    //   };
-    console.log("hello");
-    
-  console.log(AUTH_ENDPOINTS.login, payload, "api data");
-
       const response = await client.post(AUTH_ENDPOINTS.login, payload);
-      console.log(response, "response from postUserData");
-      
       return response.data || response;
     } catch (error: any) {
-      console.error('Error posting user data:', error);
+      console.log('Error posting user data:', error);
       return rejectWithValue({
         message: error?.message || 'Failed to post user data',
         code: error?.code || 'ERROR',
@@ -65,6 +45,23 @@ export const postUserData = createAsyncThunk(
     }
   }
 );
+//Role API call
+export const getRole = createAsyncThunk(
+  "login/getRole",
+  async (userId: any, { rejectWithValue }) => {
+    try {
+      const response = await client.get(USER_ENDPOINTS.role(userId));
+      return response.data || response;
+    } catch (error: any) {
+      console.error('Error fetching role data:', error);
+      return rejectWithValue({
+        message: error?.message || 'Failed to fetch role data',
+        code: error?.code || 'ERROR',
+      });
+    }
+  }
+);
+// USER_ENDPOINTS
 
 const loginSlice = createSlice({
   name: 'login',
@@ -112,13 +109,28 @@ const loginSlice = createSlice({
         state.isLoading = false;
         state.deviceInfoPosted = true;
         state.error = null;
+        const dataObj = action.payload;
         
-        // Update user and token if provided in response
-        if (action.payload?.user) {
-          state.user = action.payload.user;
+        console.log('Login fulfilled, payload:', dataObj);
+        
+        // Extract token - check multiple possible field names
+        const token = dataObj?.access_token || dataObj?.token;
+        if (token) {
+          state.token = token;
+          state.isAuthenticated = true;
+          AsyncStore.storeData(AsyncStore.Keys.USER_TOKEN, token);
+          AsyncStore.storeData(AsyncStore.Keys.IS_LOGIN, "true");
         }
-        if (action.payload?.token) {
-          state.token = action.payload.token;
+        
+        // Extract user data - check multiple possible field names
+        const user = dataObj?.user || dataObj?.data?.user;
+        if (user) {
+          state.user = user;
+          AsyncStore.storeData(AsyncStore.Keys.USER_DATA, JSON.stringify(user));
+        }
+        
+        // If we have a token, consider login successful
+        if (token) {
           state.isAuthenticated = true;
         }
       })
@@ -126,7 +138,7 @@ const loginSlice = createSlice({
         state.isLoading = false;
         state.deviceInfoPosted = false;
         state.error = (action.payload as any)?.message || 'Failed to post user data';
-        
+
         // If no token error, logout the user
         if ((action.payload as any)?.code === 'NO_TOKEN') {
           state.isAuthenticated = false;
@@ -134,6 +146,26 @@ const loginSlice = createSlice({
           state.user = null;
         }
       })
+      // getRole async thunk handlers
+      .addCase(getRole.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(getRole.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.error = null;
+        const roleData = action.payload?.[0]?.user_type;
+        if (state.user) {
+          state.user.role = roleData;
+          console.log(roleData,"roleData");
+          AsyncStore.storeData(AsyncStore.Keys.ROLE, JSON.parse(roleData));
+        }
+      })
+      .addCase(getRole.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = (action.payload as any)?.message || 'Failed to fetch role data';
+      });
+
   }
 });
 
