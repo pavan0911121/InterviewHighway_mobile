@@ -3,12 +3,15 @@ import loginSlice from './slices/loginSlice';
 import uiReducer from './slices/uiSlice';
 import homeSlice from './slices/homeSlice';
 import coursesSlice from './slices/coursesSlice';
+import profileSlice from './slices/profileSlice';
+
 
 export const store = configureStore({
   reducer: {
     login:loginSlice,
     home: homeSlice,
     courses:coursesSlice,
+    profile:profileSlice,
     ui: uiReducer,
   },
   middleware: (getDefaultMiddleware:any) =>

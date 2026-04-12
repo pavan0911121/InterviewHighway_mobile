@@ -23,7 +23,6 @@ export const getCourses = createAsyncThunk(
     async (_, { rejectWithValue }) => {
         try {
             const response = await client.get(COURSE_ENDPOINTS.courseDetails);
-            console.log(response.data, "response recommended");
             return response.data || response;
         } catch (error: any) {
             console.log('Error fetching courses:', error);

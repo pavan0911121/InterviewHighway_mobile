@@ -18,6 +18,7 @@ const SideMenu: React.FC<DrawerContentComponentProps> = ({ navigation }) => {
     { id: '3', label: 'Employer Service Agreement', url: 'https://interviewhighway.com/employer-agreement' },
     { id: '4', label: 'Terms of Use', url: 'https://interviewhighway.com/terms' },
     { id: '5', label: 'Privacy Policy', url: 'https://interviewhighway.com/privacy' },
+    { id: '6', label: 'Demo', url: 'https://interviewhighway.com/demo' },
   ]
 
   const handleMenuItemPress = (url: string) => {

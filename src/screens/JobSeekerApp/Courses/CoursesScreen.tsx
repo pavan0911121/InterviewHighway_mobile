@@ -26,7 +26,6 @@ const CoursesScreen = () => {
       console.log('Error fetching courses:', error);
     }
   };
-  console.log(selector?.courses, "selectororororororo");
   const stats = [
     { number: selector?.courses?.length || 0, label: 'Total Courses', color: '#165DFC' },
     { number: selector?.courses?.length || 0, label: 'Our Courses', color: '#22C55E' },

@@ -246,7 +246,6 @@ interface AppNavigatorProps {
 }
 
 function RootNavigator({ isUserLoggedIn, userType }: AppNavigatorProps) {
-  console.log('AppNavigator - isUserLoggedIn:', isUserLoggedIn, 'userType:', userType);
   return (
     <NavigationContainer>
       {isUserLoggedIn ? (

@@ -26,7 +26,6 @@ export const getRecommendedJobs = createAsyncThunk(
     async (_, { rejectWithValue }) => {
         try {
             const response = await client.get(JOBS_ENDPOINTS.recommendedJobs);
-            console.log(response.data, "response recommended");
             return response.data || response;
         } catch (error: any) {
             console.log('Error fetching recommended jobs:', error);
@@ -56,9 +55,7 @@ const homeSlice = createSlice({
             .addCase(getRecommendedJobs.fulfilled, (state, action) => {
                 state.isLoading = false;
                 state.recommendedJobs = action.payload; // Assuming the API returns an array of jobs
-                console.log(state.recommendedJobs, "state recommended");
                 state.error = null;
-                console.log('Recommended jobs fetched successfully:', action.payload);
             })
             .addCase(getRecommendedJobs.rejected, (state, action) => {
                 state.isLoading = false;

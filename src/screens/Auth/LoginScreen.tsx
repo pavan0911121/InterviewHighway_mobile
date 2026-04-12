@@ -16,7 +16,7 @@ import { useAuth } from '../../context/AuthContext';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../../types/navigation';
 import { useNavigation } from '@react-navigation/native';
-import { postUserData } from '../../Redux/slices/loginSlice';
+import { getVerifiedUser, postUserData } from '../../Redux/slices/loginSlice';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '../../Redux';
 
@@ -76,6 +76,7 @@ const LoginScreen: React.FC = () => {
       };
       
       const result = await dispatch(postUserData(data) as any);
+      const userId = await dispatch(getVerifiedUser(result?.payload?.user?.id)as any)
       // Check if the async thunk was fulfilled or rejected
       if (result.type.includes('fulfilled')) {
       } else if (result.type.includes('rejected')) {

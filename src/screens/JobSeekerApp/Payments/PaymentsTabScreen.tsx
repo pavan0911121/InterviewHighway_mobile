@@ -1,10 +1,242 @@
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native'
-import React from 'react'
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, FlatList, Animated } from 'react-native'
+import React, { useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import { DrawerNavigationProp } from '@react-navigation/drawer'
+import { SafeAreaView } from 'react-native-safe-area-context'
+
+interface InvoiceDetail {
+  courseId: string
+  instructorName: string
+  subtotal: number
+  cgst: number
+  sgst: number
+  totalGST: number
+}
+
+interface Transaction {
+  id: string
+  courseName: string
+  date: string
+  amount: number
+  gst: number
+  status: 'Paid' | 'Pending' | 'Failed'
+  paymentId: string
+  orderId: string
+  method: string
+  companyName: string
+  invoiceDate: string
+  invoiceDetails: InvoiceDetail
+}
 
 const PaymentsTabScreen = () => {
   const navigation = useNavigation()
+  const [expandedTransactionId, setExpandedTransactionId] = useState<string | null>(null)
+  
+  // Mock data - set to empty array to see "No transactions" screen
+  const [transactions, setTransactions] = useState<Transaction[]>([
+    {
+      id: '1',
+      courseName: 'Test Course',
+      date: '22 Mar 2026',
+      amount: 10.00,
+      gst: 1.53,
+      status: 'Paid',
+      paymentId: 'pay_SH87mZq8TQKqe',
+      orderId: 'order_SudqL281D0...',
+      method: 'Razorpay',
+      companyName: 'INLINE4 SOLUTIONS PRIVATE LIMITED',
+      invoiceDate: '22 Mar 2026',
+      invoiceDetails: {
+        courseId: 'course_001',
+        instructorName: 'tutor test',
+        subtotal: 8.47,
+        cgst: 0.77,
+        sgst: 0.77,
+        totalGST: 1.53,
+      },
+    },
+  ])
+
+  const totalSpent = transactions.reduce((sum, t) => sum + t.amount, 0)
+  const totalGST = transactions.reduce((sum, t) => sum + t.gst, 0)
+  const coursesBought = transactions.length
+
+  const renderEmptyState = () => (
+    <View style={styles.emptyContainer}>
+      <View style={styles.iconContainer}>
+        <Text style={styles.walletIcon}>💳</Text>
+      </View>
+      <Text style={styles.emptyTitle}>No transactions yet</Text>
+      <Text style={styles.emptySubtitle}>Your course purchases will appear here</Text>
+    </View>
+  )
+
+  const renderTransactionItem = ({ item }: { item: Transaction }) => {
+    const isExpanded = expandedTransactionId === item.id
+
+    return (
+      <View style={styles.transactionWrapper}>
+        <TouchableOpacity style={styles.transactionItem} onPress={() =>
+                  setExpandedTransactionId(isExpanded ? null : item.id)
+                }>
+          <View style={styles.transactionLeft}>
+            <View style={styles.courseIcon}>
+              <Text style={styles.courseIconText}>📚</Text>
+            </View>
+            <View style={styles.transactionInfo}>
+              <Text style={styles.courseName}>{item.courseName}</Text>
+              <Text style={styles.transactionDate}>{item.date}</Text>
+            </View>
+          </View>
+          <View style={styles.transactionRight}>
+            <View style={[styles.statusBadge, item.status === 'Paid' && styles.statusPaid]}>
+              <Text style={styles.statusIcon}>✓</Text>
+              <Text style={styles.statusText}>{item.status}</Text>
+            </View>
+            <View style={styles.amountAndDropdown}>
+              <Text style={styles.amount}>₹{item.amount.toFixed(2)}</Text>
+              <TouchableOpacity
+                style={styles.dropdownButton}
+              >
+                <Text style={[styles.dropdownIcon, isExpanded && styles.dropdownIconRotated]}>
+                  ▼
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+
+        {/* Expanded Invoice Details */}
+        {isExpanded && (
+          <View style={styles.invoiceContainer}>
+            {/* Tax Invoice Header */}
+            <View style={styles.invoiceHeader}>
+              <View>
+                <Text style={styles.taxInvoiceLabel}>TAX INVOICE</Text>
+                <Text style={styles.companyName}>{item.companyName}</Text>
+              </View>
+              <View style={styles.invoiceDateBadge}>
+                <Text style={styles.invoiceDateLabel}>{item.invoiceDate}</Text>
+              </View>
+            </View>
+
+            {/* Invoice Details Grid */}
+            <View style={styles.invoiceDetailsGrid}>
+              <View style={styles.invoiceGridItem}>
+                <Text style={styles.invoiceGridLabel}>PAYMENT ID</Text>
+                <Text style={styles.invoiceGridValue}>{item.paymentId}</Text>
+              </View>
+              <View style={styles.invoiceGridItem}>
+                <Text style={styles.invoiceGridLabel}>ORDER ID</Text>
+                <Text style={styles.invoiceGridValue}>{item.orderId}</Text>
+              </View>
+              <View style={styles.invoiceGridItem}>
+                <Text style={styles.invoiceGridLabel}>METHOD</Text>
+                <Text style={styles.invoiceGridValue}>{item.method}</Text>
+              </View>
+            </View>
+
+            {/* Amount Label */}
+            <View style={styles.amountLabelContainer}>
+              <Text style={styles.amountLabel}>Amount</Text>
+              <Text style={styles.amountValue}>₹{item.amount.toFixed(2)}</Text>
+            </View>
+
+            {/* Description and Amount Header */}
+            <View style={styles.descriptionHeader}>
+              <Text style={styles.descriptionHeaderLabel}>DESCRIPTION</Text>
+              <Text style={styles.descriptionHeaderLabel}>AMOUNT</Text>
+            </View>
+
+            {/* Course Item */}
+            <View style={styles.courseItemContainer}>
+              <View>
+                <Text style={styles.courseItemName}>{item.courseName}</Text>
+                <Text style={styles.courseItemInstructor}>
+                  Instructor: {item.invoiceDetails.instructorName}
+                </Text>
+              </View>
+              <Text style={styles.courseItemAmount}>₹{item.invoiceDetails.subtotal.toFixed(2)}</Text>
+            </View>
+
+            {/* Divider */}
+            <View style={styles.invoiceDivider} />
+
+            {/* Subtotal and Tax Breakdown */}
+            <View style={styles.taxBreakdown}>
+              <View style={styles.taxRow}>
+                <Text style={styles.taxLabel}>Subtotal (excl. GST)</Text>
+                <Text style={styles.taxValue}>₹{item.invoiceDetails.subtotal.toFixed(2)}</Text>
+              </View>
+              <View style={styles.taxRow}>
+                <Text style={styles.taxLabel}>CGST @ 9%</Text>
+                <Text style={styles.taxValue}>₹{item.invoiceDetails.cgst.toFixed(2)}</Text>
+              </View>
+              <View style={styles.taxRow}>
+                <Text style={styles.taxLabel}>SGST @ 9%</Text>
+                <Text style={styles.taxValue}>₹{item.invoiceDetails.sgst.toFixed(2)}</Text>
+              </View>
+              <View style={styles.taxRowBold}>
+                <Text style={styles.taxLabelBold}>Total GST (18%)</Text>
+                <Text style={styles.taxValueBold}>₹{item.invoiceDetails.totalGST.toFixed(2)}</Text>
+              </View>
+              <View style={styles.totalPaidRow}>
+                <Text style={styles.totalPaidLabel}>Total Paid</Text>
+                <Text style={styles.totalPaidValue}>₹{item.amount.toFixed(2)}</Text>
+              </View>
+            </View>
+
+            {/* Disclaimer */}
+            <Text style={styles.disclaimer}>
+              This is a computer-generated invoice and does not require an actual signature. GST is applicable under reverse charge mechanism where applicable.
+            </Text>
+          </View>
+        )}
+      </View>
+    )
+  }
+
+  const renderTransactionHistory = () => (
+    <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <View style={styles.historyHeader}>
+        <Text style={styles.historyTitle}>Payment History</Text>
+        <Text style={styles.historySubtitle}>All your course purchases with GST invoices</Text>
+      </View>
+
+      {/* Stats Cards */}
+      <View style={styles.statsContainer}>
+        <View style={styles.statCard}>
+          <Text style={styles.statLabel}>TOTAL SPENT</Text>
+          <Text style={styles.statValue}>₹{totalSpent.toFixed(2)}</Text>
+        </View>
+        <View style={styles.statCard}>
+          <Text style={styles.statLabel}>COURSES BOUGHT</Text>
+          <Text style={styles.statValue}>{coursesBought}</Text>
+        </View>
+        <View style={styles.statCard}>
+          <Text style={styles.statLabel}>TOTAL GST PAID</Text>
+          <Text style={styles.statValue}>₹{totalGST.toFixed(2)}</Text>
+        </View>
+      </View>
+
+      {/* Transactions Label */}
+      <View style={styles.transactionsLabel}>
+        <Text style={styles.transactionsCount}>
+          {transactions.length} TRANSACTION{transactions.length !== 1 ? 'S' : ''} — CLICK ANY ROW TO VIEW INVOICE
+        </Text>
+      </View>
+
+      {/* Transaction List */}
+      <View style={styles.transactionsList}>
+        <FlatList
+          data={transactions}
+          renderItem={renderTransactionItem}
+          keyExtractor={(item) => item.id}
+          scrollEnabled={false}
+        />
+      </View>
+    </ScrollView>
+  )
 
   return (
     <SafeAreaView style={styles.container}>
@@ -22,12 +254,8 @@ const PaymentsTabScreen = () => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        {/* Placeholder content */}
-        <View style={styles.contentContainer}>
-          <Text style={styles.placeholderText}>Payments Screen</Text>
-        </View>
-      </ScrollView>
+      {/* Content */}
+      {transactions.length === 0 ? renderEmptyState() : renderTransactionHistory()}
     </SafeAreaView>
   )
 }
@@ -74,16 +302,401 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flex: 1,
   },
-  contentContainer: {
+  // Empty State Styles
+  emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 100,
   },
-  placeholderText: {
-    fontSize: 16,
-    color: '#797979',
+  iconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#E0E7FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  walletIcon: {
+    fontSize: 40,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1F2937',
     fontFamily: 'Geist-VariableFont_wght',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    fontFamily: 'Geist-VariableFont_wght',
+    textAlign: 'center',
+  },
+  // Transaction History Styles
+  historyHeader: {
+    paddingHorizontal: 16,
+    paddingTop: 24,
+    paddingBottom: 16,
+  },
+  historyTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1F2937',
+    fontFamily: 'Geist-VariableFont_wght',
+    marginBottom: 4,
+  },
+  historySubtitle: {
+    fontSize: 13,
+    color: '#6B7280',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  statsContainer: {
+    paddingHorizontal: 16,
+    marginBottom: 24,
+    gap: 12,
+  },
+  statCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  statLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#9CA3AF',
+    fontFamily: 'Geist-VariableFont_wght',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1F2937',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  transactionsLabel: {
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  transactionsCount: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#6B7280',
+    fontFamily: 'Geist-VariableFont_wght',
+    letterSpacing: 0.3,
+  },
+  transactionsList: {
+    paddingHorizontal: 16,
+    paddingBottom: 24,
+  },
+  transactionWrapper: {
+    marginBottom: 10,
+  },
+  transactionItem: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  transactionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  courseIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    backgroundColor: '#E0F2FE',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  courseIconText: {
+    fontSize: 20,
+  },
+  transactionInfo: {
+    flex: 1,
+  },
+  courseName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1F2937',
+    fontFamily: 'Geist-VariableFont_wght',
+    marginBottom: 4,
+  },
+  transactionDate: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  transactionRight: {
+    alignItems: 'flex-end',
+    marginLeft: 12,
+  },
+  amountAndDropdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    backgroundColor: '#F0FDF4',
+    marginBottom: 6,
+  },
+  statusPaid: {
+    backgroundColor: '#DCFCE7',
+  },
+  statusIcon: {
+    fontSize: 12,
+    color: '#22C55E',
+    marginRight: 4,
+    fontWeight: 'bold',
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#22C55E',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  amount: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1F2937',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  dropdownButton: {
+    padding: 4,
+  },
+  dropdownIcon: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    fontWeight: '600',
+  },
+  dropdownIconRotated: {
+    transform: [{ rotate: '180deg' }],
+  },
+  // Invoice Styles
+  invoiceContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 0,
+    borderBottomLeftRadius: 8,
+    borderBottomRightRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 16,
+    borderWidth: 1,
+    borderTopWidth: 0,
+    borderColor: '#E5E7EB',
+  },
+  invoiceHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    backgroundColor: '#1E40AF',
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  taxInvoiceLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    fontFamily: 'Geist-VariableFont_wght',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  companyName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  invoiceDateBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 4,
+  },
+  invoiceDateLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  invoiceDetailsGrid: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    marginBottom: 16,
+    gap: 12,
+  },
+  invoiceGridItem: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    paddingBottom: 12,
+  },
+  invoiceGridLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#6B7280',
+    fontFamily: 'Geist-VariableFont_wght',
+    letterSpacing: 0.3,
+    marginBottom: 4,
+  },
+  invoiceGridValue: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#1F2937',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  amountLabelContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    marginBottom: 12,
+  },
+  amountLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6B7280',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  amountValue: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1F2937',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  descriptionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    marginBottom: 12,
+  },
+  descriptionHeaderLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#6B7280',
+    fontFamily: 'Geist-VariableFont_wght',
+    letterSpacing: 0.3,
+  },
+  courseItemContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingVertical: 12,
+  },
+  courseItemName: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1F2937',
+    fontFamily: 'Geist-VariableFont_wght',
+    marginBottom: 4,
+  },
+  courseItemInstructor: {
+    fontSize: 11,
+    color: '#6B7280',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  courseItemAmount: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#1F2937',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  invoiceDivider: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
+    marginVertical: 12,
+  },
+  taxBreakdown: {
+    gap: 10,
+  },
+  taxRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+  },
+  taxLabel: {
+    fontSize: 12,
+    color: '#1F2937',
+    fontFamily: 'Geist-VariableFont_wght',
+    fontWeight: '500',
+  },
+  taxValue: {
+    fontSize: 12,
+    color: '#1F2937',
+    fontFamily: 'Geist-VariableFont_wght',
+    fontWeight: '500',
+  },
+  taxRowBold: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  taxLabelBold: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#1F2937',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  taxValueBold: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#1F2937',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  totalPaidRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    borderTopWidth: 2,
+    borderTopColor: '#1F2937',
+    marginTop: 8,
+  },
+  totalPaidLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1F2937',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  totalPaidValue: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1F2937',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  disclaimer: {
+    fontSize: 10,
+    color: '#9CA3AF',
+    fontFamily: 'Geist-VariableFont_wght',
+    lineHeight: 14,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
   },
 })

@@ -8,6 +8,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { getRecommendedJobs } from '../../../Redux/slices/homeSlice';
 import { Funnel, Search } from 'lucide-react-native/icons';
 import FilterModal from './FilterModal';
+import * as AsyncStore from "../../../AsyncStore";
+
 
 type Props = BottomTabScreenProps<JobSeekerBottomTabParamList, 'HomeTab'>;
 
@@ -27,13 +29,11 @@ export default function HomeTabScreen({ navigation }: Props) {
   const getRecommendedJobsData = async () => {
     try {
       // Make API call to fetch recommended jobs
-      const response = await dispatch(getRecommendedJobs() as any);
-      console.log('Recommended Jobs Response:', response);
+      await dispatch(getRecommendedJobs() as any);
     } catch (error) {
       console.log('Error fetching recommended jobs:', error);
     }
   };
-  console.log(selector?.recommendedJobs, "selectororororororo");
 
   const jobs = selector?.recommendedJobs?.jobs
   function underscoreToSpace(str: any) {

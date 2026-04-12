@@ -1,13 +1,39 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { JobSeekerBottomTabParamList } from '../../../types/navigation';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { BookText, BriefcaseBusiness, Camera, CodeXml, Eye, FileText, Globe, GraduationCap, HardDriveUpload, Info, Lightbulb, Link, MapPin, Shield, SquarePen, Upload, UserRound, UserRoundPen, Video, VideoOff } from 'lucide-react-native';
+import { useDispatch, useSelector } from 'react-redux';
+import * as AsyncStore from "../../../AsyncStore";
+import { getProfileData } from '../../../Redux/slices/profileSlice';
 
 type Props = BottomTabScreenProps<JobSeekerBottomTabParamList, 'ProfileTab'>;
 
 export default function ProfileTabScreen({ navigation }: Props) {
+  const dispatch = useDispatch();
+  const selector = useSelector((state: any) => state.profile);
+
+
+  useEffect(() => {
+    fetchProfileData();
+  }, []);
+
+
+  const fetchProfileData = async () => {
+    try {
+      // Fetch user data from async storage
+
+      const userId = await AsyncStore.getJsonData(AsyncStore.Keys.USER_ID);
+
+      // Dispatch profile action if needed
+      const response = await dispatch(getProfileData(userId) as any);
+    } catch (error) {
+      console.log('Error fetching profile data:', error);
+    }
+  };
+  const userData = selector?.data[0];
   return (
     <SafeAreaView style={styles.container}>
       {/* Sticky Header */}
@@ -20,7 +46,6 @@ export default function ProfileTabScreen({ navigation }: Props) {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Profile</Text>
         <TouchableOpacity style={styles.filterButton}>
-          <Text style={styles.filterIcon}>⚙️</Text>
         </TouchableOpacity>
       </View>
 
@@ -30,7 +55,7 @@ export default function ProfileTabScreen({ navigation }: Props) {
           <View style={styles.avatarContainer}>
             <Text style={styles.avatarText}>P</Text>
             <TouchableOpacity style={styles.cameraIcon}>
-              <Text style={styles.cameraIconText}>📷</Text>
+              <Camera size={12} color="#ffff" />
             </TouchableOpacity>
           </View>
 
@@ -43,26 +68,27 @@ export default function ProfileTabScreen({ navigation }: Props) {
           </Text>
 
           <TouchableOpacity style={styles.noVideoButton}>
+            <VideoOff size={12} color="#ffff" fill={'#fff'} />
             <Text style={styles.noVideoButtonText}>No Video</Text>
           </TouchableOpacity>
         </View>
 
         {/* Profile Name */}
-        <Text style={styles.profileName}>pavan</Text>
+        <Text style={styles.profileName}>{userData?.name}</Text>
 
         {/* Profile Title */}
-        <Text style={styles.profileTitle}>Software Developer</Text>
+        <Text style={styles.profileTitle}>{userData?.current_role}</Text>
 
         {/* Profile Stats */}
         <View style={styles.statsContainer}>
           <View style={styles.statRow}>
             <View style={styles.statItem}>
-              <Text style={styles.statIcon}>📍</Text>
-              <Text style={styles.statText}>Location not set</Text>
+              <MapPin fill={'#165DFC'} color={'white'} />
+              <Text style={styles.statText}>{userData?.location || 'Location not set'}</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={styles.statIcon}>💼</Text>
-              <Text style={styles.statText}>0 years experience</Text>
+              <BriefcaseBusiness fill={'#165DFC'} color={'white'} />
+              <Text style={styles.statText}>{userData?.experience_level || '0 years experience'}</Text>
             </View>
           </View>
 
@@ -72,7 +98,7 @@ export default function ProfileTabScreen({ navigation }: Props) {
               <Text style={styles.statText}>Open to work</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={styles.statIcon}>👁️</Text>
+              <Eye fill={'#165DFC'} color={'white'} />
               <Text style={styles.statText}>127 profile views</Text>
             </View>
           </View>
@@ -83,7 +109,7 @@ export default function ProfileTabScreen({ navigation }: Props) {
           <View style={styles.gaugeContainer}>
             <View style={styles.gaugeOuter}>
               <View style={styles.gaugeInner}>
-                <Text style={styles.gaugePercentage}>11%</Text>
+                <Text style={styles.gaugePercentage}>{userData?.profile_completion_percentage}%</Text>
               </View>
             </View>
           </View>
@@ -105,12 +131,14 @@ export default function ProfileTabScreen({ navigation }: Props) {
         {/* Video Introduction Section */}
         <View style={styles.videoSection}>
           <View style={styles.videoHeader}>
-            <Text style={styles.videoHeaderIcon}>🎥</Text>
+            <View style={styles.videoHeaderIcon}>
+              <Video fill={'#165DFC'} color={'white'} />
+            </View>
             <Text style={styles.videoHeaderTitle}>Video Introduction</Text>
           </View>
 
           <TouchableOpacity style={styles.uploadVideoButton}>
-            <Text style={styles.uploadVideoIcon}>⬆️</Text>
+            <HardDriveUpload fill={'#165DFC'} color={'#165DFC'} />
             <Text style={styles.uploadVideoText}>Upload Video</Text>
           </TouchableOpacity>
 
@@ -129,7 +157,7 @@ export default function ProfileTabScreen({ navigation }: Props) {
           </View>
 
           <View style={styles.videoInfoBox}>
-            <Text style={styles.videoInfoIcon}>ℹ️</Text>
+            <Info fill={'#165DFC'} color={'white'} />
             <Text style={styles.videoInfoText}>
               Upload a video introduction to showcase your personality to employers.
             </Text>
@@ -139,50 +167,54 @@ export default function ProfileTabScreen({ navigation }: Props) {
         {/* Personal Information Section */}
         <View style={styles.personalInfoSection}>
           <View style={styles.personalInfoHeader}>
-            <Text style={styles.personalInfoIcon}>👤</Text>
+            <View style={styles.personalInfoIcon}>
+              <UserRound fill={'#165DFC'} color={'white'} />
+            </View>
             <Text style={styles.personalInfoTitle}>Personal Information</Text>
           </View>
 
           <TouchableOpacity style={styles.editButton}>
-            <Text style={styles.editIcon}>✏️</Text>
+            <SquarePen color={'#165DFC'} size={20} />
             <Text style={styles.editButtonText}>Edit</Text>
           </TouchableOpacity>
 
           <View style={styles.infoField}>
             <Text style={styles.fieldLabel}>Full Name</Text>
-            <Text style={styles.fieldValue}>pavan</Text>
+            <Text style={styles.fieldValue}>{userData?.name || 'Not provided'}</Text>
           </View>
 
           <View style={styles.infoField}>
             <Text style={styles.fieldLabel}>Email</Text>
-            <Text style={styles.fieldValue}>pavankarthik0911@gmail.com</Text>
+            <Text style={styles.fieldValue}>{userData?.email || 'Not provided'}</Text>
           </View>
 
           <View style={styles.infoField}>
             <Text style={styles.fieldLabel}>Phone Number</Text>
-            <Text style={styles.fieldValue}>Not provided</Text>
+            <Text style={styles.fieldValue}>{userData?.phone || 'Not provided'}</Text>
           </View>
 
           <View style={styles.infoField}>
             <Text style={styles.fieldLabel}>Location</Text>
-            <Text style={styles.fieldValue}>Not provided</Text>
+            <Text style={styles.fieldValue}>{userData?.location || 'Not provided'}</Text>
           </View>
         </View>
 
         {/* About Me Section */}
         <View style={styles.aboutMeSection}>
           <View style={styles.aboutMeHeader}>
-            <Text style={styles.aboutMeIcon}>📕</Text>
+            <View style={styles.aboutMeIcon}>
+              <FileText fill={'#9810FA'} color={'white'} />
+            </View>
             <Text style={styles.aboutMeTitle}>About Me</Text>
           </View>
 
-          <TouchableOpacity style={styles.editAboutButton}>
-            <Text style={styles.editAboutIcon}>✏️</Text>
-            <Text style={styles.editAboutText}>Edit</Text>
+          <TouchableOpacity style={styles.aboutEditButton}>
+            <SquarePen color={'#9810FA'} size={20} />
+            <Text style={styles.editButtonText}>Edit</Text>
           </TouchableOpacity>
 
           <View style={styles.bioBox}>
-            <Text style={styles.bioPlaceholderIcon}>👤</Text>
+            <UserRoundPen fill={'#D1D5DC'} color={'white'} size={45} />
             <Text style={styles.noBioText}>No bio added yet</Text>
             <Text style={styles.bioDescription}>
               Add a professional bio to help employers understand your background and expertise
@@ -190,7 +222,7 @@ export default function ProfileTabScreen({ navigation }: Props) {
           </View>
 
           <View style={styles.proTipBox}>
-            <Text style={styles.proTipLabel}>💡 Pro tip:</Text>
+            <Lightbulb fill={'#FBBF24'} color={'white'} size={20} />
             <Text style={styles.proTipText}>
               A good bio includes your experience, skills, and career goals
             </Text>
@@ -200,13 +232,15 @@ export default function ProfileTabScreen({ navigation }: Props) {
         {/* Social Links Section */}
         <View style={styles.socialLinksSection}>
           <View style={styles.socialLinksHeader}>
-            <Text style={styles.socialLinksIcon}>🔗</Text>
+            <View style={styles.socialLinksIcon}>
+              <Link color={'#00A73F'} size={20} />
+            </View>
             <Text style={styles.socialLinksTitle}>Social Links</Text>
           </View>
 
-          <TouchableOpacity style={styles.editSocialButton}>
-            <Text style={styles.editSocialIcon}>✏️</Text>
-            <Text style={styles.editSocialText}>Edit</Text>
+          <TouchableOpacity style={styles.aboutEditButton}>
+            <SquarePen color={'#00A63E'} size={20} />
+            <Text style={styles.editButtonText}>Edit</Text>
           </TouchableOpacity>
 
           <View style={styles.socialLinkItem}>
@@ -221,7 +255,7 @@ export default function ProfileTabScreen({ navigation }: Props) {
 
           <View style={styles.socialLinkItem}>
             <View style={styles.websiteIconBox}>
-              <Text style={styles.websiteIcon}>🌐</Text>
+               <Globe fill={"#fff"} color={'#00A63E'}/>
             </View>
             <View style={styles.socialLinkContent}>
               <Text style={styles.socialLinkLabel}>Personal Website</Text>
@@ -230,7 +264,7 @@ export default function ProfileTabScreen({ navigation }: Props) {
           </View>
 
           <View style={styles.socialProTipBox}>
-            <Text style={styles.socialProTipLabel}>💡 Pro Tip:</Text>
+            <Text style={styles.socialProTipLabel}><Lightbulb fill={'#FBBF24'} color={'white'} size={20} /> Pro Tip:</Text>
             <Text style={styles.socialProTipText}>
               Complete your social links
             </Text>
@@ -251,7 +285,7 @@ export default function ProfileTabScreen({ navigation }: Props) {
           </View>
 
           <View style={styles.emptySkillsBox}>
-            <Text style={styles.emptySkillsIcon}>&lt;/&gt;</Text>
+          <CodeXml color={'#D1D5DC'} size={40} />
             <Text style={styles.emptySkillsText}>
               No skills added yet. Add your technical skills to showcase your expertise.
             </Text>
@@ -261,7 +295,9 @@ export default function ProfileTabScreen({ navigation }: Props) {
         {/* Work Experience Section */}
         <View style={styles.workExperienceSection}>
           <View style={styles.experienceHeader}>
-            <Text style={styles.experienceIcon}>💼</Text>
+            <View style={styles.experienceIconBox}>
+            <BriefcaseBusiness fill={'#F54800'}  color={'#FFECD4'} size={20} />
+            </View>
             <Text style={styles.experienceTitle}>Work Experience</Text>
           </View>
 
@@ -271,7 +307,7 @@ export default function ProfileTabScreen({ navigation }: Props) {
           </TouchableOpacity>
 
           <View style={styles.emptyExperienceBox}>
-            <Text style={styles.emptyExperienceIcon}>💼</Text>
+            <BriefcaseBusiness color={'#D1D5DC'} size={40} />
             <Text style={styles.emptyExperienceText}>
               No work experience added yet. Add your professional experience to showcase your career journey.
             </Text>
@@ -281,7 +317,9 @@ export default function ProfileTabScreen({ navigation }: Props) {
         {/* Education Section */}
         <View style={styles.educationSection}>
           <View style={styles.educationHeader}>
-            <Text style={styles.educationIcon}>🎓</Text>
+            <View style={styles.educationIconBox}>
+            <GraduationCap color={'#165DFC'} size={20} />
+            </View>
             <Text style={styles.educationTitle}>Education</Text>
             <TouchableOpacity style={styles.addEducationButton}>
               <Text style={styles.addEducationIcon}>+</Text>
@@ -290,7 +328,7 @@ export default function ProfileTabScreen({ navigation }: Props) {
           </View>
 
           <View style={styles.emptyEducationBox}>
-            <Text style={styles.emptyEducationIcon}>🎓</Text>
+            <GraduationCap color={'#D1D5DC'} size={40} />
             <Text style={styles.noEducationText}>No education added yet</Text>
             <TouchableOpacity style={styles.addFirstEducationButton}>
               <Text style={styles.addFirstEducationIcon}>+</Text>
@@ -302,7 +340,9 @@ export default function ProfileTabScreen({ navigation }: Props) {
         {/* Resumes Section */}
         <View style={styles.resumesSection}>
           <View style={styles.resumesHeader}>
-            <Text style={styles.resumesIcon}>📄</Text>
+            <View style={styles.resumesIconBox}>
+              <FileText color={'#165DFC'} size={20} />
+            </View>
             <Text style={styles.resumesTitle}>Resumes</Text>
             <TouchableOpacity style={styles.addResumeButton}>
               <Text style={styles.addResumeIcon}>+</Text>
@@ -311,13 +351,13 @@ export default function ProfileTabScreen({ navigation }: Props) {
           </View>
 
           <View style={styles.emptyResumeBox}>
-            <Text style={styles.emptyResumeIcon}>📄</Text>
+            <FileText color={'#D1D5DC'} size={40} />
             <Text style={styles.noResumeText}>No resumes uploaded yet</Text>
             <Text style={styles.resumeDescription}>
               Upload your resume so employers can review your profile
             </Text>
             <TouchableOpacity style={styles.uploadResumeButton}>
-              <Text style={styles.uploadResumeIcon}>⬆️</Text>
+                <Upload color={'#165DFC'} size={20} />
               <Text style={styles.uploadResumeText}>Upload Resume</Text>
             </TouchableOpacity>
           </View>
@@ -326,12 +366,14 @@ export default function ProfileTabScreen({ navigation }: Props) {
         {/* Course Progress Section */}
         <View style={styles.courseProgressSection}>
           <View style={styles.courseProgressHeader}>
-            <Text style={styles.courseProgressIcon}>🎓</Text>
+            <View style={styles.courseProgressIconBox}>
+              <GraduationCap color={'#165DFC'} size={20} />
+            </View>
             <Text style={styles.courseProgressTitle}>Course Progress</Text>
           </View>
 
           <View style={styles.emptyCourseBox}>
-            <Text style={styles.emptyCourseIcon}>📦</Text>
+            <BookText color={'#D1D5DC'} size={40} />
             <Text style={styles.noCourseText}>No courses enrolled yet</Text>
             <Text style={styles.courseDescription}>
               Enroll in courses to boost your skills and career prospects. Complete courses to unlock job opportunities!
@@ -348,12 +390,16 @@ export default function ProfileTabScreen({ navigation }: Props) {
         {/* Password & Security Section */}
         <View style={styles.passwordSecuritySection}>
           <View style={styles.passwordSecurityHeader}>
-            <Text style={styles.passwordSecurityIcon}>🛡️</Text>
+            <View style={styles.passwordSecurityIconBox}>
+              <Shield color={'#165DFC'} size={20} />
+            </View>
             <Text style={styles.passwordSecurityTitle}>Password & Security</Text>
           </View>
 
           <View style={styles.securityInfoBox}>
-            <Text style={styles.securityInfoIcon}>ℹ️</Text>
+            <View style={styles.securityInfoIconBox}>
+              <Info color={'#165DFC'} size={20} />
+            </View>
             <View style={styles.securityInfoContent}>
               <Text style={styles.securityInfoTitle}>You're signed in with Google</Text>
               <Text style={styles.securityInfoText}>
@@ -510,12 +556,12 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 8,
     right: 8,
-    width: 40,
-    height: 40,
+    width: 30,
+    height: 30,
     borderRadius: 20,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: '#165DFC',
+    backgroundColor: '#165DFC',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -542,6 +588,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     backgroundColor: '#9CA3AF',
     borderRadius: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center', gap: 6,
   },
   noVideoButtonText: {
     fontSize: 13,
@@ -553,6 +602,7 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: '700',
     color: '#363535',
+    textTransform: 'capitalize',
     fontFamily: 'Geist-VariableFont_wght',
     marginBottom: 8,
     textAlign: 'center',
@@ -561,22 +611,26 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#165DFC',
+    textTransform: 'capitalize',
     fontFamily: 'Geist-VariableFont_wght',
     marginBottom: 20,
     textAlign: 'center',
   },
   statsContainer: {
     width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   statRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     marginBottom: 16,
   },
   statItem: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 8,
   },
   statIcon: {
@@ -590,6 +644,7 @@ const styles = StyleSheet.create({
   },
   statText: {
     fontSize: 14,
+    textTransform: 'capitalize',
     color: '#363535',
     fontFamily: 'Geist-VariableFont_wght',
     fontWeight: '500',
@@ -621,7 +676,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   gaugePercentage: {
-    fontSize: 36,
+    fontSize: 26,
     fontWeight: '700',
     color: '#10B981',
     fontFamily: 'Geist-VariableFont_wght',
@@ -674,12 +729,17 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   videoHeaderIcon: {
-    fontSize: 24,
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: '#DBE9FF',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginRight: 12,
   },
   videoHeaderTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 22,
+    fontWeight: 'bold',
     color: '#363535',
     fontFamily: 'Geist-VariableFont_wght',
   },
@@ -687,8 +747,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingVertical: 10,
+    width: '50%',
     marginBottom: 16,
+    backgroundColor: '#DBE9FF',
+    marginRight: 12,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
   uploadVideoIcon: {
     fontSize: 16,
@@ -761,8 +826,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 10,
-    borderLeftWidth: 4,
-    borderLeftColor: '#165DFC',
   },
   videoInfoIcon: {
     fontSize: 16,
@@ -788,10 +851,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
+
   },
   personalInfoIcon: {
     fontSize: 24,
     marginRight: 12,
+    width: 32,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: '#DBE9FF',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   personalInfoTitle: {
     fontSize: 18,
@@ -805,6 +875,10 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 8,
     marginBottom: 16,
+    backgroundColor: '#DBE9FF',
+    justifyContent: 'center',
+    width: 80,
+    borderRadius: 8,
   },
   editIcon: {
     fontSize: 14,
@@ -849,6 +923,13 @@ const styles = StyleSheet.create({
   aboutMeIcon: {
     fontSize: 24,
     marginRight: 12,
+    backgroundColor: '#F3E7FF',
+    borderRadius: 12,
+    padding: 6,
+    marginTop: 24,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#EAEBEE',
   },
   aboutMeTitle: {
     fontSize: 18,
@@ -856,12 +937,16 @@ const styles = StyleSheet.create({
     color: '#363535',
     fontFamily: 'Geist-VariableFont_wght',
   },
-  editAboutButton: {
+  aboutEditButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     paddingVertical: 8,
     marginBottom: 16,
+    backgroundColor: '#F3E7FF',
+    justifyContent: 'center',
+    width: 80,
+    borderRadius: 8,
   },
   editAboutIcon: {
     fontSize: 14,
@@ -941,6 +1026,12 @@ const styles = StyleSheet.create({
   socialLinksIcon: {
     fontSize: 24,
     marginRight: 12,
+    width: 32,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: '#DBFCE5',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   socialLinksTitle: {
     fontSize: 18,
@@ -983,7 +1074,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   linkedinIcon: {
-    fontSize: 12,
+    fontSize: 18,
     fontWeight: '700',
     color: '#FFFFFF',
     fontFamily: 'Geist-VariableFont_wght',
@@ -992,7 +1083,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 6,
-    backgroundColor: '#22C55E',
+    backgroundColor: '#00A63E',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1116,6 +1207,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
+  experienceIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 6,
+    backgroundColor: '#FFECD4',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+
   experienceIcon: {
     fontSize: 24,
     marginRight: 12,
@@ -1132,6 +1233,11 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 8,
     marginBottom: 16,
+      backgroundColor: '#FFECD4',
+    justifyContent: 'center',
+    width: 140,
+    borderRadius: 8,
+    paddingHorizontal: 16,
   },
   addExperienceIcon: {
     fontSize: 16,
@@ -1180,6 +1286,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
+  },
+  educationIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 6,
+    backgroundColor: '#EFF6FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
   educationIcon: {
     fontSize: 24,
@@ -1265,6 +1380,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
+  },
+  resumesIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 6,
+    backgroundColor: '#E0F2FE',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
   resumesIcon: {
     fontSize: 24,
@@ -1356,6 +1480,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
+  courseProgressIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 6,
+    backgroundColor: '#E0F2FE',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
   courseProgressIcon: {
     fontSize: 24,
     marginRight: 12,
@@ -1438,8 +1571,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
-  passwordSecurityIcon: {
-    fontSize: 24,
+  passwordSecurityIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: '#E0F2FE',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginRight: 12,
   },
   passwordSecurityTitle: {
@@ -1447,6 +1585,15 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#363535',
     fontFamily: 'Geist-VariableFont_wght',
+  },
+  securityInfoIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: '#E0F2FE',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
   securityInfoBox: {
     backgroundColor: '#EFF6FF',
