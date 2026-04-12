@@ -13,17 +13,20 @@ import {
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import SplashScreen from './src/screens/SplashScreen';
-import { Provider, useSelector } from 'react-redux';
+import { Provider, useSelector, useDispatch } from 'react-redux';
 import { store } from './src/Redux';
 import * as AsyncStore from "./src/AsyncStore";
+import { getUserRole } from './src/Redux/slices/loginSlice';
 
 
 function AppContent() {
   // const { isLoggedIn, isLoading: authLoading } = useAuth();
   const [showSplash, setShowSplash] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [role, setRole] = useState<string | null>(null);
   const [userData, setUserData] = useState(null);
   const selector = useSelector((state:any) => state.login);
+  const dispatch = useDispatch();
   
   
   useEffect(() => {
@@ -40,7 +43,7 @@ function AppContent() {
       setShowSplash(false);
     }, 1400);
     return () => clearTimeout(timeout);
-  }, []);
+  }, [role]);
   
   // Update login state when Redux state changes
   useEffect(() => {
@@ -49,16 +52,36 @@ function AppContent() {
       if (selector?.user) {
         setUserData(selector?.user);
       }
+      // Get role from Redux state if available
+      if (selector?.role) {
+        setRole(selector?.role);
+      }
     } else {
       setIsLoggedIn(false);
     }
-  }, [selector?.isAuthenticated, selector?.token, selector?.user]);
+  }, [selector?.isAuthenticated, selector?.token, selector?.user, selector?.role]);
+
+  // Fetch role immediately after login if user exists but role doesn't
+  useEffect(() => {
+    if (selector?.isAuthenticated && selector?.user && !selector?.role) {
+      console.log("Fetching user role for user:", selector?.user?.id);
+      dispatch(getUserRole(selector?.user?.id)as any);
+    }
+  }, [selector?.isAuthenticated, selector?.user, selector?.role, dispatch]);
   const LocalStorageaData = async () => {
     try {
       const token = await AsyncStore.getData(AsyncStore?.Keys?.USER_TOKEN);
       const userLoggedInData = await AsyncStore.getData(AsyncStore?.Keys?.USER_DATA);
+      const userRole = await AsyncStore.getData(AsyncStore?.Keys?.ROLE);
+      
       if(token){
         setIsLoggedIn(true);
+      }
+      if(userRole){
+        console.log("User role found in local storage:", userRole);
+        // Parse the stringified role
+        const parsedRole = JSON.parse(userRole);
+        setRole(parsedRole);
       }
       if(userLoggedInData){
         const parsedUserData = JSON.parse(userLoggedInData);
@@ -85,7 +108,16 @@ function AppContent() {
   return (
     <>
       <StatusBar barStyle="dark-content" />
-      <AppNavigator isUserLoggedIn={isLoggedIn} userType="jobseeker" />
+      {isLoggedIn && role ? (
+        <AppNavigator isUserLoggedIn={isLoggedIn} userType={role as any} />
+      ) : isLoggedIn && !role ? (
+        // Show loading while fetching role
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color="#007AFF" />
+        </View>
+      ) : (
+        <AppNavigator isUserLoggedIn={false} userType={null} />
+      )}
     </>
   );
 }

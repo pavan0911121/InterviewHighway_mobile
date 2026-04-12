@@ -21,6 +21,7 @@ interface AuthState {
   token: string | null;
   deviceInfoPosted: boolean;
   isVerified?: boolean;
+  role?: string | null;
 }
 
 const initialState: AuthState = {
@@ -31,6 +32,7 @@ const initialState: AuthState = {
   token: null,
   deviceInfoPosted: false,
   isVerified: false,
+  role: null,
 };
 //Login API call
 export const postUserData = createAsyncThunk(
@@ -64,7 +66,7 @@ export const getRole = createAsyncThunk(
     }
   }
 );
-//Role API call
+//Verified User API call
 export const getVerifiedUser = createAsyncThunk(
   "login/getVerifiedUser",
   async (userId: any, { rejectWithValue }) => {
@@ -75,6 +77,22 @@ export const getVerifiedUser = createAsyncThunk(
       console.error('Error fetching verified user data:', error);
       return rejectWithValue({
         message: error?.message || 'Failed to fetch verified user data',
+        code: error?.code || 'ERROR',
+      });
+    }
+  }
+);
+//USER Role API call
+export const getUserRole = createAsyncThunk(
+  "login/getUserRole",
+  async (userId: any, { rejectWithValue }) => {
+    try {
+      const response = await client.get(USER_ENDPOINTS.role(userId));
+      return response.data || response;
+    } catch (error: any) {
+      console.error('Error fetching user role data:', error);
+      return rejectWithValue({
+        message: error?.message || 'Failed to fetch user role data',
         code: error?.code || 'ERROR',
       });
     }
@@ -174,7 +192,7 @@ const loginSlice = createSlice({
         const roleData = action.payload?.[0]?.user_type;
         if (state.user) {
           state.user.role = roleData;
-          AsyncStore.storeData(AsyncStore.Keys.ROLE, JSON.parse(roleData));
+          AsyncStore.storeData(AsyncStore.Keys.ROLE, JSON.stringify(roleData));
         }
       })
       .addCase(getRole.rejected, (state, action) => {
@@ -190,7 +208,6 @@ const loginSlice = createSlice({
         state.error = null;
         const isVerified = action.payload?.[0]?.is_verified || false;
         const userId = action.payload?.[0]?.id || null;
-        console.log(userId,"userId");
         if (userId) {
           AsyncStore.storeData(AsyncStore.Keys.IS_VERIFIED, JSON.stringify(isVerified));
           AsyncStore.storeData(AsyncStore.Keys.USER_ID, JSON.stringify(userId));
@@ -200,7 +217,27 @@ const loginSlice = createSlice({
         state.isLoading = false;
         state.error = (action.payload as any)?.message || 'Failed to fetch verified user data';
       });
-
+      // getUserRole async thunk handlers
+      builder
+      .addCase(getUserRole.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(getUserRole.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.error = null;
+        console.log(action.payload);
+        
+        const roleData = action.payload?.[0]?.user_type;
+        if (roleData) {
+          state.role = roleData;
+          AsyncStore.storeData(AsyncStore.Keys.ROLE, JSON.stringify(roleData));
+        }
+      })
+      .addCase(getUserRole.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = (action.payload as any)?.message || 'Failed to fetch user role data';
+      });
   }
 });
 

@@ -242,20 +242,17 @@ function EmployerAppNavigator() {
 
 interface AppNavigatorProps {
   isUserLoggedIn: boolean;
-  userType?: 'jobseeker' | 'employer' | null;
+  userType?: 'job_seeker' | 'employer' | null;
 }
 
 function RootNavigator({ isUserLoggedIn, userType }: AppNavigatorProps) {
+  
   return (
-    <NavigationContainer>
-      {isUserLoggedIn ? (
-        userType === 'jobseeker' ? (
-          <JobSeekerAppNavigator />
-        ) : userType === 'employer' ? (
-          <EmployerAppNavigator />
-        ) : (
-          <AuthNavigator />
-        )
+    <NavigationContainer key={`${isUserLoggedIn}-${userType}`}>
+      {isUserLoggedIn && userType === "job_seeker" ? (
+        <JobSeekerAppNavigator />
+      ) : isUserLoggedIn && userType === "employer" ? (
+        <EmployerAppNavigator />
       ) : (
         <AuthNavigator />
       )}
