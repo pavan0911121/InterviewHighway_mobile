@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { JobSeekerBottomTabParamList } from '../../../types/navigation';
@@ -20,16 +20,21 @@ export default function ProfileTabScreen({ navigation }: Props) {
     fetchProfileData();
   }, []);
 
-
-  const fetchProfileData = async () => {
+const fetchProfileData = async () => {
     try {
       // Fetch user data from async storage
 
       const userLoggedInData = await AsyncStore.getData(AsyncStore?.Keys?.USER_DATA);
       if (userLoggedInData) {
         const parsedUserData = JSON.parse(userLoggedInData);
-        const userId = parsedUserData?.id || null;
-        const response = await dispatch(getProfileData(userId) as any);
+        const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
+        console.log(userId,"userId");
+        
+        // const userId = parsedUserData?.id || null;
+        if ( userId) {
+          const resultId = userId.replace(/"/g, '');
+          const response = await dispatch(getProfileData(resultId) as any);
+        }
       }
 
       // Dispatch profile action if needed
@@ -37,7 +42,10 @@ export default function ProfileTabScreen({ navigation }: Props) {
       console.log('Error fetching profile data:', error);
     }
   };
-  const userData = selector?.data[0];
+  console.log(selector,"userData");
+  const userData = selector && selector?.data && selector?.data[0];
+  
+  const isLoading = selector?.isLoading;
   return (
     <SafeAreaView style={styles.container}>
       {/* Sticky Header */}
@@ -52,440 +60,444 @@ export default function ProfileTabScreen({ navigation }: Props) {
         <TouchableOpacity style={styles.filterButton}>
         </TouchableOpacity>
       </View>
+      {isLoading ? (
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color="#165DFC" />
+        </View>
+      ) : (
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+          {/* Profile Avatar Section */}
+          <View style={styles.avatarSection}>
+            <View style={styles.avatarContainer}>
+              <Text style={styles.avatarText}>P</Text>
+              <TouchableOpacity style={styles.cameraIcon}>
+                <Camera size={12} color="#ffff" />
+              </TouchableOpacity>
+            </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* Profile Avatar Section */}
-        <View style={styles.avatarSection}>
-          <View style={styles.avatarContainer}>
-            <Text style={styles.avatarText}>P</Text>
-            <TouchableOpacity style={styles.cameraIcon}>
-              <Camera size={12} color="#ffff" />
+            <Text style={styles.uploadDescription}>
+              Click the camera icon or drag & drop an image to upload your profile photo
+            </Text>
+
+            <Text style={styles.supportedFormats}>
+              Supported formats: JPG, PNG, GIF • Max size: 5MB
+            </Text>
+
+            <TouchableOpacity style={styles.noVideoButton}>
+              <VideoOff size={12} color="#ffff" fill={'#fff'} />
+              <Text style={styles.noVideoButtonText}>No Video</Text>
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.uploadDescription}>
-            Click the camera icon or drag & drop an image to upload your profile photo
-          </Text>
+          {/* Profile Name */}
+          <Text style={styles.profileName}>{userData?.name}</Text>
 
-          <Text style={styles.supportedFormats}>
-            Supported formats: JPG, PNG, GIF • Max size: 5MB
-          </Text>
+          {/* Profile Title */}
+          <Text style={styles.profileTitle}>{userData?.current_role}</Text>
 
-          <TouchableOpacity style={styles.noVideoButton}>
-            <VideoOff size={12} color="#ffff" fill={'#fff'} />
-            <Text style={styles.noVideoButtonText}>No Video</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Profile Name */}
-        <Text style={styles.profileName}>{userData?.name}</Text>
-
-        {/* Profile Title */}
-        <Text style={styles.profileTitle}>{userData?.current_role}</Text>
-
-        {/* Profile Stats */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statRow}>
-            <View style={styles.statItem}>
-              <MapPin fill={'#165DFC'} color={'white'} />
-              <Text style={styles.statText}>{userData?.location || 'Location not set'}</Text>
+          {/* Profile Stats */}
+          <View style={styles.statsContainer}>
+            <View style={styles.statRow}>
+              <View style={styles.statItem}>
+                <MapPin fill={'#165DFC'} color={'white'} />
+                <Text style={styles.statText}>{userData?.location || 'Location not set'}</Text>
+              </View>
+              <View style={styles.statItem}>
+                <BriefcaseBusiness fill={'#165DFC'} color={'white'} />
+                <Text style={styles.statText}>{userData?.experience_level || '0 years experience'}</Text>
+              </View>
             </View>
-            <View style={styles.statItem}>
-              <BriefcaseBusiness fill={'#165DFC'} color={'white'} />
-              <Text style={styles.statText}>{userData?.experience_level || '0 years experience'}</Text>
-            </View>
-          </View>
 
-          <View style={styles.statRow}>
-            <View style={styles.statItem}>
-              <View style={styles.greenDot} />
-              <Text style={styles.statText}>Open to work</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Eye fill={'#165DFC'} color={'white'} />
-              <Text style={styles.statText}>127 profile views</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Profile Strength Gauge Section */}
-        <View style={styles.strengthSection}>
-          <View style={styles.gaugeContainer}>
-            <View style={styles.gaugeOuter}>
-              <View style={styles.gaugeInner}>
-                <Text style={styles.gaugePercentage}>{userData?.profile_completion_percentage}%</Text>
+            <View style={styles.statRow}>
+              <View style={styles.statItem}>
+                <View style={styles.greenDot} />
+                <Text style={styles.statText}>Open to work</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Eye fill={'#165DFC'} color={'white'} />
+                <Text style={styles.statText}>127 profile views</Text>
               </View>
             </View>
           </View>
 
-          <Text style={styles.strengthLabel}>Profile</Text>
-          <Text style={styles.strengthLabel}>Strength</Text>
-
-          <Text style={styles.strengthTitle}>Profile Strength</Text>
-
-          <Text style={styles.strengthDescription}>
-            Add more details to boost visibility
-          </Text>
-
-          <TouchableOpacity style={styles.completeProfileButton}>
-            <Text style={styles.completeProfileButtonText}>Complete Profile</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Video Introduction Section */}
-        <View style={styles.videoSection}>
-          <View style={styles.videoHeader}>
-            <View style={styles.videoHeaderIcon}>
-              <Video fill={'#165DFC'} color={'white'} />
-            </View>
-            <Text style={styles.videoHeaderTitle}>Video Introduction</Text>
-          </View>
-
-          <TouchableOpacity style={styles.uploadVideoButton}>
-            <HardDriveUpload fill={'#165DFC'} color={'#165DFC'} />
-            <Text style={styles.uploadVideoText}>Upload Video</Text>
-          </TouchableOpacity>
-
-          <View style={styles.videoUploadBox}>
-            <Text style={styles.videoUploadIcon}>📹</Text>
-            <Text style={styles.noVideoText}>No video uploaded yet</Text>
-            <Text style={styles.uploadVideoDescription}>Upload a video introduction</Text>
-          </View>
-
-          <View style={styles.videoStatusContainer}>
-            <Text style={styles.videoStatusTitle}>Video Status</Text>
-            <View style={styles.statusBadge}>
-              <View style={styles.statusDot} />
-              <Text style={styles.statusText}>Not uploaded</Text>
-            </View>
-          </View>
-
-          <View style={styles.videoInfoBox}>
-            <Info fill={'#165DFC'} color={'white'} />
-            <Text style={styles.videoInfoText}>
-              Upload a video introduction to showcase your personality to employers.
-            </Text>
-          </View>
-        </View>
-
-        {/* Personal Information Section */}
-        <View style={styles.personalInfoSection}>
-          <View style={styles.personalInfoHeader}>
-            <View style={styles.personalInfoIcon}>
-              <UserRound fill={'#165DFC'} color={'white'} />
-            </View>
-            <Text style={styles.personalInfoTitle}>Personal Information</Text>
-          </View>
-
-          <TouchableOpacity style={styles.editButton}>
-            <SquarePen color={'#165DFC'} size={20} />
-            <Text style={styles.editButtonText}>Edit</Text>
-          </TouchableOpacity>
-
-          <View style={styles.infoField}>
-            <Text style={styles.fieldLabel}>Full Name</Text>
-            <Text style={styles.fieldValue}>{userData?.name || 'Not provided'}</Text>
-          </View>
-
-          <View style={styles.infoField}>
-            <Text style={styles.fieldLabel}>Email</Text>
-            <Text style={styles.fieldValue}>{userData?.email || 'Not provided'}</Text>
-          </View>
-
-          <View style={styles.infoField}>
-            <Text style={styles.fieldLabel}>Phone Number</Text>
-            <Text style={styles.fieldValue}>{userData?.phone || 'Not provided'}</Text>
-          </View>
-
-          <View style={styles.infoField}>
-            <Text style={styles.fieldLabel}>Location</Text>
-            <Text style={styles.fieldValue}>{userData?.location || 'Not provided'}</Text>
-          </View>
-        </View>
-
-        {/* About Me Section */}
-        <View style={styles.aboutMeSection}>
-          <View style={styles.aboutMeHeader}>
-            <View style={styles.aboutMeIcon}>
-              <FileText fill={'#9810FA'} color={'white'} />
-            </View>
-            <Text style={styles.aboutMeTitle}>About Me</Text>
-          </View>
-
-          <TouchableOpacity style={styles.aboutEditButton}>
-            <SquarePen color={'#9810FA'} size={20} />
-            <Text style={styles.editButtonText}>Edit</Text>
-          </TouchableOpacity>
-
-          <View style={styles.bioBox}>
-            <UserRoundPen fill={'#D1D5DC'} color={'white'} size={45} />
-            <Text style={styles.noBioText}>No bio added yet</Text>
-            <Text style={styles.bioDescription}>
-              Add a professional bio to help employers understand your background and expertise
-            </Text>
-          </View>
-
-          <View style={styles.proTipBox}>
-            <Lightbulb fill={'#FBBF24'} color={'white'} size={20} />
-            <Text style={styles.proTipText}>
-              A good bio includes your experience, skills, and career goals
-            </Text>
-          </View>
-        </View>
-
-        {/* Social Links Section */}
-        <View style={styles.socialLinksSection}>
-          <View style={styles.socialLinksHeader}>
-            <View style={styles.socialLinksIcon}>
-              <Link color={'#00A73F'} size={20} />
-            </View>
-            <Text style={styles.socialLinksTitle}>Social Links</Text>
-          </View>
-
-          <TouchableOpacity style={styles.aboutEditButton}>
-            <SquarePen color={'#00A63E'} size={20} />
-            <Text style={styles.editButtonText}>Edit</Text>
-          </TouchableOpacity>
-
-          <View style={styles.socialLinkItem}>
-            <View style={styles.linkedinIconBox}>
-              <Text style={styles.linkedinIcon}>in</Text>
-            </View>
-            <View style={styles.socialLinkContent}>
-              <Text style={styles.socialLinkLabel}>LinkedIn Profile</Text>
-              <Text style={styles.socialLinkValue}>Not provided</Text>
-            </View>
-          </View>
-
-          <View style={styles.socialLinkItem}>
-            <View style={styles.websiteIconBox}>
-              <Globe fill={"#fff"} color={'#00A63E'} />
-            </View>
-            <View style={styles.socialLinkContent}>
-              <Text style={styles.socialLinkLabel}>Personal Website</Text>
-              <Text style={styles.socialLinkValue}>Not provided</Text>
-            </View>
-          </View>
-
-          <View style={styles.socialProTipBox}>
-            <Text style={styles.socialProTipLabel}><Lightbulb fill={'#FBBF24'} color={'white'} size={20} /> Pro Tip:</Text>
-            <Text style={styles.socialProTipText}>
-              Complete your social links
-            </Text>
-            <Text style={styles.socialProTipDescription}>
-              Adding your LinkedIn and portfolio links increases your profile strength and helps employers get a complete picture of your professional presence.
-            </Text>
-          </View>
-        </View>
-
-        {/* Skills Section */}
-        <View style={styles.skillsSection}>
-          <View style={styles.skillsHeader}>
-            <Text style={styles.skillsTitle}>Skills</Text>
-            <TouchableOpacity style={styles.addSkillButton}>
-              <Text style={styles.addSkillIcon}>+</Text>
-              <Text style={styles.addSkillText}>Add Skill</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.emptySkillsBox}>
-            <CodeXml color={'#D1D5DC'} size={40} />
-            <Text style={styles.emptySkillsText}>
-              No skills added yet. Add your technical skills to showcase your expertise.
-            </Text>
-          </View>
-        </View>
-
-        {/* Work Experience Section */}
-        <View style={styles.workExperienceSection}>
-          <View style={styles.experienceHeader}>
-            <View style={styles.experienceIconBox}>
-              <BriefcaseBusiness fill={'#F54800'} color={'#FFECD4'} size={20} />
-            </View>
-            <Text style={styles.experienceTitle}>Work Experience</Text>
-          </View>
-
-          <TouchableOpacity style={styles.addExperienceButton}>
-            <Text style={styles.addExperienceIcon}>+</Text>
-            <Text style={styles.addExperienceText}>Add Experience</Text>
-          </TouchableOpacity>
-
-          <View style={styles.emptyExperienceBox}>
-            <BriefcaseBusiness color={'#D1D5DC'} size={40} />
-            <Text style={styles.emptyExperienceText}>
-              No work experience added yet. Add your professional experience to showcase your career journey.
-            </Text>
-          </View>
-        </View>
-
-        {/* Education Section */}
-        <View style={styles.educationSection}>
-          <View style={styles.educationHeader}>
-            <View style={styles.educationIconBox}>
-              <GraduationCap color={'#165DFC'} size={20} />
-            </View>
-            <Text style={styles.educationTitle}>Education</Text>
-            <TouchableOpacity style={styles.addEducationButton}>
-              <Text style={styles.addEducationIcon}>+</Text>
-              <Text style={styles.addEducationText}>Add</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.emptyEducationBox}>
-            <GraduationCap color={'#D1D5DC'} size={40} />
-            <Text style={styles.noEducationText}>No education added yet</Text>
-            <TouchableOpacity style={styles.addFirstEducationButton}>
-              <Text style={styles.addFirstEducationIcon}>+</Text>
-              <Text style={styles.addFirstEducationText}>Add Your First Education</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Resumes Section */}
-        <View style={styles.resumesSection}>
-          <View style={styles.resumesHeader}>
-            <View style={styles.resumesIconBox}>
-              <FileText color={'#165DFC'} size={20} />
-            </View>
-            <Text style={styles.resumesTitle}>Resumes</Text>
-            <TouchableOpacity style={styles.addResumeButton}>
-              <Text style={styles.addResumeIcon}>+</Text>
-              <Text style={styles.addResumeText}>Add</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.emptyResumeBox}>
-            <FileText color={'#D1D5DC'} size={40} />
-            <Text style={styles.noResumeText}>No resumes uploaded yet</Text>
-            <Text style={styles.resumeDescription}>
-              Upload your resume so employers can review your profile
-            </Text>
-            <TouchableOpacity style={styles.uploadResumeButton}>
-              <Upload color={'#165DFC'} size={20} />
-              <Text style={styles.uploadResumeText}>Upload Resume</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Course Progress Section */}
-        <View style={styles.courseProgressSection}>
-          <View style={styles.courseProgressHeader}>
-            <View style={styles.courseProgressIconBox}>
-              <GraduationCap color={'#165DFC'} size={20} />
-            </View>
-            <Text style={styles.courseProgressTitle}>Course Progress</Text>
-          </View>
-
-          <View style={styles.emptyCourseBox}>
-            <BookText color={'#D1D5DC'} size={40} />
-            <Text style={styles.noCourseText}>No courses enrolled yet</Text>
-            <Text style={styles.courseDescription}>
-              Enroll in courses to boost your skills and career prospects. Complete courses to unlock job opportunities!
-            </Text>
-            <TouchableOpacity style={styles.browseCourseButton}>
-              <Text style={styles.browseCourseButtonText}>Browse Courses</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.viewRecommendationsButton}>
-              <Text style={styles.viewRecommendationsButtonText}>View Recommendations</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Password & Security Section */}
-        <View style={styles.passwordSecuritySection}>
-          <View style={styles.passwordSecurityHeader}>
-            <View style={styles.passwordSecurityIconBox}>
-              <Shield color={'#165DFC'} size={20} />
-            </View>
-            <Text style={styles.passwordSecurityTitle}>Password & Security</Text>
-          </View>
-
-          <View style={styles.securityInfoBox}>
-            <View style={styles.securityInfoIconBox}>
-              <Info color={'#165DFC'} size={20} />
-            </View>
-            <View style={styles.securityInfoContent}>
-              <Text style={styles.securityInfoTitle}>You're signed in with Google</Text>
-              <Text style={styles.securityInfoText}>
-                Your account uses Google authentication. To change your password, please visit your{' '}
-                <Text style={styles.googleAccountLink}>Google Account settings</Text>.
-              </Text>
-            </View>
-          </View>
-
-          <Text style={styles.securityTipsHeading}>Security Tips:</Text>
-          <View style={styles.securityTipsContainer}>
-            <View style={styles.tipItem}>
-              <Text style={styles.tipBullet}>•</Text>
-              <Text style={styles.tipText}>
-                Enable two-factor authentication on your Google account
-              </Text>
-            </View>
-            <View style={styles.tipItem}>
-              <Text style={styles.tipBullet}>•</Text>
-              <Text style={styles.tipText}>
-                Regularly review connected apps and devices
-              </Text>
-            </View>
-            <View style={styles.tipItem}>
-              <Text style={styles.tipBullet}>•</Text>
-              <Text style={styles.tipText}>
-                Use a strong, unique password for your Google account
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Complete Your Profile Section */}
-        <View style={styles.completeProfileSection}>
-          <Text style={styles.completeProfileHeading}>Complete Your Profile</Text>
-
-          <View style={styles.checklistContainer}>
-            <View style={styles.checklistItem}>
-              <View style={styles.uncheckedBox} />
-              <Text style={styles.checklistText}>Add profile photo</Text>
-            </View>
-
-            <View style={styles.checklistItem}>
-              <View style={styles.uncheckedBox} />
-              <Text style={styles.checklistText}>Record video introduction</Text>
-            </View>
-
-            <View style={styles.checklistItem}>
-              <View style={styles.checkedBox}>
-                <Text style={styles.checkmark}>✓</Text>
+          {/* Profile Strength Gauge Section */}
+          <View style={styles.strengthSection}>
+            <View style={styles.gaugeContainer}>
+              <View style={styles.gaugeOuter}>
+                <View style={styles.gaugeInner}>
+                  <Text style={styles.gaugePercentage}>{userData?.profile_completion_percentage}%</Text>
+                </View>
               </View>
-              <Text style={[styles.checklistText, styles.completedText]}>Add personal information</Text>
             </View>
 
-            <View style={styles.checklistItem}>
-              <View style={styles.uncheckedBox} />
-              <Text style={styles.checklistText}>Add professional bio</Text>
+            <Text style={styles.strengthLabel}>Profile</Text>
+            <Text style={styles.strengthLabel}>Strength</Text>
+
+            <Text style={styles.strengthTitle}>Profile Strength</Text>
+
+            <Text style={styles.strengthDescription}>
+              Add more details to boost visibility
+            </Text>
+
+            <TouchableOpacity style={styles.completeProfileButton}>
+              <Text style={styles.completeProfileButtonText}>Complete Profile</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Video Introduction Section */}
+          <View style={styles.videoSection}>
+            <View style={styles.videoHeader}>
+              <View style={styles.videoHeaderIcon}>
+                <Video fill={'#165DFC'} color={'white'} />
+              </View>
+              <Text style={styles.videoHeaderTitle}>Video Introduction</Text>
             </View>
 
-            <View style={styles.checklistItem}>
-              <View style={styles.uncheckedBox} />
-              <Text style={styles.checklistText}>Add social links</Text>
+            <TouchableOpacity style={styles.uploadVideoButton}>
+              <HardDriveUpload fill={'#165DFC'} color={'#165DFC'} />
+              <Text style={styles.uploadVideoText}>Upload Video</Text>
+            </TouchableOpacity>
+
+            <View style={styles.videoUploadBox}>
+              <Text style={styles.videoUploadIcon}>📹</Text>
+              <Text style={styles.noVideoText}>No video uploaded yet</Text>
+              <Text style={styles.uploadVideoDescription}>Upload a video introduction</Text>
             </View>
 
-            <View style={styles.checklistItem}>
-              <View style={styles.uncheckedBox} />
-              <Text style={styles.checklistText}>Add work experience</Text>
+            <View style={styles.videoStatusContainer}>
+              <Text style={styles.videoStatusTitle}>Video Status</Text>
+              <View style={styles.statusBadge}>
+                <View style={styles.statusDot} />
+                <Text style={styles.statusText}>Not uploaded</Text>
+              </View>
             </View>
 
-            <View style={styles.checklistItem}>
-              <View style={styles.uncheckedBox} />
-              <Text style={styles.checklistText}>Add skills & technologies</Text>
-            </View>
-
-            <View style={styles.checklistItem}>
-              <View style={styles.uncheckedBox} />
-              <Text style={styles.checklistText}>Upload resume</Text>
+            <View style={styles.videoInfoBox}>
+              <Info fill={'#165DFC'} color={'white'} />
+              <Text style={styles.videoInfoText}>
+                Upload a video introduction to showcase your personality to employers.
+              </Text>
             </View>
           </View>
-        </View>
 
-      </ScrollView>
+          {/* Personal Information Section */}
+          <View style={styles.personalInfoSection}>
+            <View style={styles.personalInfoHeader}>
+              <View style={styles.personalInfoIcon}>
+                <UserRound fill={'#165DFC'} color={'white'} />
+              </View>
+              <Text style={styles.personalInfoTitle}>Personal Information</Text>
+            </View>
+
+            <TouchableOpacity style={styles.editButton}>
+              <SquarePen color={'#165DFC'} size={20} />
+              <Text style={styles.editButtonText}>Edit</Text>
+            </TouchableOpacity>
+
+            <View style={styles.infoField}>
+              <Text style={styles.fieldLabel}>Full Name</Text>
+              <Text style={styles.fieldValue}>{userData?.name || 'Not provided'}</Text>
+            </View>
+
+            <View style={styles.infoField}>
+              <Text style={styles.fieldLabel}>Email</Text>
+              <Text style={styles.fieldValue}>{userData?.email || 'Not provided'}</Text>
+            </View>
+
+            <View style={styles.infoField}>
+              <Text style={styles.fieldLabel}>Phone Number</Text>
+              <Text style={styles.fieldValue}>{userData?.phone || 'Not provided'}</Text>
+            </View>
+
+            <View style={styles.infoField}>
+              <Text style={styles.fieldLabel}>Location</Text>
+              <Text style={styles.fieldValue}>{userData?.location || 'Not provided'}</Text>
+            </View>
+          </View>
+
+          {/* About Me Section */}
+          <View style={styles.aboutMeSection}>
+            <View style={styles.aboutMeHeader}>
+              <View style={styles.aboutMeIcon}>
+                <FileText fill={'#9810FA'} color={'white'} />
+              </View>
+              <Text style={styles.aboutMeTitle}>About Me</Text>
+            </View>
+
+            <TouchableOpacity style={styles.aboutEditButton}>
+              <SquarePen color={'#9810FA'} size={20} />
+              <Text style={styles.editButtonText}>Edit</Text>
+            </TouchableOpacity>
+
+            <View style={styles.bioBox}>
+              <UserRoundPen fill={'#D1D5DC'} color={'white'} size={45} />
+              <Text style={styles.noBioText}>No bio added yet</Text>
+              <Text style={styles.bioDescription}>
+                Add a professional bio to help employers understand your background and expertise
+              </Text>
+            </View>
+
+            <View style={styles.proTipBox}>
+              <Lightbulb fill={'#FBBF24'} color={'white'} size={20} />
+              <Text style={styles.proTipText}>
+                A good bio includes your experience, skills, and career goals
+              </Text>
+            </View>
+          </View>
+
+          {/* Social Links Section */}
+          <View style={styles.socialLinksSection}>
+            <View style={styles.socialLinksHeader}>
+              <View style={styles.socialLinksIcon}>
+                <Link color={'#00A73F'} size={20} />
+              </View>
+              <Text style={styles.socialLinksTitle}>Social Links</Text>
+            </View>
+
+            <TouchableOpacity style={styles.aboutEditButton}>
+              <SquarePen color={'#00A63E'} size={20} />
+              <Text style={styles.editButtonText}>Edit</Text>
+            </TouchableOpacity>
+
+            <View style={styles.socialLinkItem}>
+              <View style={styles.linkedinIconBox}>
+                <Text style={styles.linkedinIcon}>in</Text>
+              </View>
+              <View style={styles.socialLinkContent}>
+                <Text style={styles.socialLinkLabel}>LinkedIn Profile</Text>
+                <Text style={styles.socialLinkValue}>Not provided</Text>
+              </View>
+            </View>
+
+            <View style={styles.socialLinkItem}>
+              <View style={styles.websiteIconBox}>
+                <Globe fill={"#fff"} color={'#00A63E'} />
+              </View>
+              <View style={styles.socialLinkContent}>
+                <Text style={styles.socialLinkLabel}>Personal Website</Text>
+                <Text style={styles.socialLinkValue}>Not provided</Text>
+              </View>
+            </View>
+
+            <View style={styles.socialProTipBox}>
+              <Text style={styles.socialProTipLabel}><Lightbulb fill={'#FBBF24'} color={'white'} size={20} /> Pro Tip:</Text>
+              <Text style={styles.socialProTipText}>
+                Complete your social links
+              </Text>
+              <Text style={styles.socialProTipDescription}>
+                Adding your LinkedIn and portfolio links increases your profile strength and helps employers get a complete picture of your professional presence.
+              </Text>
+            </View>
+          </View>
+
+          {/* Skills Section */}
+          <View style={styles.skillsSection}>
+            <View style={styles.skillsHeader}>
+              <Text style={styles.skillsTitle}>Skills</Text>
+              <TouchableOpacity style={styles.addSkillButton}>
+                <Text style={styles.addSkillIcon}>+</Text>
+                <Text style={styles.addSkillText}>Add Skill</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.emptySkillsBox}>
+              <CodeXml color={'#D1D5DC'} size={40} />
+              <Text style={styles.emptySkillsText}>
+                No skills added yet. Add your technical skills to showcase your expertise.
+              </Text>
+            </View>
+          </View>
+
+          {/* Work Experience Section */}
+          <View style={styles.workExperienceSection}>
+            <View style={styles.experienceHeader}>
+              <View style={styles.experienceIconBox}>
+                <BriefcaseBusiness fill={'#F54800'} color={'#FFECD4'} size={20} />
+              </View>
+              <Text style={styles.experienceTitle}>Work Experience</Text>
+            </View>
+
+            <TouchableOpacity style={styles.addExperienceButton}>
+              <Text style={styles.addExperienceIcon}>+</Text>
+              <Text style={styles.addExperienceText}>Add Experience</Text>
+            </TouchableOpacity>
+
+            <View style={styles.emptyExperienceBox}>
+              <BriefcaseBusiness color={'#D1D5DC'} size={40} />
+              <Text style={styles.emptyExperienceText}>
+                No work experience added yet. Add your professional experience to showcase your career journey.
+              </Text>
+            </View>
+          </View>
+
+          {/* Education Section */}
+          <View style={styles.educationSection}>
+            <View style={styles.educationHeader}>
+              <View style={styles.educationIconBox}>
+                <GraduationCap color={'#165DFC'} size={20} />
+              </View>
+              <Text style={styles.educationTitle}>Education</Text>
+              <TouchableOpacity style={styles.addEducationButton}>
+                <Text style={styles.addEducationIcon}>+</Text>
+                <Text style={styles.addEducationText}>Add</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.emptyEducationBox}>
+              <GraduationCap color={'#D1D5DC'} size={40} />
+              <Text style={styles.noEducationText}>No education added yet</Text>
+              <TouchableOpacity style={styles.addFirstEducationButton}>
+                <Text style={styles.addFirstEducationIcon}>+</Text>
+                <Text style={styles.addFirstEducationText}>Add Your First Education</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Resumes Section */}
+          <View style={styles.resumesSection}>
+            <View style={styles.resumesHeader}>
+              <View style={styles.resumesIconBox}>
+                <FileText color={'#165DFC'} size={20} />
+              </View>
+              <Text style={styles.resumesTitle}>Resumes</Text>
+              <TouchableOpacity style={styles.addResumeButton}>
+                <Text style={styles.addResumeIcon}>+</Text>
+                <Text style={styles.addResumeText}>Add</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.emptyResumeBox}>
+              <FileText color={'#D1D5DC'} size={40} />
+              <Text style={styles.noResumeText}>No resumes uploaded yet</Text>
+              <Text style={styles.resumeDescription}>
+                Upload your resume so employers can review your profile
+              </Text>
+              <TouchableOpacity style={styles.uploadResumeButton}>
+                <Upload color={'#165DFC'} size={20} />
+                <Text style={styles.uploadResumeText}>Upload Resume</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Course Progress Section */}
+          <View style={styles.courseProgressSection}>
+            <View style={styles.courseProgressHeader}>
+              <View style={styles.courseProgressIconBox}>
+                <GraduationCap color={'#165DFC'} size={20} />
+              </View>
+              <Text style={styles.courseProgressTitle}>Course Progress</Text>
+            </View>
+
+            <View style={styles.emptyCourseBox}>
+              <BookText color={'#D1D5DC'} size={40} />
+              <Text style={styles.noCourseText}>No courses enrolled yet</Text>
+              <Text style={styles.courseDescription}>
+                Enroll in courses to boost your skills and career prospects. Complete courses to unlock job opportunities!
+              </Text>
+              <TouchableOpacity style={styles.browseCourseButton}>
+                <Text style={styles.browseCourseButtonText}>Browse Courses</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.viewRecommendationsButton}>
+                <Text style={styles.viewRecommendationsButtonText}>View Recommendations</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Password & Security Section */}
+          <View style={styles.passwordSecuritySection}>
+            <View style={styles.passwordSecurityHeader}>
+              <View style={styles.passwordSecurityIconBox}>
+                <Shield color={'#165DFC'} size={20} />
+              </View>
+              <Text style={styles.passwordSecurityTitle}>Password & Security</Text>
+            </View>
+
+            <View style={styles.securityInfoBox}>
+              <View style={styles.securityInfoIconBox}>
+                <Info color={'#165DFC'} size={20} />
+              </View>
+              <View style={styles.securityInfoContent}>
+                <Text style={styles.securityInfoTitle}>You're signed in with Google</Text>
+                <Text style={styles.securityInfoText}>
+                  Your account uses Google authentication. To change your password, please visit your{' '}
+                  <Text style={styles.googleAccountLink}>Google Account settings</Text>.
+                </Text>
+              </View>
+            </View>
+
+            <Text style={styles.securityTipsHeading}>Security Tips:</Text>
+            <View style={styles.securityTipsContainer}>
+              <View style={styles.tipItem}>
+                <Text style={styles.tipBullet}>•</Text>
+                <Text style={styles.tipText}>
+                  Enable two-factor authentication on your Google account
+                </Text>
+              </View>
+              <View style={styles.tipItem}>
+                <Text style={styles.tipBullet}>•</Text>
+                <Text style={styles.tipText}>
+                  Regularly review connected apps and devices
+                </Text>
+              </View>
+              <View style={styles.tipItem}>
+                <Text style={styles.tipBullet}>•</Text>
+                <Text style={styles.tipText}>
+                  Use a strong, unique password for your Google account
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Complete Your Profile Section */}
+          <View style={styles.completeProfileSection}>
+            <Text style={styles.completeProfileHeading}>Complete Your Profile</Text>
+
+            <View style={styles.checklistContainer}>
+              <View style={styles.checklistItem}>
+                <View style={styles.uncheckedBox} />
+                <Text style={styles.checklistText}>Add profile photo</Text>
+              </View>
+
+              <View style={styles.checklistItem}>
+                <View style={styles.uncheckedBox} />
+                <Text style={styles.checklistText}>Record video introduction</Text>
+              </View>
+
+              <View style={styles.checklistItem}>
+                <View style={styles.checkedBox}>
+                  <Text style={styles.checkmark}>✓</Text>
+                </View>
+                <Text style={[styles.checklistText, styles.completedText]}>Add personal information</Text>
+              </View>
+
+              <View style={styles.checklistItem}>
+                <View style={styles.uncheckedBox} />
+                <Text style={styles.checklistText}>Add professional bio</Text>
+              </View>
+
+              <View style={styles.checklistItem}>
+                <View style={styles.uncheckedBox} />
+                <Text style={styles.checklistText}>Add social links</Text>
+              </View>
+
+              <View style={styles.checklistItem}>
+                <View style={styles.uncheckedBox} />
+                <Text style={styles.checklistText}>Add work experience</Text>
+              </View>
+
+              <View style={styles.checklistItem}>
+                <View style={styles.uncheckedBox} />
+                <Text style={styles.checklistText}>Add skills & technologies</Text>
+              </View>
+
+              <View style={styles.checklistItem}>
+                <View style={styles.uncheckedBox} />
+                <Text style={styles.checklistText}>Upload resume</Text>
+              </View>
+            </View>
+          </View>
+
+        </ScrollView>)}
     </SafeAreaView>
   );
 }
@@ -494,6 +506,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F3F4F6',
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8f8f8',
+    paddingHorizontal: 16,
+    paddingVertical: 20,
   },
   header: {
     flexDirection: 'row',

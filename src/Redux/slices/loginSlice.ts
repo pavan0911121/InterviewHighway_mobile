@@ -211,6 +211,8 @@ const loginSlice = createSlice({
         console.log(action.payload,"userIdttyyytytyytyt");
         
         if (userId) {
+          console.log(userId,"userIdfrom slice");
+          
           AsyncStore.storeData(AsyncStore.Keys.IS_VERIFIED, JSON.stringify(isVerified));
           AsyncStore.storeData(AsyncStore.Keys.USER_ID, JSON.stringify(userId));
         }

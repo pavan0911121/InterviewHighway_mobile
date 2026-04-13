@@ -55,6 +55,8 @@ const profileSlice = createSlice({
             .addCase(getProfileData.fulfilled, (state, action) => {
                 state.isLoading = false;
                 const data = action.payload;
+                console.log(data,"datatafromslice");
+                
                 state.data = data; // Assuming the API returns an array of courses
                 state.error = null;
             })
