@@ -25,10 +25,14 @@ export default function ProfileTabScreen({ navigation }: Props) {
     try {
       // Fetch user data from async storage
 
-      const userId = await AsyncStore.getJsonData(AsyncStore.Keys.USER_ID);
+      const userLoggedInData = await AsyncStore.getData(AsyncStore?.Keys?.USER_DATA);
+      if (userLoggedInData) {
+        const parsedUserData = JSON.parse(userLoggedInData);
+        const userId = parsedUserData?.id || null;
+        const response = await dispatch(getProfileData(userId) as any);
+      }
 
       // Dispatch profile action if needed
-      const response = await dispatch(getProfileData(userId) as any);
     } catch (error) {
       console.log('Error fetching profile data:', error);
     }
@@ -255,7 +259,7 @@ export default function ProfileTabScreen({ navigation }: Props) {
 
           <View style={styles.socialLinkItem}>
             <View style={styles.websiteIconBox}>
-               <Globe fill={"#fff"} color={'#00A63E'}/>
+              <Globe fill={"#fff"} color={'#00A63E'} />
             </View>
             <View style={styles.socialLinkContent}>
               <Text style={styles.socialLinkLabel}>Personal Website</Text>
@@ -285,7 +289,7 @@ export default function ProfileTabScreen({ navigation }: Props) {
           </View>
 
           <View style={styles.emptySkillsBox}>
-          <CodeXml color={'#D1D5DC'} size={40} />
+            <CodeXml color={'#D1D5DC'} size={40} />
             <Text style={styles.emptySkillsText}>
               No skills added yet. Add your technical skills to showcase your expertise.
             </Text>
@@ -296,7 +300,7 @@ export default function ProfileTabScreen({ navigation }: Props) {
         <View style={styles.workExperienceSection}>
           <View style={styles.experienceHeader}>
             <View style={styles.experienceIconBox}>
-            <BriefcaseBusiness fill={'#F54800'}  color={'#FFECD4'} size={20} />
+              <BriefcaseBusiness fill={'#F54800'} color={'#FFECD4'} size={20} />
             </View>
             <Text style={styles.experienceTitle}>Work Experience</Text>
           </View>
@@ -318,7 +322,7 @@ export default function ProfileTabScreen({ navigation }: Props) {
         <View style={styles.educationSection}>
           <View style={styles.educationHeader}>
             <View style={styles.educationIconBox}>
-            <GraduationCap color={'#165DFC'} size={20} />
+              <GraduationCap color={'#165DFC'} size={20} />
             </View>
             <Text style={styles.educationTitle}>Education</Text>
             <TouchableOpacity style={styles.addEducationButton}>
@@ -357,7 +361,7 @@ export default function ProfileTabScreen({ navigation }: Props) {
               Upload your resume so employers can review your profile
             </Text>
             <TouchableOpacity style={styles.uploadResumeButton}>
-                <Upload color={'#165DFC'} size={20} />
+              <Upload color={'#165DFC'} size={20} />
               <Text style={styles.uploadResumeText}>Upload Resume</Text>
             </TouchableOpacity>
           </View>
@@ -1233,7 +1237,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 8,
     marginBottom: 16,
-      backgroundColor: '#FFECD4',
+    backgroundColor: '#FFECD4',
     justifyContent: 'center',
     width: 140,
     borderRadius: 8,

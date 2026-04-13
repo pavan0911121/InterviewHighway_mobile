@@ -1,36 +1,66 @@
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, TextInput, FlatList } from 'react-native'
-import React, { useState } from 'react'
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, TextInput, FlatList, ActivityIndicator } from 'react-native'
+import React, { useEffect, useState, useMemo } from 'react'
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { DrawerNavigationProp } from '@react-navigation/drawer'
+import { useDispatch, useSelector } from 'react-redux'
+import * as AsyncStore from "../../../AsyncStore";
+import { getJobPostingStats } from '../../../Redux/slices/jobPostings'
+import { Briefcase, CheckCircle, CircleX, Clock, Currency, DollarSign, EllipsisVertical, Eye, FileText, MapPin, PauseCircle, Plus, Search, Users } from 'lucide-react-native'
+
+
+
 
 const JobsScreen = () => {
+  const [userId, setUserId] = useState<string | null>(null);
   const navigation = useNavigation()
-  const [jobs] = useState({
-    total: 1,
-    active: 0,
-    draft: 0,
-    paused: 0,
-    closed: 1,
-  })
-  const [searchQuery, setSearchQuery] = useState('')
+  const dispatch = useDispatch();
 
-  const [jobListings] = useState([
-    {
-      id: '1',
-      title: 'aws engineer',
-      status: 'Closed',
-      description: 'Job saved as draft, visible in jobs list.Job saved as draft, visible in jobs list.Job saved as draft,...',
-      location: 'hyderabad',
-      type: 'Internship',
-      level: 'Entry',
-      salary: 'INR 200,000 - 200,000',
-      applications: 0,
-      views: 0,
-      postedTime: '1 months ago',
-    },
-  ])
+  useEffect(() => {
+    LocalStorageaData();
+  }, [])
+
+  //get user data from async storage and set it to state
+  const LocalStorageaData = async () => {
+    try {
+      const userLoggedInData = await AsyncStore.getData(AsyncStore?.Keys?.USER_DATA);
+      if (userLoggedInData) {
+        const parsedUserData = JSON.parse(userLoggedInData);
+        const userId = parsedUserData?.id || null;
+        const response = await dispatch(getJobPostingStats(userId) as any);
+
+      }
+    } catch (error) {
+      console.log("Error fetching user data from AsyncStorage:", error);
+    }
+  }
+  const selector = useSelector((state: any) => state.jobPostings);
+  const dashboardSelector = useSelector((state: any) => state.employerDashboard);
+  const selectorData = selector?.data?.jobs;
+  const isLoading = selector?.loading;
+  console.log("Selector Data:", selectorData);
+
+  // Calculate job stats from selectorData using useMemo
+  const jobStats = useMemo(() => {
+    if (!selectorData || !Array.isArray(selectorData)) {
+      return {
+        totalJobs: 0,
+        activeJobs: 0,
+        draftJobs: 0,
+        pausedJobs: 0,
+        closedJobs: 0,
+      };
+    }
+
+    return {
+      totalJobs: selectorData.length,
+      activeJobs: selectorData.filter((job: any) => job.status === 'active').length,
+      draftJobs: selectorData.filter((job: any) => job.status === 'draft').length,
+      pausedJobs: selectorData.filter((job: any) => job.status === 'paused').length,
+      closedJobs: selectorData.filter((job: any) => job.status === 'closed').length,
+    };
+  }, [selectorData]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -44,177 +74,179 @@ const JobsScreen = () => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Header Section */}
-        <View style={styles.headerContainer}>
-          <Text style={styles.title}>Job Postings</Text>
-          <Text style={styles.subtitle}>Manage your job listings and applications</Text>
+      {isLoading ? (
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color="#165DFC" />
         </View>
-
-        {/* Create Job Button */}
-        <TouchableOpacity style={styles.createJobButton}>
-          <MaterialCommunityIcons name="plus" size={24} color="#fff" />
-          <Text style={styles.createJobButtonText}>Create Job</Text>
-        </TouchableOpacity>
-
-        {/* Stats Cards */}
-        <View style={styles.statsContainer}>
-          {/* Total Jobs Card */}
-          <View style={[styles.card, styles.totalJobsCard]}>
-            <View style={styles.cardContent}>
-              <Text style={styles.cardLabel}>Total Jobs</Text>
-              <Text style={styles.cardNumber}>{jobs.total}</Text>
-            </View>
-            <MaterialCommunityIcons
-              name="briefcase-multiple"
-              size={40}
-              color="#165DFC"
-              style={styles.cardIcon}
-            />
+      ) : (
+        <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Header Section */}
+          <View style={styles.headerContainer}>
+            <Text style={styles.title}>Job Postings</Text>
+            <Text style={styles.subtitle}>Manage your job listings and applications</Text>
           </View>
 
-          {/* Active Card */}
-          <View style={[styles.card, styles.activeCard]}>
-            <View style={styles.cardContent}>
-              <Text style={styles.cardLabel}>Active</Text>
-              <Text style={[styles.cardNumber, styles.activeNumber]}>{jobs.active}</Text>
-            </View>
-            <MaterialCommunityIcons
-              name="check-circle"
-              size={40}
-              color="#00C853"
-              style={styles.cardIcon}
-            />
-          </View>
+          {/* Create Job Button */}
+          <TouchableOpacity style={styles.createJobButton}>
+            <Plus color={'#fff'} />
+            <Text style={styles.createJobButtonText}>Create Job</Text>
+          </TouchableOpacity>
 
-          {/* Draft Card */}
-          <View style={[styles.card, styles.draftCard]}>
-            <View style={styles.cardContent}>
-              <Text style={styles.cardLabel}>Draft</Text>
-              <Text style={styles.cardNumber}>{jobs.draft}</Text>
-            </View>
-            <MaterialCommunityIcons
-              name="file-document-outline"
-              size={40}
-              color="#165DFC"
-              style={styles.cardIcon}
-            />
-          </View>
-
-          {/* Paused Card */}
-          <View style={[styles.card, styles.pausedCard]}>
-            <View style={styles.cardContent}>
-              <Text style={styles.cardLabel}>Paused</Text>
-              <Text style={[styles.cardNumber, styles.pausedNumber]}>{jobs.paused}</Text>
-            </View>
-            <MaterialCommunityIcons
-              name="pause-circle-outline"
-              size={40}
-              color="#FF9500"
-              style={styles.cardIcon}
-            />
-          </View>
-
-          {/* Closed Card */}
-          <View style={[styles.card, styles.closedCard]}>
-            <View style={styles.cardContent}>
-              <Text style={styles.cardLabel}>Closed</Text>
-              <Text style={[styles.cardNumber, styles.closedNumber]}>{jobs.closed}</Text>
-            </View>
-            <MaterialCommunityIcons
-              name="close-circle-outline"
-              size={40}
-              color="#FF3B30"
-              style={styles.cardIcon}
-            />
-          </View>
-        </View>
-
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <MaterialCommunityIcons
-            name="magnify"
-            size={20}
-            color="#999"
-            style={styles.searchIcon}
-          />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search jobs by title, location, or description"
-            placeholderTextColor="#999"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-        </View>
-
-        {/* Job Listings */}
-        <View style={styles.jobListingsContainer}>
-          {jobListings.map((job) => (
-            <View key={job.id} style={styles.jobCard}>
-              {/* Header with Title and Menu */}
-              <View style={styles.jobHeaderRow}>
-                <Text style={styles.jobTitle}>{job.title}</Text>
-                <TouchableOpacity>
-                  <MaterialCommunityIcons name="dots-vertical" size={24} color="#666" />
-                </TouchableOpacity>
+          {/* Stats Cards */}
+          <View style={styles.statsContainer}>
+            {/* Total Jobs Card */}
+            <View style={[styles.card, styles.totalJobsCard]}>
+              <View style={styles.cardContent}>
+                <Text style={styles.cardLabel}>Total Jobs</Text>
+                <Text style={styles.cardNumber}>{jobStats.totalJobs}</Text>
               </View>
+              <Briefcase color={'#005FFF'} />
+            </View>
 
-              {/* Status Badge */}
-              <View style={styles.statusBadgeContainer}>
-                <MaterialCommunityIcons name="close-circle" size={16} color="#FF3B30" />
-                <Text style={styles.statusBadgeText}>{job.status}</Text>
-              </View>
-
-              {/* Description */}
-              <Text style={styles.jobDescription} numberOfLines={2}>
-                {job.description}
-              </Text>
-
-              {/* Location */}
-              <View style={styles.jobInfoRow}>
-                <MaterialCommunityIcons name="map-marker" size={18} color="#666" />
-                <Text style={styles.jobInfoText}>{job.location}</Text>
-              </View>
-
-              {/* Job Type */}
-              <View style={styles.jobInfoRow}>
-                <MaterialCommunityIcons name="building-outline" size={18} color="#666" />
-                <Text style={styles.jobInfoText}>
-                  {job.type} • {job.level}
+            {/* Active Card */}
+            <View style={[styles.card, styles.activeCard]}>
+              <View style={styles.cardContent}>
+                <Text style={styles.cardLabel}>Active</Text>
+                <Text style={[styles.cardNumber, styles.activeNumber]}>
+                  {jobStats.activeJobs}
                 </Text>
               </View>
+              <CheckCircle color={'#00C853'} />
 
-              {/* Salary */}
-              <View style={styles.jobInfoRow}>
-                <MaterialCommunityIcons name="currency-inr" size={18} color="#666" />
-                <Text style={styles.jobInfoText}>{job.salary}</Text>
-              </View>
-
-              {/* Stats Row */}
-              <View style={styles.jobStatsRow}>
-                <View style={styles.statItem}>
-                  <MaterialCommunityIcons name="account-multiple" size={18} color="#666" />
-                  <Text style={styles.statText}>{job.applications}</Text>
-                </View>
-                <View style={styles.statItem}>
-                  <MaterialCommunityIcons name="eye" size={18} color="#666" />
-                  <Text style={styles.statText}>{job.views}</Text>
-                </View>
-                <View style={styles.statItem}>
-                  <MaterialCommunityIcons name="clock-outline" size={18} color="#666" />
-                  <Text style={styles.statText}>{job.postedTime}</Text>
-                </View>
-              </View>
-
-              {/* View Applications Button */}
-              <TouchableOpacity style={styles.viewApplicationsButton}>
-                <MaterialCommunityIcons name="account-multiple" size={20} color="#165DFC" />
-                <Text style={styles.viewApplicationsButtonText}>View Applications</Text>
-              </TouchableOpacity>
             </View>
-          ))}
-        </View>
-      </ScrollView>
+
+            {/* Draft Card */}
+            <View style={[styles.card, styles.draftCard]}>
+              <View style={styles.cardContent}>
+                <Text style={styles.cardLabel}>Draft</Text>
+                <Text style={styles.cardNumber}>
+                  {jobStats.draftJobs}
+                </Text>
+              </View>
+              <FileText color={'#475567'} />
+            </View>
+
+            {/* Paused Card */}
+            <View style={[styles.card, styles.pausedCard]}>
+              <View style={styles.cardContent}>
+                <Text style={styles.cardLabel}>Paused</Text>
+                <Text style={[styles.cardNumber, styles.pausedNumber]}>
+                  {jobStats.pausedJobs}
+                </Text>
+              </View>
+              <PauseCircle color={'#FF9500'} />
+            </View>
+
+            {/* Closed Card */}
+            <View style={[styles.card, styles.closedCard]}>
+              <View style={styles.cardContent}>
+                <Text style={styles.cardLabel}>Closed</Text>
+                <Text style={[styles.cardNumber, styles.closedNumber]}>
+                  {jobStats.closedJobs}
+                </Text>
+              </View>
+              <CircleX color={'#FF3B30'} />
+            </View>
+          </View>
+
+          {/* Search Bar */}
+          <View style={styles.searchContainer}>
+            <Search color={'#999'} style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search jobs by title, location, or description"
+              placeholderTextColor="#999"
+            />
+          </View>
+
+          {/* Job Listings */}
+          <View style={styles.jobListingsContainer}>
+            {selectorData && selectorData.length > 0 ? (
+              selectorData.map((job: any) => (
+                <View key={job.id} style={styles.jobCard}>
+                  {/* Header with Title and Menu */}
+                  <View style={styles.jobHeaderRow}>
+                    <Text style={styles.jobTitle}>{job.title}</Text>
+                    <TouchableOpacity>
+                      <EllipsisVertical color={'black'} />
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Status Badge */}
+                  <View style={styles.statusBadgeContainer}>
+                    {job.status === 'closed' && <CircleX color={'#FF3B30'} size={16} />}
+                    {job.status === 'paused' && <PauseCircle color={'#FF9500'} size={16} />}
+                    {job.status === 'draft' && <FileText color={'#475567'} size={16} />}
+                    {job.status === 'active' && <CheckCircle color={'#00C853'} size={16} />}
+                    <Text style={[
+                      styles.statusBadgeText,
+                      {
+                        color: job.status === 'closed' ? '#FF3B30' :
+                          job.status === 'paused' ? '#FF9500' :
+                            job.status === 'draft' ? '#475567' :
+                              job.status === 'active' ? '#00C853' : '#165DFC'
+                      }
+                    ]}>
+                      {job.status?.charAt(0).toUpperCase() + job.status?.slice(1)}
+                    </Text>
+                  </View>
+
+                  {/* Description */}
+                  <Text style={styles.jobDescription} numberOfLines={2}>
+                    {job.description}
+                  </Text>
+
+                  {/* Location */}
+                  <View style={styles.jobInfoRow}>
+                    <MapPin color={'#666'} size={18} />
+                    <Text style={styles.jobInfoText}>{job.location}</Text>
+                  </View>
+
+                  {/* Job Type */}
+                  <View style={styles.jobInfoRow}>
+                    <Briefcase color={'#666'} size={18} />
+                    <Text style={styles.jobInfoText}>
+                      {job.employment_type?.replace('_', ' ').charAt(0).toUpperCase() + job.employment_type?.replace('_', ' ').slice(1)} • {job.experience_level?.charAt(0).toUpperCase() + job.experience_level?.slice(1)}
+                    </Text>
+                  </View>
+
+                  {/* Salary */}
+                  {job.salary_min && job.salary_max && (
+                    <View style={styles.jobInfoRow}>
+                      <DollarSign color={'#666'} size={18} />
+                      <Text style={styles.jobInfoText}>{job.currency} {job.salary_min} - {job.salary_max}</Text>
+                    </View>
+                  )}
+
+                  {/* Stats Row */}
+                  <View style={styles.jobStatsRow}>
+                    <View style={styles.statItem}>
+                      <Users color={'#666'} size={18} />
+                      <Text style={styles.statText}>{job.application_count || 0}</Text>
+                    </View>
+                    <View style={styles.statItem}>
+                      <Eye color={'#666'} size={18} />
+                      <Text style={styles.statText}>{job.view_count || 0}</Text>
+                    </View>
+                    <View style={styles.statItem}>
+                      <Clock color={'#666'} size={18} />
+                      <Text style={styles.statText}>{new Date(job.created_at).toLocaleDateString()}</Text>
+                    </View>
+                  </View>
+
+                  {/* View Applications Button */}
+                  <TouchableOpacity style={styles.viewApplicationsButton}>
+                    <Users color={'#165DFC'} size={20} />
+                    <Text style={styles.viewApplicationsButtonText}>View Applications</Text>
+                  </TouchableOpacity>
+                </View>
+              ))
+            ) : (
+              <Text style={{ textAlign: 'center', marginVertical: 20, color: '#666' }}>No job listings found</Text>
+            )}
+          </View>
+        </ScrollView>
+      )}
     </SafeAreaView>
   )
 }
@@ -245,8 +277,15 @@ const styles = StyleSheet.create({
     color: '#363535',
     fontFamily: 'Geist-VariableFont_wght',
   },
-   scrollContent: {
+  loaderContainer: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8f8f8',
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+  },
+  scrollContent: {
     paddingHorizontal: 16,
     paddingVertical: 20,
   },

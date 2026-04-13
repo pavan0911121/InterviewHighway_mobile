@@ -1,25 +1,46 @@
 import { StyleSheet, Text, TouchableOpacity, View, ScrollView } from 'react-native'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { DrawerNavigationProp } from '@react-navigation/drawer'
+import * as AsyncStore from "../../../AsyncStore";
+import { useDispatch, useSelector } from 'react-redux'
+import { getEmployerDashboardStats } from '../../../Redux/slices/employerDashboardSlice'
+import { Briefcase, CircleCheckBig, Clock4, Users } from 'lucide-react-native'
 
 const EmployerDashboardScreen = () => {
   const navigation = useNavigation()
-  // Sample data - replace with API data later
-  const [companyData] = useState({
-    companyName: 'Test Company Ltd',
-    staffId: '1dev',
-    totalJobs: 1,
-    activeJobs: 0,
-    totalApplications: 0,
-    pendingReview: 0,
-    shortlisted: 0,
-    candidatesInPipeline: 0,
-    hired: 0,
-    conversionRate: 0,
-  })
+const dispatch = useDispatch();
+  const selector = useSelector((state: any) => state.employerDashboard);
 
+  useEffect(() => {
+    LocalStorageaData();
+  }, [])
+
+  //get user data from async storage and set it to state
+  const [userId, setUserId] = useState(null);
+  const LocalStorageaData = async () => {
+    try {
+     const userLoggedInData = await AsyncStore.getData(AsyncStore?.Keys?.USER_DATA);
+     if(userLoggedInData){
+      const parsedUserData = JSON.parse(userLoggedInData);
+      const userId = parsedUserData?.id || null;
+      const response = await dispatch(getEmployerDashboardStats(userId) as any);
+        
+     }
+      if (userId) {
+        setUserId(userId);
+      }
+    } catch (error) {
+      console.log("Error fetching user data from AsyncStorage:", error);
+    }
+  }
+  
+  // Sample data - replace with API data later
+  // const [companyData] = useState(selector[0]?.data)
+  const dashboardStats = selector.data;
+  console.log(dashboardStats,"dashboardStats");
+  
   return (
     <SafeAreaView style={styles.container}>
       {/* Sticky Header */}
@@ -37,7 +58,7 @@ const EmployerDashboardScreen = () => {
         {/* Welcome Section */}
         <View style={styles.welcomeSection}>
           <Text style={styles.welcomeTitle}>
-            Welcome back, {companyData.companyName} {companyData.staffId}!
+            Welcome back, {dashboardStats?.companyName}
           </Text>
           <Text style={styles.welcomeSubtitle}>
             Here's an overview of your recruitment activities
@@ -51,11 +72,11 @@ const EmployerDashboardScreen = () => {
             <View style={styles.cardHeader}>
               <Text style={styles.cardLabel}>Total Jobs</Text>
               <View style={[styles.cardIcon, styles.iconBlue]}>
-                <Text style={styles.iconText}>🏢</Text>
+                <Briefcase color={'#005FFF'}/>
               </View>
             </View>
-            <Text style={styles.cardValue}>{companyData.totalJobs}</Text>
-            <Text style={styles.cardSubtext}>{companyData.activeJobs} active</Text>
+            <Text style={styles.cardValue}>{dashboardStats?.totalJobs}</Text>
+            <Text style={styles.cardSubtext}>{dashboardStats?.activeJobs} active</Text>
           </View>
 
           {/* Total Applications Card */}
@@ -63,11 +84,11 @@ const EmployerDashboardScreen = () => {
             <View style={styles.cardHeader}>
               <Text style={styles.cardLabel}>Total Applications</Text>
               <View style={[styles.cardIcon, styles.iconPurple]}>
-                <Text style={styles.iconText}>👥</Text>
+                 <Users color={'#A800FF'}/>
               </View>
             </View>
-            <Text style={styles.cardValue}>{companyData.totalApplications}</Text>
-            <Text style={styles.cardSubtext}>{companyData.pendingReview} pending review</Text>
+            <Text style={styles.cardValue}>{dashboardStats?.totalApplications}</Text>
+            <Text style={styles.cardSubtext}>{dashboardStats?.pendingApplications} pending review</Text>
           </View>
 
           {/* Shortlisted Card */}
@@ -75,10 +96,10 @@ const EmployerDashboardScreen = () => {
             <View style={styles.cardHeader}>
               <Text style={styles.cardLabel}>Shortlisted</Text>
               <View style={[styles.cardIcon, styles.iconYellow]}>
-                <Text style={styles.iconText}>⏱️</Text>
+                 <Clock4 color={'#DC8400'}/>
               </View>
             </View>
-            <Text style={styles.cardValue}>{companyData.shortlisted}</Text>
+            <Text style={styles.cardValue}>{dashboardStats?.shortlistedCount}</Text>
             <Text style={styles.cardSubtext}>Candidates in pipeline</Text>
           </View>
 
@@ -87,18 +108,18 @@ const EmployerDashboardScreen = () => {
             <View style={styles.cardHeader}>
               <Text style={styles.cardLabel}>Hired</Text>
               <View style={[styles.cardIcon, styles.iconGreen]}>
-                <Text style={styles.iconText}>✓</Text>
+                  <CircleCheckBig color={'#00A746'}/>
               </View>
             </View>
-            <Text style={styles.cardValue}>{companyData.hired}</Text>
-            <Text style={styles.cardSubtext}>{companyData.conversionRate}% conversion rate</Text>
+            <Text style={styles.cardValue}>{dashboardStats?.hiredCount}</Text>
+            <Text style={styles.cardSubtext}>{dashboardStats?.conversionRate}% conversion rate</Text>
           </View>
         </View>
 
         {/* No Applications Yet Section */}
         <View style={styles.emptyStateCard}>
           <View style={styles.emptyStateIconContainer}>
-            <Text style={styles.emptyStateIcon}>👥</Text>
+            <Users color={'#98A1AE'}/>
           </View>
           <Text style={styles.emptyStateTitle}>No applications yet</Text>
           <Text style={styles.emptyStateDescription}>

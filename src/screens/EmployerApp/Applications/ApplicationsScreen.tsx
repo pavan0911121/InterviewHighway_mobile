@@ -1,38 +1,88 @@
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, TextInput } from 'react-native'
-import React, { useState } from 'react'
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, TextInput, ActivityIndicator } from 'react-native'
+import React, { useEffect, useState, useMemo } from 'react'
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { DrawerNavigationProp } from '@react-navigation/drawer'
+import { useDispatch, useSelector } from 'react-redux'
+import * as AsyncStore from "../../../AsyncStore";
+import { getApplicationsList } from '../../../Redux/slices/employerApplicationsSlice'
+import { Briefcase, Calendar, ChevronDown, Layers, Search, User, Users } from 'lucide-react-native'
+
 
 const ApplicationsScreen = () => {
   const navigation = useNavigation()
-  const [applications] = useState({
-    total: 0,
-    pending: 0,
-    reviewing: 0,
-    shortlisted: 0,
-    rejected: 0,
-    hired: 0,
-    unviewed: 0,
-    jobs: 0,
-  })
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedJob, setSelectedJob] = useState('All Jobs')
   const [selectedSort, setSelectedSort] = useState('Newest First')
+  const dispatch = useDispatch();
+  useEffect(() => {
+      LocalStorageaData();
+    }, [])
+  
+    //get user data from async storage and set it to state
+    const LocalStorageaData = async () => {
+      try {
+        const userLoggedInData = await AsyncStore.getData(AsyncStore?.Keys?.USER_DATA);
+        if (userLoggedInData) {
+          const parsedUserData = JSON.parse(userLoggedInData);
+          const userId = parsedUserData?.id || null;
+          const response = await dispatch(getApplicationsList(userId) as any);
+  
+        }
+      } catch (error) {
+        console.log("Error fetching user data from AsyncStorage:", error);
+      }
+    }
+  const selector = useSelector((state: any) => state.employerApplications);
+  const selectorData = selector?.data?.applications;
+  const isLoading = selector?.loading;
+  console.log(selectorData, "selector data");
+
+  // Calculate application stats from selectorData using useMemo
+  const applicationStats = useMemo(() => {
+    if (!selectorData || !Array.isArray(selectorData)) {
+      return {
+        total: 0,
+        pending: 0,
+        reviewing: 0,
+        shortlisted: 0,
+        rejected: 0,
+        hired: 0,
+        unviewed: 0,
+        jobs: 0,
+      };
+    }
+
+    return {
+      total: selectorData.length,
+      pending: selectorData.filter((app: any) => app.status === 'pending').length,
+      reviewing: selectorData.filter((app: any) => app.status === 'reviewing').length,
+      shortlisted: selectorData.filter((app: any) => app.status === 'shortlisted').length,
+      rejected: selectorData.filter((app: any) => app.status === 'rejected').length,
+      hired: selectorData.filter((app: any) => app.status === 'hired').length,
+      unviewed: selectorData.filter((app: any) => app.status === 'unviewed').length,
+      jobs: new Set(selectorData.map((app: any) => app.job_id)).size, // Count unique jobs
+    };
+  }, [selectorData]);
 
   return (
     <SafeAreaView style={styles.container}>
       {/* Sticky Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.menuButton}
           onPress={() => (navigation.getParent() as DrawerNavigationProp<any>)?.openDrawer()}
         >
           <Text style={styles.menuIcon}>☰</Text>
         </TouchableOpacity>
       </View>
-      
+
+      {isLoading ? (
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color="#165DFC" />
+        </View>
+      ) : (
       <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Header Section */}
         <View style={styles.headerRow}>
@@ -41,7 +91,7 @@ const ApplicationsScreen = () => {
             <Text style={styles.subtitle}>Manage applications across all job postings</Text>
           </View>
           <TouchableOpacity style={styles.listViewButton}>
-            <MaterialCommunityIcons name="view-list" size={20} color="#000" />
+            <Layers color={'#000000'} size={15}/>
             <Text style={styles.listViewButtonText}>List View</Text>
           </TouchableOpacity>
         </View>
@@ -51,7 +101,7 @@ const ApplicationsScreen = () => {
           {/* Total Card */}
           <View style={[styles.statsCard, styles.totalCard]}>
             <Text style={[styles.statsNumber, styles.totalNumber]}>
-              {applications.total}
+              {applicationStats.total}
             </Text>
             <Text style={styles.statsLabel}>Total</Text>
           </View>
@@ -59,7 +109,7 @@ const ApplicationsScreen = () => {
           {/* Pending Card */}
           <View style={[styles.statsCard, styles.pendingCard]}>
             <Text style={[styles.statsNumber, styles.pendingNumber]}>
-              {applications.pending}
+              {applicationStats.pending}
             </Text>
             <Text style={styles.statsLabel}>Pending</Text>
           </View>
@@ -67,7 +117,7 @@ const ApplicationsScreen = () => {
           {/* Reviewing Card */}
           <View style={[styles.statsCard, styles.reviewingCard]}>
             <Text style={[styles.statsNumber, styles.reviewingNumber]}>
-              {applications.reviewing}
+              {applicationStats.reviewing}
             </Text>
             <Text style={styles.statsLabel}>Reviewing</Text>
           </View>
@@ -75,7 +125,7 @@ const ApplicationsScreen = () => {
           {/* Shortlisted Card */}
           <View style={[styles.statsCard, styles.shortlistedCard]}>
             <Text style={[styles.statsNumber, styles.shortlistedNumber]}>
-              {applications.shortlisted}
+              {applicationStats.shortlisted}
             </Text>
             <Text style={styles.statsLabel}>Shortlisted</Text>
           </View>
@@ -83,7 +133,7 @@ const ApplicationsScreen = () => {
           {/* Rejected Card */}
           <View style={[styles.statsCard, styles.rejectedCard]}>
             <Text style={[styles.statsNumber, styles.rejectedNumber]}>
-              {applications.rejected}
+              {applicationStats.rejected}
             </Text>
             <Text style={styles.statsLabel}>Rejected</Text>
           </View>
@@ -91,7 +141,7 @@ const ApplicationsScreen = () => {
           {/* Hired Card */}
           <View style={[styles.statsCard, styles.hiredCard]}>
             <Text style={[styles.statsNumber, styles.hiredNumber]}>
-              {applications.hired}
+              {applicationStats.hired}
             </Text>
             <Text style={styles.statsLabel}>Hired</Text>
           </View>
@@ -99,7 +149,7 @@ const ApplicationsScreen = () => {
           {/* Unviewed Card */}
           <View style={[styles.statsCard, styles.unviewedCard]}>
             <Text style={[styles.statsNumber, styles.unviewedNumber]}>
-              {applications.unviewed}
+              {applicationStats.unviewed}
             </Text>
             <Text style={styles.statsLabel}>Unviewed</Text>
           </View>
@@ -107,7 +157,7 @@ const ApplicationsScreen = () => {
           {/* Jobs Card */}
           <View style={[styles.statsCard, styles.jobsCard]}>
             <Text style={[styles.statsNumber, styles.jobsNumber]}>
-              {applications.jobs}
+              {applicationStats.jobs}
             </Text>
             <Text style={styles.statsLabel}>Jobs</Text>
           </View>
@@ -115,7 +165,7 @@ const ApplicationsScreen = () => {
 
         {/* Search Bar */}
         <View style={styles.searchContainer}>
-          <MaterialCommunityIcons name="magnify" size={20} color="#999" style={styles.searchIcon} />
+          <Search color={'#999999'} size={16} style={styles.searchIcon}/>
           <TextInput
             style={styles.searchInput}
             placeholder="Search by candidate name"
@@ -129,32 +179,33 @@ const ApplicationsScreen = () => {
         <View style={styles.filterRow}>
           {/* All Jobs Dropdown */}
           <TouchableOpacity style={styles.filterButton}>
-            <MaterialCommunityIcons name="briefcase-outline" size={20} color="#666" />
+            <Briefcase color={'#666'} size={20} />
             <Text style={styles.filterText}>{selectedJob}</Text>
-            <MaterialCommunityIcons name="chevron-down" size={20} color="#999" />
+            <ChevronDown color={'#999'} size={20} />
           </TouchableOpacity>
 
           {/* Sort Dropdown */}
           <TouchableOpacity style={styles.filterButton}>
-            <MaterialCommunityIcons name="calendar-outline" size={20} color="#666" />
+            <Calendar color={'#666'} size={20} />
             <Text style={styles.filterText}>{selectedSort}</Text>
-            <MaterialCommunityIcons name="chevron-down" size={20} color="#999" />
+            <ChevronDown color={'#999'} size={20} />
           </TouchableOpacity>
         </View>
 
         {/* Empty State */}
         <View style={styles.emptyStateContainer}>
-          <MaterialCommunityIcons name="account-multiple" size={80} color="#A9BDCC" />
+          <Users color={'#E0E0E0'} size={48} />
           <Text style={styles.emptyStateTitle}>No applications yet</Text>
           <Text style={styles.emptyStateDescription}>
             Applications will appear here once candidates start applying to your jobs
           </Text>
           <TouchableOpacity style={styles.viewJobsButton}>
-            <MaterialCommunityIcons name="briefcase" size={20} color="#fff" />
+            <Briefcase color={'#fff'} size={20} />
             <Text style={styles.viewJobsButtonText}>View Your Jobs</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
+      )}
     </SafeAreaView>
   )
 }
@@ -184,6 +235,12 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: '#363535',
     fontFamily: 'Geist-VariableFont_wght',
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
   },
   scrollContent: {
     flex: 1,
