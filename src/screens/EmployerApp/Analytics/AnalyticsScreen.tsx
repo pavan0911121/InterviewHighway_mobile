@@ -1,28 +1,42 @@
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView } from 'react-native'
-import React, { useState } from 'react'
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native'
+import React, { useEffect, useState } from 'react'
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { DrawerNavigationProp } from '@react-navigation/drawer'
+import { useDispatch, useSelector } from 'react-redux'
+import { getJobPostingStats } from '../../../Redux/slices/jobPostings'
+import * as AsyncStore from "../../../AsyncStore";
+import { getEmployerAnalytics } from '../../../Redux/slices/employerAnalyticsSlice'
+import { Briefcase, ChartColumn, RefreshCcw, TrendingUp, UserCheck, Users } from 'lucide-react-native'
 
 const AnalyticsScreen = () => {
-  const navigation = useNavigation()
-  const [analytics] = useState({
-    totalJobs: 1,
-    activeJobs: 0,
-    totalApplications: 0,
-    pendingReview: 0,
-    hiredCandidates: 0,
-    shortlisted: 0,
-    conversionRate: 0.0,
-    statusBreakdown: {
-      pending: 0,
-      shortlisted: 0,
-      hired: 0,
-      rejected: 0,
-    },
-  })
   const [selectedPeriod, setSelectedPeriod] = useState('30 Days')
+  const navigation = useNavigation()
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    LocalStorageaData();
+  }, [])
+
+  //get user data from async storage and set it to state
+  const LocalStorageaData = async () => {
+    try {
+      const userLoggedInData = await AsyncStore.getData(AsyncStore?.Keys?.USER_DATA);
+      if (userLoggedInData) {
+        const parsedUserData = JSON.parse(userLoggedInData);
+        const userId = parsedUserData?.id || null;
+        const response = await dispatch(getEmployerAnalytics(userId) as any);
+
+      }
+    } catch (error) {
+      console.log("Error fetching user data from AsyncStorage:", error);
+    }
+  }
+  const selector = useSelector((state: any) => state.employerAnalytics);
+  const isLoading = selector?.loading;
+  const analytics = selector?.data
+  const timelineData = selector?.timelineData
 
   const handleRefresh = () => {
     // Handle refresh logic
@@ -32,205 +46,211 @@ const AnalyticsScreen = () => {
     <SafeAreaView style={styles.container}>
       {/* Sticky Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.menuButton}
           onPress={() => (navigation.getParent() as DrawerNavigationProp<any>)?.openDrawer()}
         >
           <Text style={styles.menuIcon}>☰</Text>
         </TouchableOpacity>
       </View>
-      
-      <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Header Section */}
-        <View style={styles.headerRow}>
-          <View style={styles.headerContent}>
-            <Text style={styles.title}>Analytics</Text>
-            <Text style={styles.titleSecond}>Dashboard</Text>
-            <Text style={styles.subtitle}>Comprehensive insights for Test Company Ltd 1dev</Text>
-          </View>
-          <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
-            <MaterialCommunityIcons name="refresh" size={20} color="#000" />
-            <Text style={styles.refreshButtonText}>Refresh</Text>
-          </TouchableOpacity>
+      {isLoading ? (
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color="#165DFC" />
         </View>
-
-        {/* Metrics Cards */}
-        <View style={styles.metricsContainer}>
-          {/* Total Jobs Card */}
-          <View style={styles.metricCard}>
-            <View style={styles.metricHeader}>
-              <Text style={styles.metricLabel}>Total Jobs</Text>
-              <View style={[styles.metricIcon, styles.blueIcon]}>
-                <MaterialCommunityIcons name="briefcase-outline" size={28} color="#165DFC" />
-              </View>
+      ) : (
+        <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Header Section */}
+          <View style={styles.headerRow}>
+            <View style={styles.headerContent}>
+              <Text style={styles.title}>Analytics</Text>
+              <Text style={styles.titleSecond}>Dashboard</Text>
+              <Text style={styles.subtitle}>Comprehensive insights for Test Company Ltd 1dev</Text>
             </View>
-            <Text style={[styles.metricNumber, styles.blueNumber]}>{analytics.totalJobs}</Text>
-            <Text style={styles.metricSubtitle}>{analytics.activeJobs} active</Text>
-          </View>
-
-          {/* Total Applications Card */}
-          <View style={styles.metricCard}>
-            <View style={styles.metricHeader}>
-              <Text style={styles.metricLabel}>Total Applications</Text>
-              <View style={[styles.metricIcon, styles.purpleIcon]}>
-                <MaterialCommunityIcons name="account-multiple-outline" size={28} color="#9C27B0" />
-              </View>
-            </View>
-            <Text style={[styles.metricNumber, styles.purpleNumber]}>{analytics.totalApplications}</Text>
-            <Text style={styles.metricSubtitle}>{analytics.pendingReview} pending review</Text>
-          </View>
-
-          {/* Hired Candidates Card */}
-          <View style={styles.metricCard}>
-            <View style={styles.metricHeader}>
-              <Text style={styles.metricLabel}>Hired Candidates</Text>
-              <View style={[styles.metricIcon, styles.greenIcon]}>
-                <MaterialCommunityIcons name="account-check-outline" size={28} color="#00C853" />
-              </View>
-            </View>
-            <Text style={[styles.metricNumber, styles.greenNumber]}>{analytics.hiredCandidates}</Text>
-            <Text style={styles.metricSubtitle}>{analytics.shortlisted} shortlisted</Text>
-          </View>
-        </View>
-
-        {/* Conversion Rate Card */}
-        <View style={styles.conversionCard}>
-          <View style={styles.conversionHeader}>
-            <Text style={styles.conversionLabel}>Conversion Rate</Text>
-            <View style={[styles.conversionIcon, styles.orangeIcon]}>
-              <MaterialCommunityIcons name="trending-up" size={28} color="#FF9500" />
-            </View>
-          </View>
-          <Text style={styles.conversionRate}>{analytics.conversionRate}%</Text>
-          <Text style={styles.conversionSubtitle}>Applications to hires</Text>
-        </View>
-
-        {/* Applications Timeline Card */}
-        <View style={styles.timelineCard}>
-          <View style={styles.timelineTitleSection}>
-            <View>
-              <Text style={styles.timelineTitle}>Applications</Text>
-              <Text style={styles.timelineTitleSecond}>Timeline</Text>
-              <Text style={styles.timelineDescription}>Track application trends over time</Text>
-            </View>
-          </View>
-
-          {/* Time Period Selector */}
-          <View style={styles.timePeriodContainer}>
-            <TouchableOpacity
-              style={[
-                styles.timePeriodButton,
-                selectedPeriod === '7 Days' && styles.timePeriodButtonActive,
-              ]}
-              onPress={() => setSelectedPeriod('7 Days')}
-            >
-              <Text
-                style={[
-                  styles.timePeriodText,
-                  selectedPeriod === '7 Days' && styles.timePeriodTextActive,
-                ]}
-              >
-                7 Days
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.timePeriodButton,
-                selectedPeriod === '30 Days' && styles.timePeriodButtonActive,
-              ]}
-              onPress={() => setSelectedPeriod('30 Days')}
-            >
-              <Text
-                style={[
-                  styles.timePeriodText,
-                  selectedPeriod === '30 Days' && styles.timePeriodTextActive,
-                ]}
-              >
-                30 Days
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.timePeriodButton,
-                selectedPeriod === '90 Days' && styles.timePeriodButtonActive,
-              ]}
-              onPress={() => setSelectedPeriod('90 Days')}
-            >
-              <Text
-                style={[
-                  styles.timePeriodText,
-                  selectedPeriod === '90 Days' && styles.timePeriodTextActive,
-                ]}
-              >
-                90 Days
-              </Text>
+            <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
+              <RefreshCcw size={20} color="#000" />
+              <Text style={styles.refreshButtonText}>Refresh</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Chart Placeholder */}
-          <View style={styles.chartPlaceholder}>
-            <MaterialCommunityIcons name="chart-box-outline" size={56} color="#A9BDCC" />
-            <Text style={styles.chartPlaceholderText}>Timeline Chart will appear here</Text>
-            <Text style={styles.chartPlaceholderSubtext}>0 data points loaded</Text>
-          </View>
-        </View>
-
-        {/* Status Summary Card */}
-        <View style={styles.statusSummaryCard}>
-          <Text style={styles.statusSummaryTitle}>Status Summary</Text>
-          <Text style={styles.statusSummarySubtitle}>Current application status breakdown</Text>
-
-          {/* Status Items */}
-          <View style={styles.statusItemsContainer}>
-            {/* Pending */}
-            <View style={styles.statusRow}>
-              <View style={styles.statusDot}>
-                <View style={[styles.statusDotCircle, styles.pendingDot]} />
-                <Text style={styles.statusLabel}>Pending</Text>
+          {/* Metrics Cards */}
+          <View style={styles.metricsContainer}>
+            {/* Total Jobs Card */}
+            <View style={styles.metricCard}>
+              <View style={styles.metricHeader}>
+                <Text style={styles.metricLabel}>Total Jobs</Text>
+                <View style={[styles.metricIcon, styles.blueIcon]}>
+                  <Briefcase size={28} color="#165DFC" />
+                </View>
               </View>
-              <Text style={styles.statusValue}>{analytics.statusBreakdown.pending}</Text>
+              <Text style={[styles.metricNumber, styles.blueNumber]}>{analytics?.totalJobs}</Text>
+              <Text style={styles.metricSubtitle}>{analytics?.activeJobs} active</Text>
             </View>
 
-            {/* Shortlisted */}
-            <View style={styles.statusRow}>
-              <View style={styles.statusDot}>
-                <View style={[styles.statusDotCircle, styles.shortlistedDot]} />
-                <Text style={styles.statusLabel}>Shortlisted</Text>
+            {/* Total Applications Card */}
+            <View style={styles.metricCard}>
+              <View style={styles.metricHeader}>
+                <Text style={styles.metricLabel}>Total Applications</Text>
+                <View style={[styles.metricIcon, styles.purpleIcon]}>
+                  <Users size={28} color="#9C27B0" />
+                </View>
               </View>
-              <Text style={styles.statusValue}>{analytics.statusBreakdown.shortlisted}</Text>
+              <Text style={[styles.metricNumber, styles.purpleNumber]}>{analytics?.totalApplications}</Text>
+              <Text style={styles.metricSubtitle}>{analytics?.pendingApplications} pending review</Text>
             </View>
 
-            {/* Hired */}
-            <View style={styles.statusRow}>
-              <View style={styles.statusDot}>
-                <View style={[styles.statusDotCircle, styles.hiredDot]} />
-                <Text style={styles.statusLabel}>Hired</Text>
+            {/* Hired Candidates Card */}
+            <View style={styles.metricCard}>
+              <View style={styles.metricHeader}>
+                <Text style={styles.metricLabel}>Hired Candidates</Text>
+                <View style={[styles.metricIcon, styles.greenIcon]}>
+                  <UserCheck size={28} color="#00C853" />
+                </View>
               </View>
-              <Text style={styles.statusValue}>{analytics.statusBreakdown.hired}</Text>
-            </View>
-
-            {/* Rejected */}
-            <View style={styles.statusRow}>
-              <View style={styles.statusDot}>
-                <View style={[styles.statusDotCircle, styles.rejectedDot]} />
-                <Text style={styles.statusLabel}>Rejected</Text>
-              </View>
-              <Text style={styles.statusValue}>{analytics.statusBreakdown.rejected}</Text>
+              <Text style={[styles.metricNumber, styles.greenNumber]}>{analytics?.hiredCount}</Text>
+              <Text style={styles.metricSubtitle}>{analytics?.shortlistedCount} shortlisted</Text>
             </View>
           </View>
 
-          {/* Divider */}
-          <View style={styles.statusDivider} />
-
-          {/* Total Applications */}
-          <View style={styles.totalApplicationsRow}>
-            <Text style={styles.totalApplicationsLabel}>Total Applications</Text>
-            <Text style={styles.totalApplicationsValue}>{analytics.totalApplications}</Text>
+          {/* Conversion Rate Card */}
+          <View style={styles.conversionCard}>
+            <View style={styles.conversionHeader}>
+              <Text style={styles.conversionLabel}>Conversion Rate</Text>
+              <View style={[styles.conversionIcon, styles.orangeIcon]}>
+                <TrendingUp size={28} color="#FF9500" />
+              </View>
+            </View>
+            <Text style={styles.conversionRate}>{analytics?.conversionRate}%</Text>
+            <Text style={styles.conversionSubtitle}>Applications to hires</Text>
           </View>
-        </View>
-      </ScrollView>
+
+          {/* Applications Timeline Card */}
+          <View style={styles.timelineCard}>
+            <View style={styles.timelineTitleSection}>
+              <View>
+                <Text style={styles.timelineTitle}>Applications</Text>
+                <Text style={styles.timelineTitleSecond}>Timeline</Text>
+                <Text style={styles.timelineDescription}>Track application trends over time</Text>
+              </View>
+            </View>
+
+            {/* Time Period Selector */}
+            <View style={styles.timePeriodContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.timePeriodButton,
+                  selectedPeriod === '7 Days' && styles.timePeriodButtonActive,
+                ]}
+                onPress={() => setSelectedPeriod('7 Days')}
+              >
+                <Text
+                  style={[
+                    styles.timePeriodText,
+                    selectedPeriod === '7 Days' && styles.timePeriodTextActive,
+                  ]}
+                >
+                  7 Days
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.timePeriodButton,
+                  selectedPeriod === '30 Days' && styles.timePeriodButtonActive,
+                ]}
+                onPress={() => setSelectedPeriod('30 Days')}
+              >
+                <Text
+                  style={[
+                    styles.timePeriodText,
+                    selectedPeriod === '30 Days' && styles.timePeriodTextActive,
+                  ]}
+                >
+                  30 Days
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.timePeriodButton,
+                  selectedPeriod === '90 Days' && styles.timePeriodButtonActive,
+                ]}
+                onPress={() => setSelectedPeriod('90 Days')}
+              >
+                <Text
+                  style={[
+                    styles.timePeriodText,
+                    selectedPeriod === '90 Days' && styles.timePeriodTextActive,
+                  ]}
+                >
+                  90 Days
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Chart Placeholder */}
+            <View style={styles.chartPlaceholder}>
+              <ChartColumn size={56} color="#A9BDCC" />
+              <Text style={styles.chartPlaceholderText}>Timeline Chart will appear here</Text>
+              <Text style={styles.chartPlaceholderSubtext}>{timelineData?.length || 0} data points loaded</Text>
+            </View>
+          </View>
+          {/* Status Summary Card */}
+          <View style={styles.statusSummaryCard}>
+            <Text style={styles.statusSummaryTitle}>Status Summary</Text>
+            <Text style={styles.statusSummarySubtitle}>Current application status breakdown</Text>
+
+            {/* Status Items */}
+            <View style={styles.statusItemsContainer}>
+              {/* Pending */}
+              <View style={styles.statusRow}>
+                <View style={styles.statusDot}>
+                  <View style={[styles.statusDotCircle, styles.pendingDot]} />
+                  <Text style={styles.statusLabel}>Pending</Text>
+                </View>
+                <Text style={styles.statusValue}>{0}</Text>
+              </View>
+
+              {/* Shortlisted */}
+              <View style={styles.statusRow}>
+                <View style={styles.statusDot}>
+                  <View style={[styles.statusDotCircle, styles.shortlistedDot]} />
+                  <Text style={styles.statusLabel}>Shortlisted</Text>
+                </View>
+                <Text style={styles.statusValue}>{0}</Text>
+              </View>
+
+              {/* Hired */}
+              <View style={styles.statusRow}>
+                <View style={styles.statusDot}>
+                  <View style={[styles.statusDotCircle, styles.hiredDot]} />
+                  <Text style={styles.statusLabel}>Hired</Text>
+                </View>
+                <Text style={styles.statusValue}>{0}</Text>
+              </View>
+
+              {/* Rejected */}
+              <View style={styles.statusRow}>
+                <View style={styles.statusDot}>
+                  <View style={[styles.statusDotCircle, styles.rejectedDot]} />
+                  <Text style={styles.statusLabel}>Rejected</Text>
+                </View>
+                <Text style={styles.statusValue}>{0}</Text>
+              </View>
+            </View>
+
+            {/* Divider */}
+            <View style={styles.statusDivider} />
+
+            {/* Total Applications */}
+            <View style={styles.totalApplicationsRow}>
+              <Text style={styles.totalApplicationsLabel}>Total Applications</Text>
+              <Text style={styles.totalApplicationsValue}>{0}</Text>
+            </View>
+          </View>
+
+
+        </ScrollView>)}
+
     </SafeAreaView>
   )
 }
@@ -241,6 +261,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f8f8',
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8f8f8',
+    paddingHorizontal: 16,
+    paddingVertical: 20,
   },
   header: {
     flexDirection: 'row',

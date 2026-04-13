@@ -1,36 +1,72 @@
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { DrawerNavigationProp } from '@react-navigation/drawer'
+import * as AsyncStore from "../../../AsyncStore";
+import { useDispatch, useSelector } from 'react-redux'
+import { getEmployerCredits, getEmployerCreditTiers, getEmployerCreditTransactions } from '../../../Redux/slices/employerCreditsSlice'
+import { Check, CreditCard, DollarSign, Gift, History, IndianRupee, Info, Package, Sparkles, Star, TrendingUp, Zap } from 'lucide-react-native'
 
 const CreditsScreen = () => {
-  const navigation = useNavigation()
-  const [credits] = useState({
-    available: 0,
-    used: 0,
-    purchased: 0,
-    remaining: 0,
-  })
+  const [userId, setUserId] = useState(null);
   const [selectedPlan, setSelectedPlan] = useState('free')
+  const navigation = useNavigation()
+  const dispatch = useDispatch();
+  const selector = useSelector((state: any) => state.employerCredits);
+
+
+  useEffect(() => {
+    LocalStorageaData();
+  }, [])
+
+  //get user data from async storage and set it to state
+  const LocalStorageaData = async () => {
+    try {
+      const userLoggedInData = await AsyncStore.getData(AsyncStore?.Keys?.USER_DATA);
+      if (userLoggedInData) {
+        const parsedUserData = JSON.parse(userLoggedInData);
+        const userId = parsedUserData?.id || null;
+        const response = await dispatch(getEmployerCredits(userId) as any);
+         const tierResponse = await dispatch(getEmployerCreditTiers() as any);
+         const transactionResponse = await dispatch(getEmployerCreditTransactions(userId) as any);
+      }
+      if (userId) {
+        setUserId(userId);
+      }
+    } catch (error) {
+      console.log("Error fetching user data from AsyncStorage:", error);
+    }
+  }
+  const credits = selector?.data?.credits
+  const tiers = selector?.tiers?.tiers
+
+  // Sample data - replace with API data later
+  // const [companyData] = useState(selector[0]?.data)
+  const dashboardStats = selector.data;
+
+  // Extract numeric value from price formatted string (e.g., "₹999" -> "999")
+  const priceFormat = (priceFormatted: string): string => {
+    return priceFormatted?.replace(/[₹,]/g, '') || '0';
+  };
   return (
     <SafeAreaView style={styles.container}>
       {/* Sticky Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.menuButton}
           onPress={() => (navigation.getParent() as DrawerNavigationProp<any>)?.openDrawer()}
         >
           <Text style={styles.menuIcon}>☰</Text>
         </TouchableOpacity>
       </View>
-      
+
       <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Header Section */}
         <View style={styles.headerContainer}>
-          <View style={styles.headerTitleRow}>
-            <MaterialCommunityIcons name="briefcase" size={32} color="#165DFC" />
+          <View style={styles.headerTitleRow}> 
+            <CreditCard color={'#005FFF'} size={30}/>
             <View>
               <Text style={styles.headerTitle}>Credit</Text>
               <Text style={styles.headerTitleSecond}>Management</Text>
@@ -44,17 +80,17 @@ const CreditsScreen = () => {
           {/* Header with icon and badge */}
           <View style={styles.offerHeader}>
             <View style={styles.giftIconContainer}>
-              <MaterialCommunityIcons name="gift" size={28} color="#fff" />
+              <Gift color="#fff" size={20} />
             </View>
             <View style={styles.offerBadge}>
-              <MaterialCommunityIcons name="spark" size={14} color="#fff" />
+              <Sparkles color="#fff" size={20} />
               <Text style={styles.offerBadgeText}>LAUNCH OFFER</Text>
             </View>
           </View>
 
           {/* Offer Title */}
           <View style={styles.offerTitleContainer}>
-            <MaterialCommunityIcons name="spark" size={20} color="#FFA500" />
+            <Zap color="#FFA500" size={20} />
             <View style={styles.offerTitleText}>
               <Text style={styles.offerTitle}>FREE Premium Access</Text>
               <Text style={styles.offerTitleSecond}>Until March 31, 2027!</Text>
@@ -64,11 +100,11 @@ const CreditsScreen = () => {
           {/* Benefits List */}
           <View style={styles.benefitsContainer}>
             <View style={styles.benefitRow}>
-              <MaterialCommunityIcons name="check-circle" size={20} color="#00C853" />
+                <Check color="#00C853" size={20} />
               <Text style={styles.benefitText}>All plans completely FREE until March 31, 2027</Text>
             </View>
             <View style={styles.benefitRow}>
-              <MaterialCommunityIcons name="check-circle" size={20} color="#00C853" />
+              <Check color="#00C853" size={20} />
               <Text style={styles.benefitText}>Unlimited job postings during the free period</Text>
             </View>
           </View>
@@ -76,7 +112,7 @@ const CreditsScreen = () => {
           {/* Info Box */}
           <View style={styles.infoBox}>
             <View style={styles.infoBoxHeader}>
-              <MaterialCommunityIcons name="information-outline" size={20} color="#165DFC" />
+              <Info color="#165DFC" size={20} />
               <Text style={styles.infoBoxTitle}>Starting April 1, 2027:</Text>
             </View>
 
@@ -104,14 +140,14 @@ const CreditsScreen = () => {
         {/* Your Credits Card */}
         <View style={styles.yourCreditsCard}>
           <View style={styles.yourCreditsHeader}>
-            <MaterialCommunityIcons name="package-variant" size={24} color="#165DFC" />
+            <Package color="#165DFC" size={20} />
             <Text style={styles.yourCreditsTitle}>Your Credits</Text>
           </View>
 
           {/* Credits Available */}
           <View style={styles.creditStatCard}>
             <Text style={[styles.creditStatNumber, { color: '#165DFC' }]}>
-              {credits.available}
+              {credits?.credits_available}
             </Text>
             <Text style={styles.creditStatLabel}>Credits Available</Text>
           </View>
@@ -121,331 +157,300 @@ const CreditsScreen = () => {
             {/* Used */}
             <View style={styles.creditStatItem}>
               <View style={styles.creditStatIconContainer}>
-                <MaterialCommunityIcons name="trending-up" size={24} color="#FF9500" />
+               <TrendingUp color="#FF9500" size={20} />
               </View>
               <Text style={styles.creditStatItemLabel}>Used</Text>
-              <Text style={styles.creditStatItemValue}>{credits.used}</Text>
+              <Text style={styles.creditStatItemValue}>{credits?.credits_used}</Text>
             </View>
 
             {/* Purchased */}
             <View style={styles.creditStatItem}>
               <View style={styles.creditStatIconContainer}>
-                <MaterialCommunityIcons name="package" size={24} color="#00C853" />
+                <Package color="#00C853" size={20} />
               </View>
               <Text style={styles.creditStatItemLabel}>Purchased</Text>
-              <Text style={styles.creditStatItemValue}>{credits.purchased}</Text>
+              <Text style={styles.creditStatItemValue}>{credits?.total_credits_purchased}</Text>
             </View>
 
             {/* Remaining */}
             <View style={styles.creditStatItem}>
               <View style={styles.creditStatIconContainer}>
-                <MaterialCommunityIcons name="currency-usd" size={24} color="#165DFC" />
+                <DollarSign color="#165DFC" size={20} />
               </View>
               <Text style={styles.creditStatItemLabel}>Remaining</Text>
-              <Text style={styles.creditStatItemValue}>{credits.remaining}%</Text>
+              <Text style={styles.creditStatItemValue}>
+                {credits?.total_credits_purchased > 0 
+                  ? Math.round((credits?.credits_available / credits?.total_credits_purchased) * 100)
+                  : 0
+                }%
+              </Text>
             </View>
           </View>
         </View>
 
         {/* Choose Your Plan Section */}
-        <View style={styles.planSectionContainer}>
-          <Text style={styles.planSectionTitle}>Choose Your Plan</Text>
-          <Text style={styles.planSectionSubtitle}>
-            Claim your credits now – All plans free during our launch period
-          </Text>
+        {tiers && tiers.length > 0 && (
+          <View style={styles.planSectionContainer}>
+            <Text style={styles.planSectionTitle}>Choose Your Plan</Text>
+            <Text style={styles.planSectionSubtitle}>
+              Claim your credits now – All plans free during our launch period
+            </Text>
 
-          {/* Free Plan Card */}
-          <View style={styles.planCard}>
-            {/* Auto-Assigned Badge */}
-            <View style={styles.planBadgeContainer}>
-              <View style={styles.autoAssignedBadge}>
-                <MaterialCommunityIcons name="star" size={14} color="#fff" />
-                <Text style={styles.autoAssignedBadgeText}>Auto-Assigned</Text>
-              </View>
-            </View>
+            {tiers.map((tier: any, index: number) => {
+              const isFreeTier = tier.tier === 'free';
+              const isStandardTier = tier.tier === 'standard';
+              const isProTier = tier.tier === 'pro';
 
-            {/* Plan Title */}
-            <Text style={styles.planTitle}>Free Plan</Text>
+              const getPlanCardStyle = () => {
+                if (isFreeTier) return styles.planCard;
+                if (isStandardTier) return styles.standardPlanCard;
+                if (isProTier) return styles.proPlanCard;
+                return styles.planCard;
+              };
 
-            {/* Included Badge */}
-            <View style={styles.includedBadgeContainer}>
-              <MaterialCommunityIcons name="gift" size={16} color="#fff" />
-              <Text style={styles.includedBadgeText}>Included</Text>
-            </View>
+              const getBadgeStyle = () => {
+                if (isFreeTier) return styles.autoAssignedBadge;
+                if (isStandardTier) return styles.mostPopularBadge;
+                if (isProTier) return styles.bestValueBadge;
+              };
 
-            {/* Price */}
-            <View style={styles.priceContainer}>
-              <Text style={styles.priceSymbol}>₹</Text>
-              <Text style={styles.priceAmount}>0</Text>
-            </View>
-            <Text style={styles.priceSubtitle}>Auto-assigned on signup</Text>
+              const getBadgeText = () => {
+                if (isFreeTier) return 'Auto-Assigned';
+                if (isStandardTier) return 'Most Popular';
+                if (isProTier) return 'Best Value';
+              };
 
-            {/* Credit Box */}
-            <View style={styles.creditBoxContainer}>
-              <Text style={styles.creditBoxNumber}>1</Text>
-              <Text style={styles.creditBoxLabel}>Credit Included</Text>
-            </View>
+              const getCreditBoxStyle = () => {
+                if (isFreeTier) return styles.creditBoxContainer;
+                if (isStandardTier) return styles.standardCreditBoxContainer;
+                if (isProTier) return styles.proCreditBoxContainer;
+              };
 
-            {/* Benefits List */}
-            <View style={styles.benefitsListContainer}>
-              <View style={styles.benefitListItem}>
-                <MaterialCommunityIcons name="check" size={18} color="#333" />
-                <Text style={styles.benefitListText}>Post 1 job listing</Text>
-              </View>
-              <View style={styles.benefitListItem}>
-                <MaterialCommunityIcons name="check" size={18} color="#333" />
-                <View style={styles.benefitListTextWrapper}>
-                  <Text style={styles.benefitListText}>
-                    <Text style={styles.benefitBold}>30-day visibility</Text>
-                    <Text style={styles.benefitNormal}> per posting</Text>
+              const getCreditNumberStyle = () => {
+                if (isFreeTier) return styles.creditBoxNumber;
+                if (isStandardTier) return styles.standardCreditBoxNumber;
+                if (isProTier) return styles.proCreditBoxNumber;
+              };
+
+              const getPriceSymbolStyle = () => {
+                if (isFreeTier) return styles.priceSymbol;
+                if (isStandardTier) return styles.standardPriceSymbol;
+                if (isProTier) return styles.proPriceSymbol;
+              };
+
+              const getPriceAmountStyle = () => {
+                if (isFreeTier) return styles.priceAmount;
+                if (isStandardTier) return styles.standardPriceAmount;
+                if (isProTier) return styles.proPriceAmount;
+              };
+
+              const getCheckIconColor = () => {
+                if (isFreeTier) return '#333';
+                if (isStandardTier) return '#00C853';
+                if (isProTier) return '#165DFC';
+              };
+
+              const getButtonStyle = () => {
+                if (isFreeTier) return null;
+                if (isStandardTier) return styles.getStartedButton;
+                if (isProTier) return styles.proGetStartedButton;
+              };
+
+              const getPerfectForBoxStyle = () => {
+                if (isFreeTier) return styles.perfectForBox;
+                if (isStandardTier) return styles.standardPerfectForBox;
+                if (isProTier) return styles.proPerfectForBox;
+              };
+
+              const getPerfectForTextStyle = () => {
+                if (isFreeTier) return styles.perfectForText;
+                if (isStandardTier) return styles.standardPerfectForText;
+                if (isProTier) return styles.proPerfectForText;
+              };
+
+              const getPerfectForText = () => {
+                if (isFreeTier) return 'Perfect for trying out the platform';
+                if (isStandardTier) return 'Perfect for getting started';
+                if (isProTier) return 'Best for active hiring teams';
+              };
+
+              const getPerfectForIcon = () => {
+                if (isFreeTier) return 'star';
+                if (isStandardTier) return 'star';
+                if (isProTier) return 'fire';
+              };
+
+              return (
+                <View key={index} style={getPlanCardStyle()}>
+                  {/* Badge */}
+                  {!isFreeTier && (
+                    <View style={isStandardTier ? styles.mostPopularBadgeContainer : styles.bestValueBadgeContainer}>
+                      <View style={getBadgeStyle()}>
+                        <Zap color="#FFF" size={15}/>
+                        <Text style={isStandardTier ? styles.mostPopularBadgeText : styles.bestValueBadgeText}>
+                          {getBadgeText()}
+                        </Text>
+                      </View>
+                    </View>
+                  )}
+
+                  {isFreeTier && (
+                    <View style={styles.planBadgeContainer}>
+                      <View style={styles.autoAssignedBadge}>
+                        <Star color="#fff" size={14} />
+                        <Text style={styles.autoAssignedBadgeText}>Auto-Assigned</Text>
+                      </View>
+                    </View>
+                  )}
+
+                  {/* Plan Title */}
+                  <Text style={isFreeTier ? styles.planTitle : isStandardTier ? styles.standardPlanTitle : styles.proPlanTitle}>
+                    {tier.tier.charAt(0).toUpperCase() + tier.tier.slice(1)} Plan
                   </Text>
-                </View>
-              </View>
-              <View style={styles.benefitListItem}>
-                <MaterialCommunityIcons name="check" size={18} color="#333" />
-                <View style={styles.benefitListTextWrapper}>
-                  <Text style={styles.benefitListText}>
-                    Access to <Text style={styles.benefitBold}>qualified candidates</Text>
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.benefitListItem}>
-                <MaterialCommunityIcons name="check" size={18} color="#333" />
-                <View style={styles.benefitListTextWrapper}>
-                  <Text style={styles.benefitListText}>
-                    <Text style={styles.benefitBold}>Application tracking</Text>
-                    <Text style={styles.benefitNormal}> dashboard</Text>
-                  </Text>
-                </View>
-              </View>
-            </View>
 
-            {/* Included in Account */}
-            <View style={styles.includedAccountBox}>
-              <MaterialCommunityIcons name="check" size={18} color="#666" />
-              <Text style={styles.includedAccountText}>Already included in your account</Text>
-            </View>
+                  {/* Free/Promo Badge */}
+                  <View style={isFreeTier ? styles.includedBadgeContainer : isStandardTier ? styles.standardFreeBadgeContainer : styles.proFreeBadgeContainer}>
+                    <Gift color="#fff" size={16} />
+                    <Text style={isFreeTier ? styles.includedBadgeText : isStandardTier ? styles.standardFreeBadgeText : styles.proFreeBadgeText}>
+                      {isFreeTier ? 'Included' : 'FREE until March 31, 2027'}
+                    </Text>
+                  </View>
 
-            {/* Perfect For */}
-            <View style={styles.perfectForBox}>
-              <MaterialCommunityIcons name="star" size={18} color="#FFA500" />
-              <Text style={styles.perfectForText}>Perfect for trying out the platform</Text>
-            </View>
+                  {/* Price */}
+                  {!isFreeTier && tier.price > 0 && (
+                    <View style={isStandardTier ? styles.standardPriceContainer : styles.proPriceContainer}>
+                      <Text style={isStandardTier ? styles.strikethroughPrice : styles.proStrikethroughPrice}>
+                        {tier.price_formatted}
+                      </Text>
+                    </View>
+                  )}
+
+                  <View style={isFreeTier ? styles.priceContainer : isStandardTier ? styles.standardMainPriceContainer : styles.proMainPriceContainer}>
+                    <IndianRupee color="#000" size={25} />
+                    <Text style={getPriceAmountStyle()}>{priceFormat(tier?.price_formatted)}</Text>
+                  </View>
+                  <Text style={isFreeTier ? styles.priceSubtitle : isStandardTier ? styles.standardPriceSubtitle : styles.proPriceSubtitle}>
+                    {isFreeTier ? 'Auto-assigned on signup' : 'No payment required • Launch Offer'}
+                  </Text>
+
+                  {!isFreeTier && (
+                    <View style={isStandardTier ? styles.regularPriceBox : styles.proRegularPriceBox}>
+                      <Text style={isStandardTier ? styles.regularPriceText : styles.proRegularPriceText}>
+                        Regular price {tier.price_formatted} from April 1, 2027
+                      </Text>
+                    </View>
+                  )}
+
+                  {/* Credit Box */}
+                  <View style={getCreditBoxStyle()}>
+                    <Text style={getCreditNumberStyle()}>{tier.credits}</Text>
+                    <Text style={isFreeTier ? styles.creditBoxLabel : isStandardTier ? styles.standardCreditBoxLabel : styles.proCreditBoxLabel}>
+                      {tier.credits} Credit{tier.credits > 1 ? 's' : ''} Included
+                    </Text>
+                    {!isFreeTier && (
+                      <Text style={isStandardTier ? styles.standardCreditBoxSubtitle : styles.proCreditBoxSubtitle}>
+                        (Worth {tier.price_formatted} after launch)
+                      </Text>
+                    )}
+                  </View>
+
+                  {/* Benefits List */}
+                  <View style={isFreeTier ? styles.benefitsListContainer : isStandardTier ? styles.standardBenefitsListContainer : styles.proBenefitsListContainer}>
+                    <View style={isFreeTier ? styles.benefitListItem : isStandardTier ? styles.standardBenefitListItem : styles.proBenefitListItem}>
+                      <Check color={getCheckIconColor()}/>
+                      <Text style={isFreeTier ? styles.benefitListText : isStandardTier ? styles.standardBenefitListText : styles.proBenefitListText}>
+                        Post {tier.credits} job listing{tier.credits > 1 ? 's' : ''}
+                      </Text>
+                    </View>
+                    <View style={isFreeTier ? styles.benefitListItem : isStandardTier ? styles.standardBenefitListItem : styles.proBenefitListItem}>
+                      <Check color={getCheckIconColor()}/>
+                      <View style={styles.benefitListTextWrapper}>
+                        <Text style={isFreeTier ? styles.benefitListText : isStandardTier ? styles.standardBenefitListText : styles.proBenefitListText}>
+                          <Text style={styles.benefitBold}>30-day visibility</Text>
+                          <Text style={styles.benefitNormal}> per posting</Text>
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={isFreeTier ? styles.benefitListItem : isStandardTier ? styles.standardBenefitListItem : styles.proBenefitListItem}>
+                      <Check color={getCheckIconColor()}/>
+                      <View style={styles.benefitListTextWrapper}>
+                        <Text style={isFreeTier ? styles.benefitListText : isStandardTier ? styles.standardBenefitListText : styles.proBenefitListText}>
+                          Access to <Text style={styles.benefitBold}>qualified candidates</Text>
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={isFreeTier ? styles.benefitListItem : isStandardTier ? styles.standardBenefitListItem : styles.proBenefitListItem}>
+                      <Check color={getCheckIconColor()}/>
+                      <View style={styles.benefitListTextWrapper}>
+                        <Text style={isFreeTier ? styles.benefitListText : isStandardTier ? styles.standardBenefitListText : styles.proBenefitListText}>
+                          <Text style={styles.benefitBold}>Application tracking</Text>
+                          <Text style={styles.benefitNormal}> dashboard</Text>
+                        </Text>
+                      </View>
+                    </View>
+                    {!isFreeTier && (
+                      <View style={isStandardTier ? styles.standardBenefitListItem : styles.proBenefitListItem}>
+                        <Check color={getCheckIconColor()} />
+                        <View style={styles.benefitListTextWrapper}>
+                          <Text style={isStandardTier ? styles.standardBenefitListText : styles.proBenefitListText}>
+                            <Text style={styles.benefitBold}>Candidate analytics</Text>
+                            <Text style={styles.benefitNormal}> & insights</Text>
+                          </Text>
+                        </View>
+                      </View>
+                    )}
+                    {isProTier && (
+                      <>
+                        <View style={styles.proBenefitListItem}>
+                          <Check color={getCheckIconColor()} />
+                          <View style={styles.benefitListTextWrapper}>
+                            <Text style={styles.proBenefitListText}>
+                              <Text style={styles.benefitBold}>Best Value:</Text>
+                              <Text style={styles.benefitNormal}> Save ₹665</Text>
+                            </Text>
+                          </View>
+                        </View>
+                        <View style={styles.proBenefitListItem}>
+                          <Check color={getCheckIconColor()} />
+                          <Text style={styles.proBenefitListText}>Premium Support</Text>
+                        </View>
+                      </>
+                    )}
+                  </View>
+
+                  {/* Call to Action */}
+                  {isFreeTier && (
+                    <View style={styles.includedAccountBox}>
+                      <Check color="#666" />
+                      <Text style={styles.includedAccountText}>Already included in your account</Text>
+                    </View>
+                  )}
+
+                  {!isFreeTier && (
+                    <TouchableOpacity style={getButtonStyle()}>
+                      <Sparkles size={18} color={'#fff'} />
+                      <Text style={isStandardTier ? styles.getStartedButtonText : styles.proGetStartedButtonText}>
+                        Get Started Free
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {/* Perfect For */}
+                  <View style={getPerfectForBoxStyle()}>
+                    <Sparkles size={18} color={isProTier ? '#FF3B30' : '#FFA500'} />
+                    <Text style={getPerfectForTextStyle()}>{getPerfectForText()}</Text>
+                  </View>
+                </View>
+              );
+            })}
           </View>
-
-          {/* Standard Plan Card */}
-          <View style={styles.standardPlanCard}>
-            {/* Most Popular Badge */}
-            <View style={styles.mostPopularBadgeContainer}>
-              <View style={styles.mostPopularBadge}>
-                <MaterialCommunityIcons name="fire" size={14} color="#fff" />
-                <Text style={styles.mostPopularBadgeText}>Most Popular</Text>
-              </View>
-            </View>
-
-            {/* Plan Title */}
-            <Text style={styles.standardPlanTitle}>Standard Plan</Text>
-
-            {/* Free Badge */}
-            <View style={styles.standardFreeBadgeContainer}>
-              <MaterialCommunityIcons name="gift" size={16} color="#fff" />
-              <Text style={styles.standardFreeBadgeText}>FREE until March 31, 2027</Text>
-            </View>
-
-            {/* Price */}
-            <View style={styles.standardPriceContainer}>
-              <Text style={styles.strikethroughPrice}>₹999</Text>
-            </View>
-            <View style={styles.standardMainPriceContainer}>
-              <Text style={styles.standardPriceSymbol}>₹</Text>
-              <Text style={styles.standardPriceAmount}>0</Text>
-            </View>
-            <Text style={styles.standardPriceSubtitle}>No payment required • Launch Offer</Text>
-
-            {/* Regular Price Info */}
-            <View style={styles.regularPriceBox}>
-              <Text style={styles.regularPriceText}>Regular price ₹999 from April 1, 2027</Text>
-            </View>
-
-            {/* Credit Box */}
-            <View style={styles.standardCreditBoxContainer}>
-              <Text style={styles.standardCreditBoxNumber}>3</Text>
-              <Text style={styles.standardCreditBoxLabel}>Credits Included</Text>
-              <Text style={styles.standardCreditBoxSubtitle}>(Worth ₹999 after launch)</Text>
-            </View>
-
-            {/* Benefits List */}
-            <View style={styles.standardBenefitsListContainer}>
-              <View style={styles.standardBenefitListItem}>
-                <MaterialCommunityIcons name="check" size={18} color="#00C853" />
-                <Text style={styles.standardBenefitListText}>Post 3 job listings</Text>
-              </View>
-              <View style={styles.standardBenefitListItem}>
-                <MaterialCommunityIcons name="check" size={18} color="#00C853" />
-                <View style={styles.benefitListTextWrapper}>
-                  <Text style={styles.standardBenefitListText}>
-                    <Text style={styles.benefitBold}>30-day visibility</Text>
-                    <Text style={styles.benefitNormal}> per posting</Text>
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.standardBenefitListItem}>
-                <MaterialCommunityIcons name="check" size={18} color="#00C853" />
-                <View style={styles.benefitListTextWrapper}>
-                  <Text style={styles.standardBenefitListText}>
-                    Access to <Text style={styles.benefitBold}>qualified candidates</Text>
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.standardBenefitListItem}>
-                <MaterialCommunityIcons name="check" size={18} color="#00C853" />
-                <View style={styles.benefitListTextWrapper}>
-                  <Text style={styles.standardBenefitListText}>
-                    <Text style={styles.benefitBold}>Application tracking</Text>
-                    <Text style={styles.benefitNormal}> dashboard</Text>
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.standardBenefitListItem}>
-                <MaterialCommunityIcons name="check" size={18} color="#00C853" />
-                <View style={styles.benefitListTextWrapper}>
-                  <Text style={styles.standardBenefitListText}>
-                    <Text style={styles.benefitBold}>Candidate analytics</Text>
-                    <Text style={styles.benefitNormal}> & insights</Text>
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            {/* Get Started Button */}
-            <TouchableOpacity style={styles.getStartedButton}>
-              <MaterialCommunityIcons name="star" size={18} color="#fff" />
-              <Text style={styles.getStartedButtonText}>Get Started Free</Text>
-            </TouchableOpacity>
-
-            {/* Perfect For */}
-            <View style={styles.standardPerfectForBox}>
-              <MaterialCommunityIcons name="star" size={18} color="#FFA500" />
-              <Text style={styles.standardPerfectForText}>Perfect for getting started</Text>
-            </View>
-          </View>
-
-          {/* Pro Plan Card */}
-          <View style={styles.proPlanCard}>
-            {/* Best Value Badge */}
-            <View style={styles.bestValueBadgeContainer}>
-              <View style={styles.bestValueBadge}>
-                <MaterialCommunityIcons name="check-circle" size={14} color="#fff" />
-                <Text style={styles.bestValueBadgeText}>Best Value</Text>
-              </View>
-            </View>
-
-            {/* Plan Title */}
-            <Text style={styles.proPlanTitle}>Pro Plan</Text>
-
-            {/* Free Badge */}
-            <View style={styles.proFreeBadgeContainer}>
-              <MaterialCommunityIcons name="gift" size={16} color="#fff" />
-              <Text style={styles.proFreeBadgeText}>FREE until March 31, 2027</Text>
-            </View>
-
-            {/* Price */}
-            <View style={styles.proPriceContainer}>
-              <Text style={styles.proStrikethroughPrice}>₹1,999</Text>
-            </View>
-            <View style={styles.proMainPriceContainer}>
-              <Text style={styles.proPriceSymbol}>₹</Text>
-              <Text style={styles.proPriceAmount}>0</Text>
-            </View>
-            <Text style={styles.proPriceSubtitle}>No payment required • Launch Offer</Text>
-
-            {/* Regular Price Info */}
-            <View style={styles.proRegularPriceBox}>
-              <Text style={styles.proRegularPriceText}>Regular price ₹1,999 from April 1, 2027</Text>
-            </View>
-
-            {/* Credit Box */}
-            <View style={styles.proCreditBoxContainer}>
-              <Text style={styles.proCreditBoxNumber}>8</Text>
-              <Text style={styles.proCreditBoxLabel}>Credits Included</Text>
-              <Text style={styles.proCreditBoxSubtitle}>(Worth ₹1,999 after launch)</Text>
-            </View>
-
-            {/* Benefits List */}
-            <View style={styles.proBenefitsListContainer}>
-              <View style={styles.proBenefitListItem}>
-                <MaterialCommunityIcons name="check" size={18} color="#165DFC" />
-                <Text style={styles.proBenefitListText}>Post 8 job listings</Text>
-              </View>
-              <View style={styles.proBenefitListItem}>
-                <MaterialCommunityIcons name="check" size={18} color="#165DFC" />
-                <View style={styles.benefitListTextWrapper}>
-                  <Text style={styles.proBenefitListText}>
-                    <Text style={styles.benefitBold}>30-day visibility</Text>
-                    <Text style={styles.benefitNormal}> per posting</Text>
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.proBenefitListItem}>
-                <MaterialCommunityIcons name="check" size={18} color="#165DFC" />
-                <View style={styles.benefitListTextWrapper}>
-                  <Text style={styles.proBenefitListText}>
-                    Access to <Text style={styles.benefitBold}>qualified candidates</Text>
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.proBenefitListItem}>
-                <MaterialCommunityIcons name="check" size={18} color="#165DFC" />
-                <View style={styles.benefitListTextWrapper}>
-                  <Text style={styles.proBenefitListText}>
-                    <Text style={styles.benefitBold}>Application tracking</Text>
-                    <Text style={styles.benefitNormal}> dashboard</Text>
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.proBenefitListItem}>
-                <MaterialCommunityIcons name="check" size={18} color="#165DFC" />
-                <View style={styles.benefitListTextWrapper}>
-                  <Text style={styles.proBenefitListText}>
-                    <Text style={styles.benefitBold}>Candidate analytics</Text>
-                    <Text style={styles.benefitNormal}> & insights</Text>
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.proBenefitListItem}>
-                <MaterialCommunityIcons name="check" size={18} color="#165DFC" />
-                <View style={styles.benefitListTextWrapper}>
-                  <Text style={styles.proBenefitListText}>
-                    <Text style={styles.benefitBold}>Best Value:</Text>
-                    <Text style={styles.benefitNormal}> Save ₹665</Text>
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.proBenefitListItem}>
-                <MaterialCommunityIcons name="check" size={18} color="#165DFC" />
-                <Text style={styles.proBenefitListText}>Premium Support</Text>
-              </View>
-            </View>
-
-            {/* Get Started Button */}
-            <TouchableOpacity style={styles.proGetStartedButton}>
-              <MaterialCommunityIcons name="star" size={18} color="#fff" />
-              <Text style={styles.proGetStartedButtonText}>Get Started Free</Text>
-            </TouchableOpacity>
-
-            {/* Best For */}
-            <View style={styles.proPerfectForBox}>
-              <MaterialCommunityIcons name="fire" size={18} color="#FF3B30" />
-              <Text style={styles.proPerfectForText}>Best for active hiring teams</Text>
-            </View>
-          </View>
-        </View>
+        )}
 
         {/* Transaction History Section */}
         <View style={styles.transactionHistoryContainer}>
           <View style={styles.transactionHistoryHeader}>
             <View style={styles.transactionHistoryTitleRow}>
-              <MaterialCommunityIcons name="history" size={24} color="#333" />
+              <History color="#333" />
               <Text style={styles.transactionHistoryTitle}>Transaction History</Text>
             </View>
             <TouchableOpacity style={styles.refreshButton}>
@@ -455,7 +460,7 @@ const CreditsScreen = () => {
 
           {/* Empty State */}
           <View style={styles.transactionEmptyState}>
-            <MaterialCommunityIcons name="history" size={56} color="#E0E0E0" />
+            <History size={56} color="#E0E0E0" />
             <Text style={styles.transactionEmptyTitle}>No transactions yet</Text>
             <Text style={styles.transactionEmptySubtitle}>Your credit purchases and usage will appear here</Text>
           </View>
@@ -469,7 +474,7 @@ const CreditsScreen = () => {
           <View style={styles.howCreditsListContainer}>
             {/* Item 1 */}
             <View style={styles.howCreditsItem}>
-              <MaterialCommunityIcons name="check" size={20} color="#00C853" />
+              <Check color={'#00C853'} size={20} />
               <View style={styles.howCreditsTextContainer}>
                 <Text style={styles.howCreditsItemTitle}>
                   <Text style={styles.howCreditsBold}>FREE until March 31, 2027:</Text>
@@ -480,7 +485,7 @@ const CreditsScreen = () => {
 
             {/* Item 2 */}
             <View style={styles.howCreditsItem}>
-              <MaterialCommunityIcons name="check" size={20} color="#00C853" />
+              <Check color={'#00C853'} size={20} />
               <View style={styles.howCreditsTextContainer}>
                 <Text style={styles.howCreditsItemTitle}>
                   <Text style={styles.howCreditsBold}>Unlimited postings:</Text>
@@ -491,7 +496,7 @@ const CreditsScreen = () => {
 
             {/* Item 3 */}
             <View style={styles.howCreditsItem}>
-              <MaterialCommunityIcons name="check" size={20} color="#00C853" />
+              <Check color={'#00C853'} size={20} />
               <View style={styles.howCreditsTextContainer}>
                 <Text style={styles.howCreditsItemTitle}>
                   <Text style={styles.howCreditsBold}>Starting April 1, 2027:</Text>
@@ -502,7 +507,7 @@ const CreditsScreen = () => {
 
             {/* Item 4 */}
             <View style={styles.howCreditsItem}>
-              <MaterialCommunityIcons name="check" size={20} color="#00C853" />
+              <Check color={'#00C853'} size={20} />
               <View style={styles.howCreditsTextContainer}>
                 <Text style={styles.howCreditsItemTitle}>
                   <Text style={styles.howCreditsBold}>Admin flexibility:</Text>
@@ -553,7 +558,7 @@ const styles = StyleSheet.create({
   },
   headerTitleRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     marginBottom: 12,
     gap: 12,
   },
@@ -594,9 +599,9 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   giftIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: '#00C853',
     alignItems: 'center',
     justifyContent: 'center',
@@ -675,7 +680,7 @@ const styles = StyleSheet.create({
   infoBoxTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#1976D2',
+    color: '#000000',
     fontFamily: 'Geist-VariableFont_wght',
   },
   creditPlansContainer: {
@@ -769,7 +774,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 8,
-    backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
@@ -834,11 +838,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Geist-VariableFont_wght',
   },
   planTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
     color: '#000',
     fontFamily: 'Geist-VariableFont_wght',
     marginBottom: 12,
+    textTransform: 'capitalize',
   },
   includedBadgeContainer: {
     flexDirection: 'row',
@@ -858,7 +863,7 @@ const styles = StyleSheet.create({
   },
   priceContainer: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     marginBottom: 4,
   },
   priceSymbol: {
@@ -1024,7 +1029,7 @@ const styles = StyleSheet.create({
   },
   standardMainPriceContainer: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     marginBottom: 4,
   },
   standardPriceSymbol: {
@@ -1202,7 +1207,7 @@ const styles = StyleSheet.create({
   },
   proMainPriceContainer: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     marginBottom: 4,
   },
   proPriceSymbol: {

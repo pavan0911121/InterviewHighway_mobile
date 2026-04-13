@@ -39,7 +39,7 @@ const dispatch = useDispatch();
   // Sample data - replace with API data later
   // const [companyData] = useState(selector[0]?.data)
   const dashboardStats = selector.data;
-  console.log(dashboardStats,"dashboardStats");
+  console.log(selector?.transactions,"dashboardStats");
   
   return (
     <SafeAreaView style={styles.container}>

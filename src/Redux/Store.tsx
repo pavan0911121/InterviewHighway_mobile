@@ -7,6 +7,8 @@ import profileSlice from './slices/profileSlice';
 import employerDashboardSlice from './slices/employerDashboardSlice';
 import jobPostingsSlice from './slices/jobPostings';
 import employerApplicationsSlice from './slices/employerApplicationsSlice';
+import employerCreditsSlice from './slices/employerCreditsSlice';
+import employerAnalyticsSlice from './slices/employerAnalyticsSlice';
 
 
 export const store = configureStore({
@@ -18,6 +20,8 @@ export const store = configureStore({
     employerDashboard: employerDashboardSlice,
     jobPostings: jobPostingsSlice,
     employerApplications: employerApplicationsSlice,
+    employerCredits: employerCreditsSlice,
+    employerAnalytics: employerAnalyticsSlice,
     ui: uiReducer,
   },
   middleware: (getDefaultMiddleware:any) =>

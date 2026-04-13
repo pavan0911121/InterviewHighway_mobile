@@ -161,6 +161,18 @@ export const EMPLOYER_ENDPOINTS = {
   // Company profile
   employerCompanyProfile: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/employer/profile?userId=${userId}`,
+  
+  // Analytics - Applications Timeline
+  analyticsApplicationsTimeline: (userId: string, period: string = '30d') =>
+    `${RAILWAY_API_BASE_URL}/api/employer/dashboard/applications-timeline?userId=${userId}&period=${period}`,
+  
+  // Analytics - Job Performance
+  analyticsJobsPerformance: (userId: string) =>
+    `${RAILWAY_API_BASE_URL}/api/employer/dashboard/jobs-performance?userId=${userId}`,
+  
+  // Analytics - Count Stats
+  analyticsCount: (userId: string) =>
+    `${RAILWAY_API_BASE_URL}/api/employer/dashboard/stats?userId=${userId}`,
 };
 
 // ============================================================================
