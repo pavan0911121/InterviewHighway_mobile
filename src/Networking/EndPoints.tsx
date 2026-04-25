@@ -21,6 +21,8 @@ export const RAILWAY_API_BASE_URL = 'https://interviewhighway-v2-production.up.r
 export const AUTH_ENDPOINTS = {
   login: `${API_BASE_URL}/auth/v1/token?grant_type=password`,
   userData: `${API_BASE_URL}/auth/v1/user`,
+  checkEmail: `${RAILWAY_API_BASE_URL}/api/check-email`,
+  signup: `${API_BASE_URL}/auth/v1/signup?redirect_to=https%3A%2F%2Finterviewhighway.com%2Fauth%2Fcallback`,
 };
 
 // ===========================
@@ -40,6 +42,7 @@ export const USER_ENDPOINTS = {
 // ======================
 
 export const PROFILE_ENDPOINTS = {
+  
   profilePercentage: (userId: string) =>
     `${API_BASE_URL}/rest/v1/profiles?select=*&user_id=eq.${userId}`,
   

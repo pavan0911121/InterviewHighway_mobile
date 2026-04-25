@@ -84,7 +84,9 @@ const LoginScreen: React.FC = () => {
       } else if (result.type.includes('rejected')) {
         // Failed - show error message
         const errorMessage = result.payload?.message || 'Login failed. Please check your credentials and try again.';
-        setLoginError(errorMessage);
+        if(errorMessage === 'Email not confirmed'){
+          setLoginError('Please check your email and click the verification link before signing in.');
+        }
       }
     } catch (error) {
       if(error){

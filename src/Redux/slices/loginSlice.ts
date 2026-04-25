@@ -22,6 +22,13 @@ interface AuthState {
   deviceInfoPosted: boolean;
   isVerified?: boolean;
   role?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
+  mobileNumber?: string | null;
+  experienceLevel?: string | null;
+  currentRole?: string | null;
+  preferredLocation?: string | null;
 }
 
 const initialState: AuthState = {
@@ -33,6 +40,14 @@ const initialState: AuthState = {
   deviceInfoPosted: false,
   isVerified: false,
   role: null,
+  firstName: null,
+  lastName: null,
+  email: null,
+  mobileNumber: null,
+  experienceLevel: null,
+  currentRole: null,
+  preferredLocation: null,
+
 };
 //Login API call
 export const postUserData = createAsyncThunk(
@@ -98,6 +113,39 @@ export const getUserRole = createAsyncThunk(
     }
   }
 );
+//Check email API call
+export const checkEmail = createAsyncThunk(
+  "login/checkEmail",
+  async (email: string, { rejectWithValue }) => {
+    try {
+      const response = await client.post(AUTH_ENDPOINTS.checkEmail, { email });
+      return response.data || response;
+    } catch (error: any) {
+      console.error('Error checking email:', error);
+      return rejectWithValue({
+        message: error?.message || 'Failed to check email',
+        code: error?.code || 'ERROR',
+      });
+    }
+  }
+);
+//Register Job Seeker Api
+export const registerJobSeeker = createAsyncThunk(
+  "login/registerJobSeeker",
+  async (payload: any, { rejectWithValue }) => {
+    try {
+      const response = await client.post(AUTH_ENDPOINTS.signup, payload);
+      return response.data || response;
+    } catch (error: any) {
+      console.error('Error registering job seeker:', error);
+      return rejectWithValue({
+        message: error?.message || 'Failed to register job seeker',
+        code: error?.code || 'ERROR',
+      });
+    }
+  }
+);
+
 // USER_ENDPOINTS
 
 const loginSlice = createSlice({
@@ -131,6 +179,17 @@ const loginSlice = createSlice({
         state.user = { ...state.user, ...action.payload };
       }
     },
+    updateUserData: (state, action: PayloadAction<{ firstName?: string; lastName?: string; email?: string; mobileNumber?: string }>) => {
+      state.firstName = action.payload.firstName || null;
+      state.lastName = action.payload.lastName || null;
+      state.email = action.payload.email || null;
+      state.mobileNumber = action.payload.mobileNumber || null;
+    },
+    updateExperience: (state, action: PayloadAction<{ experienceLevel?: string; currentRole?: string; preferredLocation?: string }>) => {
+      state.experienceLevel = action.payload.experienceLevel || null;
+      state.currentRole = action.payload.currentRole || null;
+      state.preferredLocation = action.payload.preferredLocation || null;
+    },
     clearError: (state) => {
       state.error = null;
     },
@@ -147,7 +206,7 @@ const loginSlice = createSlice({
         state.deviceInfoPosted = true;
         state.error = null;
         const dataObj = action.payload;
-        
+
         // Extract token - check multiple possible field names
         const token = dataObj?.access_token || dataObj?.token;
         if (token) {
@@ -156,14 +215,14 @@ const loginSlice = createSlice({
           AsyncStore.storeData(AsyncStore.Keys.USER_TOKEN, token);
           AsyncStore.storeData(AsyncStore.Keys.IS_LOGIN, "true");
         }
-        
+
         // Extract user data - check multiple possible field names
         const user = dataObj?.user || dataObj?.data?.user;
         if (user) {
           state.user = user;
           AsyncStore.storeData(AsyncStore.Keys.USER_DATA, JSON.stringify(user));
         }
-        
+
         // If we have a token, consider login successful
         if (token) {
           state.isAuthenticated = true;
@@ -199,8 +258,8 @@ const loginSlice = createSlice({
         state.isLoading = false;
         state.error = (action.payload as any)?.message || 'Failed to fetch role data';
       });
-      // getVerifiedUser async thunk handlers
-      builder
+    // getVerifiedUser async thunk handlers
+    builder
       .addCase(getVerifiedUser.pending, (state) => {
         state.error = null;
       })
@@ -208,11 +267,8 @@ const loginSlice = createSlice({
         state.error = null;
         const isVerified = action.payload?.[0]?.is_verified || false;
         const userId = action.payload?.[0]?.id || null;
-        console.log(action.payload,"userIdttyyytytyytyt");
-        
+
         if (userId) {
-          console.log(userId,"userIdfrom slice");
-          
           AsyncStore.storeData(AsyncStore.Keys.IS_VERIFIED, JSON.stringify(isVerified));
           AsyncStore.storeData(AsyncStore.Keys.USER_ID, JSON.stringify(userId));
         }
@@ -221,8 +277,8 @@ const loginSlice = createSlice({
         state.isLoading = false;
         state.error = (action.payload as any)?.message || 'Failed to fetch verified user data';
       });
-      // getUserRole async thunk handlers
-      builder
+    // getUserRole async thunk handlers
+    builder
       .addCase(getUserRole.pending, (state) => {
         state.isLoading = true;
         state.error = null;
@@ -230,8 +286,7 @@ const loginSlice = createSlice({
       .addCase(getUserRole.fulfilled, (state, action) => {
         state.isLoading = false;
         state.error = null;
-        console.log(action.payload);
-        
+
         const roleData = action.payload?.[0]?.user_type;
         if (roleData) {
           state.role = roleData;
@@ -241,6 +296,36 @@ const loginSlice = createSlice({
       .addCase(getUserRole.rejected, (state, action) => {
         state.isLoading = false;
         state.error = (action.payload as any)?.message || 'Failed to fetch user role data';
+      });
+    // checkEmail async thunk handlers
+    builder
+      .addCase(checkEmail.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(checkEmail.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.error = null;
+        // Handle email check response if needed
+      })
+      .addCase(checkEmail.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = (action.payload as any)?.message || 'Failed to check email';
+      });
+    // registerJobSeeker async thunk handlers
+    builder
+      .addCase(registerJobSeeker.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(registerJobSeeker.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.error = null;
+        // Handle job seeker registration response if needed
+      })
+      .addCase(registerJobSeeker.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = (action.payload as any)?.message || 'Failed to register job seeker';
       });
   }
 });
@@ -252,6 +337,9 @@ export const {
   logout,
   updateUserProfile,
   clearError,
+  updateUserData,
+  updateExperience,
+
 } = loginSlice.actions;
 
 export default loginSlice.reducer;

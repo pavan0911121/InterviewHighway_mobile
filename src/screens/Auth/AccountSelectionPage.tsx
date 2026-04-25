@@ -4,14 +4,15 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { AuthStackParamList } from '../../types/navigation'
+import { Building, User } from 'lucide-react-native'
 
 type AccountSelectionNavigationProp = NativeStackNavigationProp<AuthStackParamList>;
 
 const AccountSelectionPage = () => {
   const [selectedType, setSelectedType] = useState<'jobseeker' | 'employer' | null>(null)
   const navigation = useNavigation<AccountSelectionNavigationProp>();
-  const handleSignIn = () => {
-    navigation.navigate('JobSeekerSignup');
+  const handleSignIn = (screen: 'JobSeekerSignup' | 'EmployerSignup') => {
+    navigation.navigate(screen);
     // TODO: Implement sign in navigation
   };
   return (
@@ -35,9 +36,9 @@ const AccountSelectionPage = () => {
             styles.accountCard,
             selectedType === 'jobseeker' && styles.accountCardSelected,
           ]}
-          onPress={() => setSelectedType('jobseeker')}
+          onPress={() => handleSignIn('JobSeekerSignup')}
         >
-          <Text style={styles.accountIcon}>👤</Text>
+           <User color={'#000000'}/>
           <Text style={styles.accountTitle}>Job Seeker</Text>
           <Text style={styles.accountDescription}>
             Find your dream job and advance your career
@@ -64,9 +65,9 @@ const AccountSelectionPage = () => {
             styles.accountCard,
             selectedType === 'employer' && styles.accountCardSelected,
           ]}
-          onPress={() => setSelectedType('employer')}
+          onPress={() => navigation.navigate('EmployerSignup')}
         >
-          <Text style={styles.accountIcon}>🏢</Text>
+           <Building color={"#000000"}/>
           <Text style={styles.accountTitle}>Employer</Text>
           <Text style={styles.accountDescription}>
             Hire top talent with verified skills
@@ -87,21 +88,10 @@ const AccountSelectionPage = () => {
           </View>
         </TouchableOpacity>
 
-        {/* Continue Button */}
-        <TouchableOpacity
-          style={[
-            styles.continueButton,
-            !selectedType && styles.continueButtonDisabled,
-          ]}
-          disabled={!selectedType}
-        >
-          <Text style={styles.continueButtonText}>Select an account type to continue</Text>
-        </TouchableOpacity>
-
         {/* Sign In Link */}
         <View style={styles.signInContainer}>
           <Text style={styles.signInText}>Already have an account? </Text>
-          <TouchableOpacity onPress={handleSignIn}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
             <Text style={styles.signInLink}>Sign In</Text>
           </TouchableOpacity>
         </View>
@@ -119,7 +109,7 @@ const styles = StyleSheet.create({
   },
   topBar: {
     height: 4,
-    backgroundColor: '#165DFC',
+    // backgroundColor: '#165DFC',
   },
   scrollContent: {
     paddingHorizontal: 20,
@@ -194,10 +184,8 @@ const styles = StyleSheet.create({
   },
   bulletText: {
     fontSize: 12,
-    color: '#000000',
+    color: '#597182',
     fontFamily: 'Geist-VariableFont_wght',
-    flex: 1,
-    lineHeight: 16,
   },
   continueButton: {
     width: '100%',

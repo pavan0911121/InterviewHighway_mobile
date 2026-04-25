@@ -23,8 +23,6 @@ export const getProfileData = createAsyncThunk(
     async (userId: string, { rejectWithValue }) => {
         try {
             const response = await client.get(PROFILE_ENDPOINTS.profileData(userId));
-            console.log(response,"");
-            
             return response.data || response;
         } catch (error: any) {
             console.log('Error fetching profile data:', error);
@@ -55,7 +53,6 @@ const profileSlice = createSlice({
             .addCase(getProfileData.fulfilled, (state, action) => {
                 state.isLoading = false;
                 const data = action.payload;
-                console.log(data,"datatafromslice");
                 
                 state.data = data; // Assuming the API returns an array of courses
                 state.error = null;
@@ -63,7 +60,6 @@ const profileSlice = createSlice({
             .addCase(getProfileData.rejected, (state, action) => {
                 state.isLoading = false;
                 state.error = action.payload as string;
-                console.log('Error fetching profile data:', action.payload);
             })
     }
 });

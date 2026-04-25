@@ -287,12 +287,11 @@ export const parseAPIResponse = async (response: Response): Promise<APIResponse>
       return Promise.reject(err);
     }
 
-    const errorBody = err instanceof Error ? err.message : String(err);
-
-    return Promise.reject({
+const errorBody = err instanceof Error ? err.message : String(err);
+return Promise.reject({
       type: 'InvalidJSON',
       status: response.status,
-      message: 'Invalid JSON response',
+      message: (err as any)?.body?.msg || 'Failed to parse response',
       body: errorBody,
     });
   }

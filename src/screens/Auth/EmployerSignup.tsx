@@ -9,6 +9,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Picker } from '@react-native-picker/picker'
+import { ArrowLeft } from 'lucide-react-native'
 import React, { useState } from 'react'
 
 const EmployerSignup = ({ navigation }: any) => {
@@ -51,13 +52,25 @@ const EmployerSignup = ({ navigation }: any) => {
     return
   }
 
+  const isStep2Valid = () => {
+    // Email validation: must have @ and valid TLD (.com, .org, etc.)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/
+    const isEmailValid = officialEmail.trim() && emailRegex.test(officialEmail)
+    
+    // Phone validation: must be exactly 10 digits
+    const isPhoneValid = contactPhone.trim() && contactPhone.length === 10 && /^\d{10}$/.test(contactPhone)
+    
+    return isEmailValid && isPhoneValid
+  }
+
   const validateStep2 = () => {
     const newErrors: any = {}
     if (!firstName.trim()) newErrors.firstName = 'First name is required'
     if (!lastName.trim()) newErrors.lastName = 'Last name is required'
     if (!officialEmail.trim()) newErrors.officialEmail = 'Email is required'
-    if (officialEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(officialEmail)) newErrors.officialEmail = 'Invalid email'
+    if (officialEmail && !/^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(officialEmail)) newErrors.officialEmail = 'Invalid email format (must contain @ and valid domain like .com)'
     if (!contactPhone.trim()) newErrors.contactPhone = 'Phone number is required'
+    if (contactPhone && contactPhone.length !== 10) newErrors.contactPhone = 'Phone must be exactly 10 digits'
     if (!designation.trim()) newErrors.designation = 'Designation is required'
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -106,6 +119,12 @@ const EmployerSignup = ({ navigation }: any) => {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+
+        {/* Back Button */}
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation?.goBack()}>
+          <ArrowLeft size={30} color="#000000" />
+        </TouchableOpacity>
+        
         {/* Header Section */}
         <View style={styles.headerSection}>
           <Text style={styles.mainTitle}>Employer</Text>
@@ -342,7 +361,11 @@ const EmployerSignup = ({ navigation }: any) => {
                 <TouchableOpacity style={styles.previousButton} onPress={handlePreviousStep}>
                   <Text style={styles.previousButtonText}>Previous</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.nextButton} onPress={handleNextStep}>
+                <TouchableOpacity 
+                  style={[styles.nextButton, !isStep2Valid() && styles.buttonDisabled]} 
+                  onPress={handleNextStep}
+                  disabled={!isStep2Valid()}
+                >
                   <Text style={styles.nextButtonText}>Next</Text>
                 </TouchableOpacity>
               </View>
@@ -782,5 +805,14 @@ const styles = StyleSheet.create({
     color: '#165DFC',
     fontFamily: 'Geist-VariableFont_wght',
     textDecorationLine: 'underline',
+  },
+  backButton: {
+    marginBottom: 16,
+    padding: 8,
+    alignSelf: 'flex-start',
+  },
+  buttonDisabled: {
+    backgroundColor: '#CCCCCC',
+    opacity: 0.6,
   },
 })

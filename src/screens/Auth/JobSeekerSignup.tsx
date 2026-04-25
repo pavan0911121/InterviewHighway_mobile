@@ -1,16 +1,21 @@
 import { StyleSheet, Text, View, TouchableOpacity, ScrollView, TextInput } from 'react-native'
 import React, { useState, useMemo } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { ArrowLeft } from 'lucide-react-native'
+import { useDispatch, useSelector } from 'react-redux'
+import { checkEmail, registerJobSeeker, updateExperience, updateUserData } from '../../Redux/slices/loginSlice'
 
-const JobSeekerSignup = () => {
+const JobSeekerSignup = ({ navigation }: any) => {
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1)
-  
+
   // Step 1 - Basic Information
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
-  
+  const [emailStatus, setEmailStatus] = useState('') // 'checking' | 'valid' | 'invalid' | ''
+  const [emailMessage, setEmailMessage] = useState('') // Status message to display
+
   // Step 2 - Professional Information
   const [experienceLevel, setExperienceLevel] = useState('Select your experience level')
   const [currentRole, setCurrentRole] = useState('')
@@ -27,6 +32,8 @@ const JobSeekerSignup = () => {
   const [jobAlerts, setJobAlerts] = useState(false)
 
   const experienceLevels = ['Fresher', '0-1 Years', '1-3 Years', '3-5 Years', '5+ Years']
+  const dispatch = useDispatch();
+  const selector = useSelector((state: any) => state.login);
 
   // Password validation
   const passwordValidation = useMemo(() => {
@@ -38,7 +45,12 @@ const JobSeekerSignup = () => {
     }
   }, [password])
 
-  const handleNextStep = () => {
+  const handleNextStep = (step: 1 | 2 | 3) => {
+    if (step === 1) {
+      dispatch(updateUserData({ firstName, lastName, email, mobileNumber: phone }))
+    }else if (step === 2) {
+      dispatch(updateExperience({ experienceLevel, currentRole, preferredLocation }))
+    }
     if (currentStep < 3) {
       setCurrentStep((currentStep + 1) as 1 | 2 | 3)
     }
@@ -50,14 +62,117 @@ const JobSeekerSignup = () => {
     }
   }
 
-  const handleCreateAccount = () => {
-    console.log('Create Account clicked')
+  const isStep1Valid = () => {
+    // Check if first name is not empty
+    const isFirstNameValid = firstName.trim().length > 0
+    
+    // Check if last name is not empty
+    const isLastNameValid = lastName.trim().length > 0
+    
+    // Check if phone is exactly 10 digits
+    const isPhoneValid = phone.trim().length === 10 && /^\d{10}$/.test(phone)
+    
+    // Check if email is verified (API confirmed it's available)
+    const isEmailValid = emailStatus === 'valid'
+    
+    // Return true only if all conditions are met
+    return isFirstNameValid && isLastNameValid && isPhoneValid && isEmailValid
+  }
+
+  const handleEmailChange = (text: string) => {
+    setEmail(text)
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/
+
+    // If empty, clear messages
+    if (!text.trim()) {
+      setEmailStatus('')
+      setEmailMessage('')
+      return
+    }
+
+    // Check if email has @ and .com format
+    if (text.includes('@') && text.includes('.')) {
+      // Show checking availability message
+      setEmailStatus('checking')
+      setEmailMessage('Checking availability...')
+
+      // Validate with regex
+      if (!emailRegex.test(text)) {
+        // Invalid format
+        setEmailStatus('invalid')
+        setEmailMessage('Please enter a valid email address')
+        return
+      }
+
+      // Wait 0.3 seconds then call the API
+      const timer = setTimeout(async () => {
+        if (emailRegex.test(text)) {
+          try {
+            const response = await dispatch(checkEmail(text) as any)
+            // Handle success - email is available
+            setEmailStatus('valid')
+            setEmailMessage(response?.payload?.message)
+          } catch (error) {
+            console.log('Email verification error:', error)
+            setEmailStatus('invalid')
+            setEmailMessage('Email already registered')
+          }
+        }
+      }, 300)
+
+      return () => clearTimeout(timer)
+    } else if (text.includes('@') || text.includes('.')) {
+      // User is typing but hasn't completed format
+      setEmailStatus('checking')
+      setEmailMessage('Checking availability...')
+    } else {
+      setEmailStatus('')
+      setEmailMessage('')
+    }
+  }
+
+  const handleEmailVerification = async () => {
+    // Email validation: must have @ and valid TLD (.com, .org, etc.)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/
+
+    if (email.trim() && emailRegex.test(email)) {
+      try {
+        const response = await dispatch(checkEmail(email) as any);
+        // Handle the response - you can check if email is available or already registered
+      } catch (error) {
+        console.log('Email verification error:', error)
+      }
+    }
+  }
+
+  const handleCreateAccount = async() => {
+    const payload = { 
+      firstName: firstName, 
+      lastName: lastName, 
+      email: email, 
+      mobileNumber: phone, 
+      experienceLevel: experienceLevel, 
+      currentRole: currentRole, 
+      preferredLocation: preferredLocation, 
+      keySkills: keySkills, 
+      password: password, 
+      jobAlerts: jobAlerts 
+    }
+    const response = await dispatch(registerJobSeeker((payload)) as any);
+    if (response?.payload?.id) {
+      navigation.navigate('Login')
+    }
     // TODO: Implement account creation logic
   }
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {/* Back Button */}
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation?.goBack()}>
+          <ArrowLeft size={30} color="#000000" />
+        </TouchableOpacity>
         {/* Header Section */}
         <View style={styles.headerSection}>
           <Text style={styles.mainTitle}>Create your</Text>
@@ -114,8 +229,18 @@ const JobSeekerSignup = () => {
                   placeholderTextColor="#A0A0A0"
                   keyboardType="email-address"
                   value={email}
-                  onChangeText={setEmail}
+                  onChangeText={handleEmailChange}
                 />
+                {emailMessage ? (
+                  <Text style={[
+                    styles.helperText,
+                    emailStatus === 'checking' && styles.emailStatusChecking,
+                    emailStatus === 'valid' && styles.emailStatusValid,
+                    emailStatus === 'invalid' && styles.emailStatusInvalid,
+                  ]}>
+                    {emailMessage}
+                  </Text>
+                ) : null}
               </View>
 
               <View style={styles.inputGroup}>
@@ -134,7 +259,11 @@ const JobSeekerSignup = () => {
                 </Text>
               </View>
 
-              <TouchableOpacity style={styles.nextButton} onPress={handleNextStep}>
+              <TouchableOpacity
+                style={[styles.nextButton, !isStep1Valid() && styles.buttonDisabled]}
+                onPress={() => handleNextStep(1)}
+                disabled={!isStep1Valid()}
+              >
                 <Text style={styles.nextButtonText}>Next</Text>
               </TouchableOpacity>
 
@@ -239,7 +368,7 @@ const JobSeekerSignup = () => {
                 <TouchableOpacity style={styles.previousButton} onPress={handlePreviousStep}>
                   <Text style={styles.previousButtonText}>Previous</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.nextButton} onPress={handleNextStep}>
+                <TouchableOpacity style={styles.nextButton} onPress={() => handleNextStep(2)}>
                   <Text style={styles.nextButtonText}>Next</Text>
                 </TouchableOpacity>
               </View>
@@ -433,6 +562,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F3F1FF',
+  },
+  backButton: {
+    marginBottom: 16,
+    padding: 8,
+    alignSelf: 'flex-start',
   },
   scrollContent: {
     paddingHorizontal: 20,
@@ -768,6 +902,10 @@ const styles = StyleSheet.create({
     color: '#363535',
     fontFamily: 'Geist-VariableFont_wght',
   },
+  buttonDisabled: {
+    backgroundColor: '#CCCCCC',
+    opacity: 0.6,
+  },
   signUpContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -785,5 +923,17 @@ const styles = StyleSheet.create({
     color: '#165DFC',
     fontFamily: 'Geist-VariableFont_wght',
     textDecorationLine: 'underline',
+  },
+  emailStatusChecking: {
+    color: '#FFA500',
+    fontWeight: '500',
+  },
+  emailStatusValid: {
+    color: '#10B981',
+    fontWeight: '500',
+  },
+  emailStatusInvalid: {
+    color: '#ff4444',
+    fontWeight: '500',
   },
 })

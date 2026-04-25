@@ -28,8 +28,6 @@ const fetchProfileData = async () => {
       if (userLoggedInData) {
         const parsedUserData = JSON.parse(userLoggedInData);
         const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
-        console.log(userId,"userId");
-        
         // const userId = parsedUserData?.id || null;
         if ( userId) {
           const resultId = userId.replace(/"/g, '');
@@ -42,9 +40,7 @@ const fetchProfileData = async () => {
       console.log('Error fetching profile data:', error);
     }
   };
-  console.log(selector,"userData");
   const userData = selector && selector?.data && selector?.data[0];
-  
   const isLoading = selector?.isLoading;
   return (
     <SafeAreaView style={styles.container}>
