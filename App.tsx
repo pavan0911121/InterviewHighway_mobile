@@ -64,7 +64,6 @@ function AppContent() {
   // Fetch role immediately after login if user exists but role doesn't
   useEffect(() => {
     if (selector?.isAuthenticated && selector?.user && !selector?.role) {
-      console.log("Fetching user role for user:", selector?.user?.id);
       dispatch(getUserRole(selector?.user?.id)as any);
     }
   }, [selector?.isAuthenticated, selector?.user, selector?.role, dispatch]);
@@ -78,7 +77,6 @@ function AppContent() {
         setIsLoggedIn(true);
       }
       if(userRole){
-        console.log("User role found in local storage:", userRole);
         // Parse the stringified role
         const parsedRole = JSON.parse(userRole);
         setRole(parsedRole);

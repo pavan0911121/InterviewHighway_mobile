@@ -38,6 +38,12 @@ const employerProfileSlice = createSlice({
     name: 'profile',
     initialState,
     reducers: {
+        clearEmployerProfileData: (state) => {
+            state.courses = null;
+            state.isLoading = false;
+            state.error = null;
+            state.total = 0;
+        },
         clearError: (state) => {
             state.error = null;
         },
@@ -66,7 +72,7 @@ const employerProfileSlice = createSlice({
 });
 
 export const {
-
+    clearEmployerProfileData
 } = employerProfileSlice.actions;
 
 export default employerProfileSlice.reducer;

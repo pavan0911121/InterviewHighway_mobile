@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import client from '../../Networking/Client';
 import { EMPLOYER_ENDPOINTS } from '../../Networking/EndPoints';
+import { clear } from 'node:console';
 
 
 interface creditsState {
@@ -73,6 +74,12 @@ const employerCreditsSlice = createSlice({
     name: 'employerCredits',
     initialState,
     reducers: {
+        clearEmployerCreditsData: (state) => {
+            state.data = null;
+            state.total = 0;
+            state.tiers = null; // Clear tiers data
+            state.transactions = null; // Clear transactions data
+        },
         clearError: (state) => {
             state.error = null;
         },
@@ -137,6 +144,7 @@ const employerCreditsSlice = createSlice({
 
 export const {
     clearError,
+    clearEmployerCreditsData
 } = employerCreditsSlice.actions;
 
 export default employerCreditsSlice.reducer;

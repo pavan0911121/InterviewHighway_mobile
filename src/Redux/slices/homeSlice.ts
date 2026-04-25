@@ -3,6 +3,7 @@ import client from '../../Networking/Client';
 import { AUTH_ENDPOINTS, JOBS_ENDPOINTS, USER_ENDPOINTS } from '../../Networking/EndPoints';
 import { getData } from '../../AsyncStore/asyncStorage';
 import * as AsyncStore from "../../AsyncStore";
+import { clear } from 'node:console';
 
 
 interface homeState {
@@ -41,6 +42,13 @@ const homeSlice = createSlice({
     name: 'home',
     initialState,
     reducers: {
+        clearHomeData: (state) => {
+            state.user = null;
+            state.isLoading = false;
+            state.error = null;
+            state.recommendedJobs = [];
+            state.total = 0;
+        },
         clearError: (state) => {
         },
     },
@@ -66,7 +74,7 @@ const homeSlice = createSlice({
 });
 
 export const {
-
+clearHomeData,
 } = homeSlice.actions;
 
 export default homeSlice.reducer;

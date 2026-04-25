@@ -4,6 +4,7 @@ import { AUTH_ENDPOINTS, USER_ENDPOINTS } from '../../Networking/EndPoints';
 import { getData } from '../../AsyncStore/asyncStorage';
 import { USER_TOKEN } from '../../AsyncStore/keys';
 import * as AsyncStore from "../../AsyncStore";
+import { clear } from 'node:console';
 
 interface User {
   id: string;
@@ -190,6 +191,23 @@ const loginSlice = createSlice({
       state.currentRole = action.payload.currentRole || null;
       state.preferredLocation = action.payload.preferredLocation || null;
     },
+    clearUserData: (state) => {
+      state.firstName = null;
+      state.lastName = null;
+      state.email = null;
+      state.mobileNumber = null;
+      state.experienceLevel = null;
+      state.currentRole = null;
+      state.preferredLocation = null;
+      state.role = null;
+      state.isVerified = false;
+      state.user = null;
+      state.token = null;
+      state.isAuthenticated = false;
+      state.error = null;
+      state.deviceInfoPosted = false;
+      state.isLoading = false;
+    },
     clearError: (state) => {
       state.error = null;
     },
@@ -339,7 +357,7 @@ export const {
   clearError,
   updateUserData,
   updateExperience,
-
+clearUserData
 } = loginSlice.actions;
 
 export default loginSlice.reducer;

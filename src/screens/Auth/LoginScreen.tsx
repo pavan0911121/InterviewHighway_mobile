@@ -104,8 +104,6 @@ const LoginScreen: React.FC = () => {
 
   const handleSignUp = () => {
     navigation.navigate('AccountTypeSelection');
-    // TODO: Implement sign up navigation
-    console.log('Sign up pressed');
   };
 
   return (

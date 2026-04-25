@@ -38,6 +38,10 @@ const employerApplicationsSlice = createSlice({
     name: 'employerApplications',
     initialState,
     reducers: {
+        clearEmplloyerApplicationsData: (state) => {
+            state.data = null;
+            state.total = 0;
+        },
         clearError: (state) => {
             state.error = null;
         },
@@ -66,7 +70,8 @@ const employerApplicationsSlice = createSlice({
 });
 
 export const {
-
+    clearEmplloyerApplicationsData,
+    clearError
 } = employerApplicationsSlice.actions;
 
 export default employerApplicationsSlice.reducer;

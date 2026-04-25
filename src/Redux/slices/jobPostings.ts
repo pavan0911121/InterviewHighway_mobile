@@ -38,6 +38,12 @@ const jobPostingsSlice = createSlice({
     name: 'jobPostings',
     initialState,
     reducers: {
+        clearEmployerJobPostingsData: (state) => {
+            state.data = null;
+            state.isLoading = false;
+            state.error = null;
+            state.total = 0;
+        },
         clearError: (state) => {
             state.error = null;
         },
@@ -66,7 +72,7 @@ const jobPostingsSlice = createSlice({
 });
 
 export const {
-
+    clearEmployerJobPostingsData
 } = jobPostingsSlice.actions;
 
 export default jobPostingsSlice.reducer;

@@ -2,6 +2,18 @@ import React from 'react'
 import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Linking } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { DrawerNavigationProp, DrawerContentComponentProps } from '@react-navigation/drawer'
+import { useDispatch } from 'react-redux'
+import * as AsyncStore from '../AsyncStore'
+import { clearCoursesData } from '../Redux/slices/coursesSlice'
+import { clearEmplloyerAnalyticsData } from '../Redux/slices/employerAnalyticsSlice'
+import { clearEmplloyerApplicationsData } from '../Redux/slices/employerApplicationsSlice'
+import { clearEmployerCreditsData } from '../Redux/slices/employerCreditsSlice'
+import { clearEmployerDashboardData } from '../Redux/slices/employerDashboardSlice'
+import { clearEmployerProfileData } from '../Redux/slices/employerProfileSlice'
+import { clearHomeData } from '../Redux/slices/homeSlice'
+import { clearEmployerJobPostingsData } from '../Redux/slices/jobPostings'
+import { clearUserData } from '../Redux/slices/loginSlice'
+import { clearProfileData } from '../Redux/slices/profileSlice'
 
 interface MenuItem {
   id: string
@@ -11,7 +23,7 @@ interface MenuItem {
 
 const SideMenu: React.FC<DrawerContentComponentProps> = ({ navigation }) => {
   const insets = useSafeAreaInsets()
-
+  const dispatch = useDispatch()
   const menuItems: MenuItem[] = [
     { id: '1', label: 'About us', url: 'https://interviewhighway.com/about' },
     { id: '2', label: 'Acceptable Use Policy', url: 'https://interviewhighway.com/acceptable-use' },
@@ -26,9 +38,35 @@ const SideMenu: React.FC<DrawerContentComponentProps> = ({ navigation }) => {
     navigation.closeDrawer()
   }
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
+    
+    await dispatch(clearEmplloyerAnalyticsData());
+    await dispatch(clearEmplloyerApplicationsData());
+    await dispatch(clearEmployerCreditsData());
+    await dispatch(clearEmployerDashboardData());
+    await dispatch(clearEmployerProfileData());
+    await dispatch(clearEmployerJobPostingsData());
+    
+    
+    await dispatch(clearHomeData());
+    await dispatch(clearUserData());
+    await dispatch(clearProfileData());
+    await dispatch(clearCoursesData());
+    
+    // Clear AsyncStorage - remove all auth-related keys
+    await AsyncStore.multiRemove([
+      AsyncStore.Keys.USER_TOKEN,
+      AsyncStore.Keys.IS_LOGIN,
+      AsyncStore.Keys.USER_DATA,
+      AsyncStore.Keys.IS_VERIFIED,
+      AsyncStore.Keys.USER_ID,
+      AsyncStore.Keys.ROLE,
+      AsyncStore.Keys.EMP_ID,
+      AsyncStore.Keys.ORG_ID,
+    ]);
+    
+    // Close drawer - the app will re-check AsyncStorage and navigate to login
     navigation.closeDrawer()
-    // Handle sign out logic here
   }
 
   return (

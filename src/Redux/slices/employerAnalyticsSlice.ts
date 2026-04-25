@@ -57,6 +57,11 @@ const employerAnalyticsSlice = createSlice({
     name: 'employerAnalytics',
     initialState,
     reducers: {
+        clearEmplloyerAnalyticsData: (state) => {
+            state.data = null;
+            state.total = 0;
+            state.timelineData = null;
+        },
         clearError: (state) => {
             state.error = null;
         },
@@ -103,7 +108,8 @@ const employerAnalyticsSlice = createSlice({
 });
 
 export const {
-
+clearEmplloyerAnalyticsData,
+clearError
 } = employerAnalyticsSlice.actions;
 
 export default employerAnalyticsSlice.reducer;

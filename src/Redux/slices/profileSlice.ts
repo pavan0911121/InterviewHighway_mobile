@@ -38,6 +38,10 @@ const profileSlice = createSlice({
     name: 'profile',
     initialState,
     reducers: {
+        clearProfileData: (state) => {
+            state.data = null;
+            state.total = 0;
+        },
         clearError: (state) => {
             state.error = null;
         },
@@ -65,6 +69,8 @@ const profileSlice = createSlice({
 });
 
 export const {
+    clearProfileData,
+    clearError
 
 } = profileSlice.actions;
 

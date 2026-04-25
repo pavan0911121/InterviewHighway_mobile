@@ -7,6 +7,7 @@ import { Funnel } from 'lucide-react-native/icons';
 import FilterModal from '../Dashboard/FilterModal';
 import { getCourses } from '../../../Redux/slices/coursesSlice';
 import { useDispatch, useSelector } from 'react-redux';
+import { Search } from 'lucide-react-native';
 
 const CoursesScreen = () => {
   const navigation = useNavigation();
@@ -69,7 +70,7 @@ const CoursesScreen = () => {
 
           <View style={styles.marketplaceSection}>
             <View style={styles.marketplaceIcon}>
-              <Text style={styles.marketplaceIconText}>🔍</Text>
+               <Search color={'#00A63E'}/>
             </View>
             <View style={styles.marketplaceContent}>
               <Text style={styles.marketplaceTitle}>Course Marketplace</Text>
@@ -208,7 +209,6 @@ const styles = StyleSheet.create({
   marketplaceSection: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#F3F4F6',
     borderRadius: 8,
     padding: 12,
     gap: 12,

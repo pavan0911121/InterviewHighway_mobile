@@ -41,6 +41,10 @@ const employerDashboardSlice = createSlice({
         clearError: (state) => {
             state.error = null;
         },
+        clearEmployerDashboardData: (state) => {
+            state.data = null;
+            state.total = 0;
+        }
     },
     extraReducers: (builder) => {
         builder
@@ -66,7 +70,7 @@ const employerDashboardSlice = createSlice({
 });
 
 export const {
-
+    clearEmployerDashboardData
 } = employerDashboardSlice.actions;
 
 export default employerDashboardSlice.reducer;
