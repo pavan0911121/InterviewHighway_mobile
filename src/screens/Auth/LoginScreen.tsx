@@ -166,7 +166,7 @@ const LoginScreen: React.FC = () => {
       //   // Send Google Sign-In info to your backend
       //   const data = {
       //     email: userData?.data?.user?.email,
-      //   };
+      //   };p
 
         // Call your backend API to authenticate with Google
         // const result = await dispatch(postUserData(data) as any);

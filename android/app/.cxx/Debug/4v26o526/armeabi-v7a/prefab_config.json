@@ -1,11 +1,11 @@
 {
   "enabled": true,
-  "prefabPath": "/private/var/root/.gradle/caches/modules-2/files-2.1/com.google.prefab/cli/2.1.0/aa32fec809c44fa531f01dcfb739b5b3304d3050/cli-2.1.0-all.jar",
+  "prefabPath": "/Users/pavankarthik/.gradle/caches/modules-2/files-2.1/com.google.prefab/cli/2.1.0/aa32fec809c44fa531f01dcfb739b5b3304d3050/cli-2.1.0-all.jar",
   "packages": [
     "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-worklets/android/build/intermediates/prefab_package/debug/prefab",
-    "/private/var/root/.gradle/caches/9.0.0/transforms/df62f4a3c6818dc3cc09553936c6f2fd/transformed/react-android-0.84.1-debug/prefab",
+    "/Users/pavankarthik/.gradle/caches/8.13/transforms/bf534975a15cab713fd8c8a94be4d904/transformed/react-android-0.84.1-debug/prefab",
     "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-reanimated/android/build/intermediates/prefab_package/debug/prefab",
-    "/private/var/root/.gradle/caches/9.0.0/transforms/9d34929fdb65a145dc091d62c15d0d86/transformed/hermes-android-250829098.0.9-debug/prefab",
-    "/private/var/root/.gradle/caches/9.0.0/transforms/6cb94eb4240b26bae55579cb79d8f81a/transformed/fbjni-0.7.0/prefab"
+    "/Users/pavankarthik/.gradle/caches/8.13/transforms/c07f82ccf2b9b5dd1e5d91cd65a8af73/transformed/hermes-android-250829098.0.9-debug/prefab",
+    "/Users/pavankarthik/.gradle/caches/8.13/transforms/afa14f1adbb86c059ef93176614d2683/transformed/fbjni-0.7.0/prefab"
   ]
 }
