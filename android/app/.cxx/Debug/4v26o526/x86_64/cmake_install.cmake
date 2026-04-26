@@ -44,9 +44,8 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
-  include("/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/rnasyncstorage_autolinked_build/cmake_install.cmake")
-  include("/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/RNCNetInfoSpec_autolinked_build/cmake_install.cmake")
   include("/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/RNCSlider_autolinked_build/cmake_install.cmake")
+  include("/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/RNGoogleSignInCGen_autolinked_build/cmake_install.cmake")
   include("/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/rnpicker_autolinked_build/cmake_install.cmake")
   include("/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/rngesturehandler_codegen_autolinked_build/cmake_install.cmake")
   include("/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/Debug/4v26o526/x86_64/rnreanimated_autolinked_build/cmake_install.cmake")
