@@ -1,0 +1,4 @@
+/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/RelWithDebInfo/4r6f1f12/x86_64/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/foo.dir
+/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/RelWithDebInfo/4r6f1f12/x86_64/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/boo.dir
+/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/RelWithDebInfo/4r6f1f12/x86_64/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/edit_cache.dir
+/Users/pavankarthik/InterviewHighway_mobile/android/app/.cxx/RelWithDebInfo/4r6f1f12/x86_64/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/rebuild_cache.dir

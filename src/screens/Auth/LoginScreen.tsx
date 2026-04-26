@@ -23,17 +23,10 @@ import { useDispatch } from 'react-redux';
 import { AppDispatch } from '../../Redux';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import supabase from '../../../supabase';
+import { useEffect } from 'react';
 
 
 const googleIcon = require('../../assets/google.png');
-
-// Configure Google Sign-In
-GoogleSignin.configure({
-  webClientId: '788719402448-ula730nqa8imak1hvf5qbd7quavir2ne.apps.googleusercontent.com', // Replace with your Google Web Client ID
-  iosClientId: '788719402448-19qjpf9u043a7p82jcoajbkee6bcctfp.apps.googleusercontent.com', // Replace with your Google iOS Client ID
-  offlineAccess: true,
-  forceCodeForRefreshToken: true,
-});
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 
@@ -50,8 +43,38 @@ const LoginScreen: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [errors, setErrors] = useState<Partial<LoginForm>>({});
   const [loginError, setLoginError] = useState<string>('');
+  const [googleConfigInitialized, setGoogleConfigInitialized] = useState(false);
   const navigation = useNavigation<LoginScreenNavigationProp>();
   const dispatch = useDispatch<AppDispatch>();
+
+  // Initialize Google Sign-In configuration once on component mount
+  useEffect(() => {
+    const initializeGoogleSignIn = async () => {
+      try {
+        GoogleSignin.configure({
+          webClientId: '788719402448-7bgr231umerf4nqmjodp3qiar26terre.apps.googleusercontent.com',
+          iosClientId: '788719402448-19qjpf9u043a7p82jcoajbkee6bcctfp.apps.googleusercontent.com',
+          offlineAccess: false,
+          forceCodeForRefreshToken: true,
+        });
+        
+        // Sign out first to ensure clean state on first attempt
+        try {
+          await GoogleSignin.signOut();
+        } catch (signOutError) {
+          // Ignore error if user wasn't signed in
+          console.log('Sign out info:', signOutError);
+        }
+        
+        setGoogleConfigInitialized(true);
+      } catch (error) {
+        console.error('Error initializing Google Sign-In:', error);
+        setGoogleConfigInitialized(true); // Still set to true to allow retry
+      }
+    };
+
+    initializeGoogleSignIn();
+  }, []);
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -104,6 +127,8 @@ const LoginScreen: React.FC = () => {
         }
       }
     } catch (error) {
+      console.log(error,"error from google");
+      
       if (error) {
         setLoginError('Login failed. Please check your credentials and try again.');
       }
@@ -126,8 +151,24 @@ const LoginScreen: React.FC = () => {
       setLoginError('');
       setIsLoading(true);
 
-      await GoogleSignin.hasPlayServices();
+      // Ensure Google Sign-In is initialized before proceeding
+      if (!googleConfigInitialized) {
+        setLoginError('Google Sign-In is initializing. Please try again.');
+        setIsLoading(false);
+        return;
+      }
 
+      // Check for Play Services availability
+      try {
+        await GoogleSignin.hasPlayServices();
+      } catch (playServicesError) {
+        console.log('Play Services Error:', playServicesError);
+        setLoginError('Google Play Services not available or outdated. Please update Google Play Services.');
+        setIsLoading(false);
+        return;
+      }
+
+      // Attempt sign-in
       const userInfo = await GoogleSignin.signIn();
 
       const idToken = userInfo.data?.idToken;
@@ -135,59 +176,78 @@ const LoginScreen: React.FC = () => {
       if (!idToken) {
         throw new Error('No ID token found');
       }
-      console.log(userInfo,"userinfogoogle");
-      
 
-      // // 🔥 Exchange with Supabase
-      // const { data, error } = await supabase.auth.signInWithIdToken({
-      //   provider: 'google',
-      //   token: idToken,
-      // });
+      console.log('Google Sign-In Success:', userInfo);
 
-      // if (error) {
-      //   console.log('Supabase error:', error);
-      //   return;
-      // }
+      // Extract user data
+      const userData = userInfo.data?.user;
+      if (userData) {
+        // Send to your backend for authentication
+        const data = {
+          email: userData.email,
+          name: userData.name,
+          id: userData.id,
+        };
 
-      // console.log('User:', data.user);
-      // console.log('Session:', data.session);
+        const result = await dispatch(postUserData(data) as any);
+        const userId = await dispatch(getVerifiedUser(result?.payload?.user?.id) as any);
 
-      // // ✅ ACCESS TOKEN HERE
-      // const accessToken = data.session.access_token;
-
-      // console.log('Access Token:', accessToken);
-
-      // if (userInfo) {
-      //   // Type assertion to access user data
-
-      //   const userData = (userInfo as any).user || userInfo;
-      //   console.log(userData, "userInfofromgoogle");
-
-      //   // Send Google Sign-In info to your backend
-      //   const data = {
-      //     email: userData?.data?.user?.email,
-      //   };p
-
-        // Call your backend API to authenticate with Google
-        // const result = await dispatch(postUserData(data) as any);
-        // const userId = await dispatch(getVerifiedUser(result?.payload?.user?.id) as any);
-
-        // if (result.type.includes('fulfilled')) {
-        //   // Successfully logged in
-        // } else if (result.type.includes('rejected')) {
-        //   const errorMessage = result.payload?.message || 'Google Sign-In failed.';
-        //   setLoginError(errorMessage);
-        // }
+        if (result.type.includes('fulfilled')) {
+          // Successfully logged in with Google
+          console.log('Google login successful');
+          // Navigation will be handled by your auth flow
+        } else if (result.type.includes('rejected')) {
+          const errorMessage = result.payload?.message || 'Google authentication failed.';
+          setLoginError(errorMessage);
+        }
       }
-     catch (error: any) {
+    } catch (error: any) {
+      console.error('Google Sign-In Error:', error);
+      
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        setLoginError('Google Sign-In cancelled');
+        setLoginError('Google Sign-In cancelled by user');
       } else if (error.code === statusCodes.IN_PROGRESS) {
-        setLoginError('Google Sign-In is in progress');
+        setLoginError('Google Sign-In is already in progress');
       } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
         setLoginError('Google Play Services not available');
+      } else if (error.code === '10') {
+        // Code 10 is DEVELOPER_ERROR - usually means configuration or network issue
+        // Retry once more as it often works on second attempt
+        console.log('Retrying Google Sign-In due to initial error...');
+        try {
+          setLoginError(''); // Clear error
+          const retryUserInfo = await GoogleSignin.signIn();
+          const retryIdToken = retryUserInfo.data?.idToken;
+
+          if (!retryIdToken) {
+            throw new Error('No ID token found on retry');
+          }
+
+          console.log('Google Sign-In Retry Success:', retryUserInfo);
+          const userData = retryUserInfo.data?.user;
+          
+          if (userData) {
+            const data = {
+              email: userData.email,
+              name: userData.name,
+              id: userData.id,
+            };
+
+            const result = await dispatch(postUserData(data) as any);
+            await dispatch(getVerifiedUser(result?.payload?.user?.id) as any);
+
+            if (result.type.includes('fulfilled')) {
+              console.log('Google login successful on retry');
+            } else if (result.type.includes('rejected')) {
+              const errorMessage = result.payload?.message || 'Google authentication failed.';
+              setLoginError(errorMessage);
+            }
+          }
+        } catch (retryError: any) {
+          console.error('Google Sign-In Retry Error:', retryError);
+          setLoginError('Google Sign-In failed. Please ensure your device has internet connection and try again.');
+        }
       } else {
-        console.log('Google Sign-In Error:', error);
         setLoginError('Google Sign-In failed. Please try again.');
       }
     } finally {
@@ -324,7 +384,7 @@ const LoginScreen: React.FC = () => {
             {/* Google Sign In Button */}
             <TouchableOpacity
               style={styles.googleButton}
-              disabled={isLoading}
+              disabled={isLoading || !googleConfigInitialized}
               activeOpacity={0.7}
               onPress={handleGoogleSignIn}
             >
@@ -332,7 +392,9 @@ const LoginScreen: React.FC = () => {
                 source={googleIcon}
                 style={styles.googleButtonIcon}
               />
-              <Text style={styles.googleButtonText}>Continue with google</Text>
+              <Text style={styles.googleButtonText}>
+                {!googleConfigInitialized ? 'Initializing...' : 'Continue with google'}
+              </Text>
             </TouchableOpacity>
           </View>
 
