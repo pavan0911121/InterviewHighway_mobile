@@ -129,6 +129,14 @@ export const RESUME_ENDPOINTS = {
     `${RAILWAY_API_BASE_URL}/api/resumes/user/${userId}`,
 };
 
+// ===================
+// PAYMENT ENDPOINTS
+// ===================
+
+export const PAYMENT_ENDPOINTS = {
+  paymentHistory: `${RAILWAY_API_BASE_URL}/api/payments/history`,
+};
+
 // ============================================================================
 // ============================================================================
 // ============================================================================

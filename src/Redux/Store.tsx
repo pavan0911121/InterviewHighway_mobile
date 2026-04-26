@@ -10,6 +10,7 @@ import employerApplicationsSlice from './slices/employerApplicationsSlice';
 import employerCreditsSlice from './slices/employerCreditsSlice';
 import employerAnalyticsSlice from './slices/employerAnalyticsSlice';
 import employerProfileSlice from './slices/employerProfileSlice';
+import paymentsSlice from './slices/paymentsSlice';
 
 
 export const store = configureStore({
@@ -24,6 +25,7 @@ export const store = configureStore({
     employerCredits: employerCreditsSlice,
     employerAnalytics: employerAnalyticsSlice,
     employerProfile: employerProfileSlice,
+    paymentHistory: paymentsSlice,
     ui: uiReducer,
   },
   middleware: (getDefaultMiddleware:any) =>

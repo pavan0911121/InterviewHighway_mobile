@@ -1,8 +1,13 @@
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, FlatList, Animated } from 'react-native'
-import React, { useState } from 'react'
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, FlatList, Animated, ActivityIndicator } from 'react-native'
+import React, { useEffect, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import { DrawerNavigationProp } from '@react-navigation/drawer'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useDispatch, useSelector } from 'react-redux'
+import { AppDispatch } from '../../../Redux'
+import * as AsyncStore from "../../../AsyncStore";
+import { getPaymentHistoryData } from '../../../Redux/slices/paymentsSlice'
+
 
 interface InvoiceDetail {
   courseId: string
@@ -31,31 +36,98 @@ interface Transaction {
 const PaymentsTabScreen = () => {
   const navigation = useNavigation()
   const [expandedTransactionId, setExpandedTransactionId] = useState<string | null>(null)
-  
-  // Mock data - set to empty array to see "No transactions" screen
-  const [transactions, setTransactions] = useState<Transaction[]>([
-    {
-      id: '1',
-      courseName: 'Test Course',
-      date: '22 Mar 2026',
-      amount: 10.00,
-      gst: 1.53,
-      status: 'Paid',
-      paymentId: 'pay_SH87mZq8TQKqe',
-      orderId: 'order_SudqL281D0...',
-      method: 'Razorpay',
-      companyName: 'INLINE4 SOLUTIONS PRIVATE LIMITED',
-      invoiceDate: '22 Mar 2026',
-      invoiceDetails: {
-        courseId: 'course_001',
-        instructorName: 'tutor test',
-        subtotal: 8.47,
-        cgst: 0.77,
-        sgst: 0.77,
-        totalGST: 1.53,
-      },
-    },
-  ])
+  const [isLoading, setIsLoading] = useState(true)
+  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const dispatch = useDispatch<AppDispatch>();
+  const selector = useSelector((state: any) => state.paymentHistory);
+
+  // Format date from ISO string to readable format
+  const formatDate = (dateString: string): string => {
+    try {
+      const date = new Date(dateString)
+      return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+    } catch (error) {
+      return dateString
+    }
+  }
+
+  // Calculate GST from amount
+  const calculateGST = (amountInPaisa: number) => {
+    const amountInRupees = amountInPaisa / 100
+    const totalGST = amountInRupees * 0.18 // 18% GST
+    const cgst = totalGST / 2 // 9%
+    const sgst = totalGST / 2 // 9%
+    const subtotal = amountInRupees - totalGST
+
+    return {
+      subtotal: parseFloat(subtotal.toFixed(2)),
+      cgst: parseFloat(cgst.toFixed(2)),
+      sgst: parseFloat(sgst.toFixed(2)),
+      totalGST: parseFloat(totalGST.toFixed(2)),
+    }
+  }
+
+  // Transform API response to Transaction format
+  const transformApiResponse = (data: any[]): Transaction[] => {
+    if (!data || !Array.isArray(data)) return []
+
+    return data.map((item: any) => {
+      const amountInRupees = item.amount / 100
+      const gstData = calculateGST(item.amount)
+
+      return {
+        id: item.id || '',
+        courseName: item.title || 'Unknown Course',
+        date: formatDate(item.created_at),
+        amount: amountInRupees,
+        gst: gstData.totalGST,
+        status: item.status === 'captured' ? 'Paid' : item.status,
+        paymentId: item.razorpay_payment_id || '',
+        orderId: item.razorpay_order_id || '',
+        method: 'Razorpay',
+        companyName: 'INLINE4 SOLUTIONS PRIVATE LIMITED',
+        invoiceDate: formatDate(item.created_at),
+        invoiceDetails: {
+          courseId: item.id || '',
+          instructorName: item.instructor_name || '',
+          ...gstData,
+        },
+      }
+    })
+  }
+
+  useEffect(() => {
+    getPaymentHistory()
+  }, [])
+
+  // Update transactions when selector data changes
+  useEffect(() => {
+    if (selector?.data && Array.isArray(selector?.data)) {
+      if (selector?.data.length > 0) {
+        const transformedTransactions = transformApiResponse(selector?.data)
+        setTransactions(transformedTransactions)
+      } else {
+        setTransactions([])
+      }
+      setIsLoading(false)
+    } else if (selector?.error) {
+      setTransactions([])
+      setIsLoading(false)
+    }
+  }, [selector])
+console.log(transactions, selector?.data, "transactionsss");
+
+  const getPaymentHistory = async () => {
+    try {
+      setIsLoading(true)
+      const response = await dispatch(getPaymentHistoryData() as any)
+    } catch (error) {
+      console.log("Error fetching payment history:", error)
+      setIsLoading(false)
+    }
+  }
+
+  console.log(selector, "selector in payments")
 
   const totalSpent = transactions.reduce((sum, t) => sum + t.amount, 0)
   const totalGST = transactions.reduce((sum, t) => sum + t.gst, 0)
@@ -254,8 +326,16 @@ const PaymentsTabScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Content */}
-      {transactions.length === 0 ? renderEmptyState() : renderTransactionHistory()}
+      {/* Loading State */}
+      {selector?.isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#165DFC" />
+          <Text style={styles.loadingText}>Loading payment history...</Text>
+        </View>
+      ) : (
+        /* Content */
+        transactions.length === 0 ? renderEmptyState() : renderTransactionHistory()
+      )}
     </SafeAreaView>
   )
 }
@@ -266,6 +346,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F3F4F6',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#6B7280',
+    fontFamily: 'Geist-VariableFont_wght',
   },
   header: {
     flexDirection: 'row',
