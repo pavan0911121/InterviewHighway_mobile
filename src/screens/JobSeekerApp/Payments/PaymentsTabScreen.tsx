@@ -7,7 +7,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { AppDispatch } from '../../../Redux'
 import * as AsyncStore from "../../../AsyncStore";
 import { getPaymentHistoryData } from '../../../Redux/slices/paymentsSlice'
-
+import { CircleCheckBig, CreditCard } from 'lucide-react-native'
 
 interface InvoiceDetail {
   courseId: string
@@ -28,15 +28,15 @@ interface Transaction {
   paymentId: string
   orderId: string
   method: string
+  brand: string
   companyName: string
   invoiceDate: string
   invoiceDetails: InvoiceDetail
 }
 
-const PaymentsTabScreen = () => {
-  const navigation = useNavigation()
+const PaymentsTabScreen = ({ }) => {
+  const navigation = useNavigation<DrawerNavigationProp<any>>();
   const [expandedTransactionId, setExpandedTransactionId] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const dispatch = useDispatch<AppDispatch>();
   const selector = useSelector((state: any) => state.paymentHistory);
@@ -54,7 +54,7 @@ const PaymentsTabScreen = () => {
   // Calculate GST from amount
   const calculateGST = (amountInPaisa: number) => {
     const amountInRupees = amountInPaisa / 100
-    const totalGST = amountInRupees * 0.18 // 18% GST
+    const totalGST = amountInRupees * 0.153 // 18% GST
     const cgst = totalGST / 2 // 9%
     const sgst = totalGST / 2 // 9%
     const subtotal = amountInRupees - totalGST
@@ -69,65 +69,50 @@ const PaymentsTabScreen = () => {
 
   // Transform API response to Transaction format
   const transformApiResponse = (data: any[]): Transaction[] => {
-    if (!data || !Array.isArray(data)) return []
-
     return data.map((item: any) => {
       const amountInRupees = item.amount / 100
       const gstData = calculateGST(item.amount)
-
+      console.log(item?.courses?.title, "data in transformApiResponse");
       return {
         id: item.id || '',
-        courseName: item.title || 'Unknown Course',
+        courseName: item?.courses?.title || 'Unknown Course',
         date: formatDate(item.created_at),
         amount: amountInRupees,
         gst: gstData.totalGST,
         status: item.status === 'captured' ? 'Paid' : item.status,
         paymentId: item.razorpay_payment_id || '',
         orderId: item.razorpay_order_id || '',
-        method: 'Razorpay',
+        method: item?.method,
+        brand:'InterviewHighway',
         companyName: 'INLINE4 SOLUTIONS PRIVATE LIMITED',
         invoiceDate: formatDate(item.created_at),
         invoiceDetails: {
           courseId: item.id || '',
-          instructorName: item.instructor_name || '',
+          instructorName: item?.courses?.instructor_name || '',
           ...gstData,
         },
       }
     })
   }
+  console.log(selector?.data?.transactions, "transaccvtttc");
 
+  // Fetch payment history on mount
   useEffect(() => {
-    getPaymentHistory()
-  }, [])
+    dispatch(getPaymentHistoryData() as any)
+  }, [dispatch])
 
   // Update transactions when selector data changes
   useEffect(() => {
-    if (selector?.data && Array.isArray(selector?.data)) {
-      if (selector?.data.length > 0) {
-        const transformedTransactions = transformApiResponse(selector?.data)
+
+    if (selector?.data) {
+      if (selector?.data?.transactions) {
+        const transformedTransactions = transformApiResponse(selector?.data?.transactions)
+        console.log(transformedTransactions, "transformedTransactions");
+
         setTransactions(transformedTransactions)
-      } else {
-        setTransactions([])
       }
-      setIsLoading(false)
-    } else if (selector?.error) {
-      setTransactions([])
-      setIsLoading(false)
     }
-  }, [selector])
-console.log(transactions, selector?.data, "transactionsss");
-
-  const getPaymentHistory = async () => {
-    try {
-      setIsLoading(true)
-      const response = await dispatch(getPaymentHistoryData() as any)
-    } catch (error) {
-      console.log("Error fetching payment history:", error)
-      setIsLoading(false)
-    }
-  }
-
-  console.log(selector, "selector in payments")
+  }, [selector?.data?.transactions])
 
   const totalSpent = transactions.reduce((sum, t) => sum + t.amount, 0)
   const totalGST = transactions.reduce((sum, t) => sum + t.gst, 0)
@@ -136,7 +121,7 @@ console.log(transactions, selector?.data, "transactionsss");
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
       <View style={styles.iconContainer}>
-        <Text style={styles.walletIcon}>💳</Text>
+        <CreditCard color={"#007AFF"} />
       </View>
       <Text style={styles.emptyTitle}>No transactions yet</Text>
       <Text style={styles.emptySubtitle}>Your course purchases will appear here</Text>
@@ -149,11 +134,11 @@ console.log(transactions, selector?.data, "transactionsss");
     return (
       <View style={styles.transactionWrapper}>
         <TouchableOpacity style={styles.transactionItem} onPress={() =>
-                  setExpandedTransactionId(isExpanded ? null : item.id)
-                }>
+          setExpandedTransactionId(isExpanded ? null : item.id)
+        }>
           <View style={styles.transactionLeft}>
             <View style={styles.courseIcon}>
-              <Text style={styles.courseIconText}>📚</Text>
+              <CreditCard color={"#00AA28"} />
             </View>
             <View style={styles.transactionInfo}>
               <Text style={styles.courseName}>{item.courseName}</Text>
@@ -162,14 +147,15 @@ console.log(transactions, selector?.data, "transactionsss");
           </View>
           <View style={styles.transactionRight}>
             <View style={[styles.statusBadge, item.status === 'Paid' && styles.statusPaid]}>
-              <Text style={styles.statusIcon}>✓</Text>
+              <View style={styles.statusIcon}>
+
+              <CircleCheckBig color={"#00AA28"} size={15} />
+              </View>
               <Text style={styles.statusText}>{item.status}</Text>
             </View>
             <View style={styles.amountAndDropdown}>
               <Text style={styles.amount}>₹{item.amount.toFixed(2)}</Text>
-              <TouchableOpacity
-                style={styles.dropdownButton}
-              >
+              <TouchableOpacity style={styles.dropdownButton}>
                 <Text style={[styles.dropdownIcon, isExpanded && styles.dropdownIconRotated]}>
                   ▼
                 </Text>
@@ -185,6 +171,7 @@ console.log(transactions, selector?.data, "transactionsss");
             <View style={styles.invoiceHeader}>
               <View>
                 <Text style={styles.taxInvoiceLabel}>TAX INVOICE</Text>
+                <Text style={styles.companyName}>{item.brand}</Text>
                 <Text style={styles.companyName}>{item.companyName}</Text>
               </View>
               <View style={styles.invoiceDateBadge}>
@@ -214,27 +201,21 @@ console.log(transactions, selector?.data, "transactionsss");
               <Text style={styles.amountValue}>₹{item.amount.toFixed(2)}</Text>
             </View>
 
-            {/* Description and Amount Header */}
+            {/* Description */}
             <View style={styles.descriptionHeader}>
               <Text style={styles.descriptionHeaderLabel}>DESCRIPTION</Text>
               <Text style={styles.descriptionHeaderLabel}>AMOUNT</Text>
             </View>
-
-            {/* Course Item */}
             <View style={styles.courseItemContainer}>
               <View>
                 <Text style={styles.courseItemName}>{item.courseName}</Text>
-                <Text style={styles.courseItemInstructor}>
-                  Instructor: {item.invoiceDetails.instructorName}
-                </Text>
+                <Text style={styles.courseItemInstructor}>Instructor: {item.invoiceDetails.instructorName}</Text>
               </View>
               <Text style={styles.courseItemAmount}>₹{item.invoiceDetails.subtotal.toFixed(2)}</Text>
             </View>
 
-            {/* Divider */}
+            {/* Tax Breakdown */}
             <View style={styles.invoiceDivider} />
-
-            {/* Subtotal and Tax Breakdown */}
             <View style={styles.taxBreakdown}>
               <View style={styles.taxRow}>
                 <Text style={styles.taxLabel}>Subtotal (excl. GST)</Text>
@@ -252,64 +233,24 @@ console.log(transactions, selector?.data, "transactionsss");
                 <Text style={styles.taxLabelBold}>Total GST (18%)</Text>
                 <Text style={styles.taxValueBold}>₹{item.invoiceDetails.totalGST.toFixed(2)}</Text>
               </View>
-              <View style={styles.totalPaidRow}>
-                <Text style={styles.totalPaidLabel}>Total Paid</Text>
-                <Text style={styles.totalPaidValue}>₹{item.amount.toFixed(2)}</Text>
-              </View>
+            </View>
+
+            {/* Total Paid */}
+            <View style={styles.totalPaidRow}>
+              <Text style={styles.totalPaidLabel}>Total Paid</Text>
+              <Text style={styles.totalPaidValue}>₹{item.amount.toFixed(2)}</Text>
             </View>
 
             {/* Disclaimer */}
             <Text style={styles.disclaimer}>
-              This is a computer-generated invoice and does not require an actual signature. GST is applicable under reverse charge mechanism where applicable.
+              This is a computer-generated invoice and does not require a physical signature. GST is applicable under reverse charge mechanism where applicable.
             </Text>
           </View>
         )}
       </View>
     )
   }
-
-  const renderTransactionHistory = () => (
-    <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-      <View style={styles.historyHeader}>
-        <Text style={styles.historyTitle}>Payment History</Text>
-        <Text style={styles.historySubtitle}>All your course purchases with GST invoices</Text>
-      </View>
-
-      {/* Stats Cards */}
-      <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <Text style={styles.statLabel}>TOTAL SPENT</Text>
-          <Text style={styles.statValue}>₹{totalSpent.toFixed(2)}</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statLabel}>COURSES BOUGHT</Text>
-          <Text style={styles.statValue}>{coursesBought}</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statLabel}>TOTAL GST PAID</Text>
-          <Text style={styles.statValue}>₹{totalGST.toFixed(2)}</Text>
-        </View>
-      </View>
-
-      {/* Transactions Label */}
-      <View style={styles.transactionsLabel}>
-        <Text style={styles.transactionsCount}>
-          {transactions.length} TRANSACTION{transactions.length !== 1 ? 'S' : ''} — CLICK ANY ROW TO VIEW INVOICE
-        </Text>
-      </View>
-
-      {/* Transaction List */}
-      <View style={styles.transactionsList}>
-        <FlatList
-          data={transactions}
-          renderItem={renderTransactionItem}
-          keyExtractor={(item) => item.id}
-          scrollEnabled={false}
-        />
-      </View>
-    </ScrollView>
-  )
-
+  ///header
   return (
     <SafeAreaView style={styles.container}>
       {/* Sticky Header */}
@@ -326,15 +267,52 @@ console.log(transactions, selector?.data, "transactionsss");
         </TouchableOpacity>
       </View>
 
-      {/* Loading State */}
+      {/* Scrollable Content */}
       {selector?.isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#165DFC" />
-          <Text style={styles.loadingText}>Loading payment history...</Text>
+          <Text style={styles.loadingText}>Loading transactions...</Text>
         </View>
+      ) : transactions && transactions?.length === 0 ? (
+        renderEmptyState()
       ) : (
-        /* Content */
-        transactions.length === 0 ? renderEmptyState() : renderTransactionHistory()
+        <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+          {/* Payment History Header */}
+          <View style={styles.historyHeader}>
+            <Text style={styles.historyTitle}>Payment History</Text>
+            <Text style={styles.historySubtitle}>All your course purchases with GST invoices</Text>
+          </View>
+
+          {/* Stats Cards */}
+          <View style={styles.statsContainer}>
+            <View style={styles.statCard}>
+              <Text style={styles.statLabel}>TOTAL SPENT</Text>
+              <Text style={styles.statValue}>₹{totalSpent.toFixed(2)}</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statLabel}>COURSES BOUGHT</Text>
+              <Text style={styles.statValue}>{coursesBought}</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statLabel}>TOTAL GST PAID</Text>
+              <Text style={styles.statValue}>₹{totalGST.toFixed(2)}</Text>
+            </View>
+          </View>
+
+          {/* Transactions Label */}
+          <View style={styles.transactionsLabel}>
+            <Text style={styles.transactionsCount}>{transactions.length} TRANSACTION — CLICK ANY ROW TO VIEW INVOICE</Text>
+          </View>
+
+          {/* Transactions List */}
+          <View style={styles.transactionsList}>
+            {transactions.map((transaction) => (
+              <View key={transaction.id}>
+                {renderTransactionItem({ item: transaction })}
+              </View>
+            ))}
+          </View>
+        </ScrollView>
       )}
     </SafeAreaView>
   )
@@ -508,8 +486,8 @@ const styles = StyleSheet.create({
   courseIcon: {
     width: 44,
     height: 44,
-    borderRadius: 8,
-    backgroundColor: '#E0F2FE',
+    borderRadius: 25,
+    backgroundColor: '#D4FDE5',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -558,9 +536,11 @@ const styles = StyleSheet.create({
     color: '#22C55E',
     marginRight: 4,
     fontWeight: 'bold',
+    gap: 4,
   },
   statusText: {
     fontSize: 12,
+    gap: 14,
     fontWeight: '600',
     color: '#22C55E',
     fontFamily: 'Geist-VariableFont_wght',
@@ -600,7 +580,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     paddingVertical: 12,
     paddingHorizontal: 12,
-    backgroundColor: '#1E40AF',
+    backgroundColor: '#005FFF',
     borderRadius: 8,
     marginBottom: 16,
   },
@@ -613,6 +593,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   companyName: {
+    width: 200,
+    paddingVertical: 4,
     fontSize: 14,
     fontWeight: '700',
     color: '#FFFFFF',
@@ -652,6 +634,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   invoiceGridValue: {
+    textTransform: 'capitalize',
     fontSize: 12,
     fontWeight: '500',
     color: '#1F2937',

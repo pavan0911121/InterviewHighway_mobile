@@ -14,6 +14,7 @@ import { clearHomeData } from '../Redux/slices/homeSlice'
 import { clearEmployerJobPostingsData } from '../Redux/slices/jobPostings'
 import { clearUserData } from '../Redux/slices/loginSlice'
 import { clearProfileData } from '../Redux/slices/profileSlice'
+import { clearPaymentData } from '../Redux/slices/paymentsSlice'
 
 interface MenuItem {
   id: string
@@ -51,6 +52,7 @@ const SideMenu: React.FC<DrawerContentComponentProps> = ({ navigation }) => {
     await dispatch(clearHomeData());
     await dispatch(clearUserData());
     await dispatch(clearProfileData());
+    await dispatch(clearPaymentData());
     await dispatch(clearCoursesData());
     
     // Clear AsyncStorage - remove all auth-related keys

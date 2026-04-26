@@ -12,7 +12,7 @@ interface paymentsState {
 }
 
 const initialState: paymentsState = {
-    data: null,
+    data: [],
     isLoading: false,
     error: null,
     total: 0
@@ -38,7 +38,7 @@ const paymentsSlice = createSlice({
     name: 'payments',
     initialState,
     reducers: {
-        clearProfileData: (state) => {
+        clearPaymentData: (state) => {
             state.data = null;
             state.total = 0;
         },
@@ -68,7 +68,7 @@ const paymentsSlice = createSlice({
 });
 
 export const {
-    clearProfileData,
+    clearPaymentData,
     clearError
 
 } = paymentsSlice.actions;
