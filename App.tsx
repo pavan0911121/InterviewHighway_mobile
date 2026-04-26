@@ -43,7 +43,7 @@ function AppContent() {
       setShowSplash(false);
     }, 1400);
     return () => clearTimeout(timeout);
-  }, [role]);
+  }, [role, selector?.userId]);
   
   // Update login state when Redux state changes
   useEffect(() => {
@@ -102,6 +102,7 @@ function AppContent() {
       </>
     );
   }
+console.log(isLoggedIn, role, "Login and Role State in AppContent");
 
   return (
     <>

@@ -30,6 +30,7 @@ interface AuthState {
   experienceLevel?: string | null;
   currentRole?: string | null;
   preferredLocation?: string | null;
+  userId: string | null;
 }
 
 const initialState: AuthState = {
@@ -48,6 +49,7 @@ const initialState: AuthState = {
   experienceLevel: null,
   currentRole: null,
   preferredLocation: null,
+  userId: null,
 
 };
 //Login API call
@@ -285,7 +287,7 @@ const loginSlice = createSlice({
         state.error = null;
         const isVerified = action.payload?.[0]?.is_verified || false;
         const userId = action.payload?.[0]?.id || null;
-
+        state.userId = userId;
         if (userId) {
           AsyncStore.storeData(AsyncStore.Keys.IS_VERIFIED, JSON.stringify(isVerified));
           AsyncStore.storeData(AsyncStore.Keys.USER_ID, JSON.stringify(userId));
@@ -357,7 +359,7 @@ export const {
   clearError,
   updateUserData,
   updateExperience,
-clearUserData
+  clearUserData
 } = loginSlice.actions;
 
 export default loginSlice.reducer;

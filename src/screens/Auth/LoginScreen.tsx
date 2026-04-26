@@ -24,6 +24,8 @@ import { AppDispatch } from '../../Redux';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import supabase from '../../../supabase';
 import { useEffect } from 'react';
+import * as AsyncStore from '../../AsyncStore';
+// import { signInWithEmail, prepareGoogleAuthData } from '../../utils/supabaseAuth';
 
 
 const googleIcon = require('../../assets/google.png');
@@ -57,7 +59,7 @@ const LoginScreen: React.FC = () => {
           offlineAccess: false,
           forceCodeForRefreshToken: true,
         });
-        
+
         // Sign out first to ensure clean state on first attempt
         try {
           await GoogleSignin.signOut();
@@ -65,7 +67,7 @@ const LoginScreen: React.FC = () => {
           // Ignore error if user wasn't signed in
           console.log('Sign out info:', signOutError);
         }
-        
+
         setGoogleConfigInitialized(true);
       } catch (error) {
         console.error('Error initializing Google Sign-In:', error);
@@ -107,7 +109,7 @@ const LoginScreen: React.FC = () => {
     try {
       setLoginError('');
       setIsLoading(true);
-
+      
       const data = {
         email: form.email,
         password: form.password,
@@ -115,23 +117,21 @@ const LoginScreen: React.FC = () => {
 
       const result = await dispatch(postUserData(data) as any);
       const userId = await dispatch(getVerifiedUser(result?.payload?.user?.id) as any)
-      // const userRole = await dispatch(getRole(result?.payload?.user?.id) as any);
 
-      // Check if the async thunk was fulfilled or rejected
       if (result.type.includes('fulfilled')) {
+        // Login successful
+        console.log('Login successful with Supabase token');
       } else if (result.type.includes('rejected')) {
-        // Failed - show error message
         const errorMessage = result.payload?.message || 'Login failed. Please check your credentials and try again.';
         if (errorMessage === 'Email not confirmed') {
           setLoginError('Please check your email and click the verification link before signing in.');
+        } else {
+          setLoginError(errorMessage);
         }
       }
     } catch (error) {
-      console.log(error,"error from google");
-      
-      if (error) {
-        setLoginError('Login failed. Please check your credentials and try again.');
-      }
+      console.log(error, "error from login");
+      setLoginError('Login failed. Please check your credentials and try again.');
     } finally {
       setIsLoading(false);
     }
@@ -160,96 +160,54 @@ const LoginScreen: React.FC = () => {
 
       // Check for Play Services availability
       try {
-        await GoogleSignin.hasPlayServices();
-      } catch (playServicesError) {
-        console.log('Play Services Error:', playServicesError);
-        setLoginError('Google Play Services not available or outdated. Please update Google Play Services.');
-        setIsLoading(false);
-        return;
-      }
+          await GoogleSignin.hasPlayServices()
+          const response = await GoogleSignin.signIn()
+          if (response?.type === 'success' ) {
+            const { data, error } = await supabase.auth.signInWithIdToken({
+              provider: 'google',
+              token: response.data.idToken as string,
+            })
+            console.log(data,"data from gogle signin");
+            
+            if(error) {
+              setLoginError(error.message || 'Authentication failed');
+              setIsLoading(false);
+              return;
+            }
 
-      // Attempt sign-in
-      const userInfo = await GoogleSignin.signIn();
-
-      const idToken = userInfo.data?.idToken;
-
-      if (!idToken) {
-        throw new Error('No ID token found');
-      }
-
-      console.log('Google Sign-In Success:', userInfo);
-
-      // Extract user data
-      const userData = userInfo.data?.user;
-      if (userData) {
-        // Send to your backend for authentication
-        const data = {
-          email: userData.email,
-          name: userData.name,
-          id: userData.id,
-        };
-
-        const result = await dispatch(postUserData(data) as any);
-        const userId = await dispatch(getVerifiedUser(result?.payload?.user?.id) as any);
-
-        if (result.type.includes('fulfilled')) {
-          // Successfully logged in with Google
-          console.log('Google login successful');
-          // Navigation will be handled by your auth flow
-        } else if (result.type.includes('rejected')) {
-          const errorMessage = result.payload?.message || 'Google authentication failed.';
-          setLoginError(errorMessage);
+            if(data?.session?.access_token) {
+              // Store token and login status
+              await AsyncStore.storeData(AsyncStore.Keys.USER_TOKEN, data?.session?.access_token);
+              await AsyncStore.storeData(AsyncStore.Keys.IS_LOGIN, "true");
+              await AsyncStore.storeData(AsyncStore.Keys.USER_DATA, JSON.stringify(data?.session?.user));
+              
+              
+              // Store user data
+              if(data?.user) {
+                await AsyncStore.storeData(AsyncStore.Keys.USER_DATA, JSON.stringify(data.user));
+              }
+            }
+            
+            // Fetch verified user and role - this will update Redux state
+            const userResult = await dispatch(getVerifiedUser(data?.user?.id) as any);
+            
+            
+            // The App.tsx will automatically detect Redux state changes and navigate
+          }
+        } catch (error: any) {
+          if (error.code === statusCodes.IN_PROGRESS) {
+            setLoginError('Sign in already in progress');
+          } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+            setLoginError('Google Play Services not available or outdated');
+          } else {
+            setLoginError('Google Sign-In failed. Please try again.');
+            console.error('Google Sign-In Error:', error);
+          }
         }
-      }
+
     } catch (error: any) {
       console.error('Google Sign-In Error:', error);
-      
-      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        setLoginError('Google Sign-In cancelled by user');
-      } else if (error.code === statusCodes.IN_PROGRESS) {
-        setLoginError('Google Sign-In is already in progress');
-      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        setLoginError('Google Play Services not available');
-      } else if (error.code === '10') {
-        // Code 10 is DEVELOPER_ERROR - usually means configuration or network issue
-        // Retry once more as it often works on second attempt
-        console.log('Retrying Google Sign-In due to initial error...');
-        try {
-          setLoginError(''); // Clear error
-          const retryUserInfo = await GoogleSignin.signIn();
-          const retryIdToken = retryUserInfo.data?.idToken;
-
-          if (!retryIdToken) {
-            throw new Error('No ID token found on retry');
-          }
-
-          console.log('Google Sign-In Retry Success:', retryUserInfo);
-          const userData = retryUserInfo.data?.user;
-          
-          if (userData) {
-            const data = {
-              email: userData.email,
-              name: userData.name,
-              id: userData.id,
-            };
-
-            const result = await dispatch(postUserData(data) as any);
-            await dispatch(getVerifiedUser(result?.payload?.user?.id) as any);
-
-            if (result.type.includes('fulfilled')) {
-              console.log('Google login successful on retry');
-            } else if (result.type.includes('rejected')) {
-              const errorMessage = result.payload?.message || 'Google authentication failed.';
-              setLoginError(errorMessage);
-            }
-          }
-        } catch (retryError: any) {
-          console.error('Google Sign-In Retry Error:', retryError);
-          setLoginError('Google Sign-In failed. Please ensure your device has internet connection and try again.');
-        }
-      } else {
-        setLoginError('Google Sign-In failed. Please try again.');
-      }
+      setLoginError('Google Sign-In failed. Please ensure your device has internet connection and try again.');
     } finally {
       setIsLoading(false);
     }
