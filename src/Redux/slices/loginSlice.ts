@@ -1,10 +1,7 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import client from '../../Networking/Client';
 import { AUTH_ENDPOINTS, USER_ENDPOINTS } from '../../Networking/EndPoints';
-import { getData } from '../../AsyncStore/asyncStorage';
-import { USER_TOKEN } from '../../AsyncStore/keys';
 import * as AsyncStore from "../../AsyncStore";
-import { clear } from 'node:console';
 
 interface User {
   id: string;
@@ -60,7 +57,6 @@ export const postUserData = createAsyncThunk(
       const response = await client.post(AUTH_ENDPOINTS.login, payload);
       return response.data || response;
     } catch (error: any) {
-      console.log('Error posting user data:', error);
       return rejectWithValue({
         message: error?.message || 'Failed to post user data',
         code: error?.code || 'ERROR',
@@ -159,9 +155,9 @@ const loginSlice = createSlice({
       state.isLoading = true;
       state.error = null;
     },
-    loginSuccess: (state, action: PayloadAction<{ user: User; token: string }>) => {
+    loginSuccess: (state, action: PayloadAction<{ user: User; token: string, isAuthenticated: boolean }>) => {
       state.isLoading = false;
-      state.isAuthenticated = true;
+      state.isAuthenticated = action.payload.isAuthenticated;
       state.user = action.payload.user;
       state.token = action.payload.token;
       state.error = null;

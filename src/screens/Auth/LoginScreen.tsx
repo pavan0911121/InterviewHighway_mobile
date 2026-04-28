@@ -18,7 +18,7 @@ import { useAuth } from '../../context/AuthContext';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../../types/navigation';
 import { useNavigation } from '@react-navigation/native';
-import { getRole, getVerifiedUser, postUserData } from '../../Redux/slices/loginSlice';
+import { getRole, getVerifiedUser, loginSuccess, postUserData } from '../../Redux/slices/loginSlice';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '../../Redux';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
@@ -65,7 +65,6 @@ const LoginScreen: React.FC = () => {
           await GoogleSignin.signOut();
         } catch (signOutError) {
           // Ignore error if user wasn't signed in
-          console.log('Sign out info:', signOutError);
         }
 
         setGoogleConfigInitialized(true);
@@ -120,7 +119,6 @@ const LoginScreen: React.FC = () => {
 
       if (result.type.includes('fulfilled')) {
         // Login successful
-        console.log('Login successful with Supabase token');
       } else if (result.type.includes('rejected')) {
         const errorMessage = result.payload?.message || 'Login failed. Please check your credentials and try again.';
         if (errorMessage === 'Email not confirmed') {
@@ -130,7 +128,6 @@ const LoginScreen: React.FC = () => {
         }
       }
     } catch (error) {
-      console.log(error, "error from login");
       setLoginError('Login failed. Please check your credentials and try again.');
     } finally {
       setIsLoading(false);
@@ -139,7 +136,6 @@ const LoginScreen: React.FC = () => {
 
   const handleForgotPassword = () => {
     // TODO: Implement forgot password navigation
-    console.log('Forgot password pressed');
   };
 
   const handleSignUp = () => {
@@ -167,7 +163,6 @@ const LoginScreen: React.FC = () => {
               provider: 'google',
               token: response.data.idToken as string,
             })
-            console.log(data,"data from gogle signin");
             
             if(error) {
               setLoginError(error.message || 'Authentication failed');
@@ -180,7 +175,20 @@ const LoginScreen: React.FC = () => {
               await AsyncStore.storeData(AsyncStore.Keys.USER_TOKEN, data?.session?.access_token);
               await AsyncStore.storeData(AsyncStore.Keys.IS_LOGIN, "true");
               await AsyncStore.storeData(AsyncStore.Keys.USER_DATA, JSON.stringify(data?.session?.user));
-              
+
+              const sessionUser = data?.session?.user;
+              const sessionEmail = sessionUser?.email ?? '';
+              const userWithName = {
+                ...sessionUser,
+                email: sessionEmail,
+                name: sessionEmail ? sessionEmail.split('@')[0] : 'User',
+              };
+
+              dispatch(loginSuccess({
+                user: userWithName as any,
+                token: data?.session?.access_token,
+                isAuthenticated: true,
+              }) as any);
               
               // Store user data
               if(data?.user) {

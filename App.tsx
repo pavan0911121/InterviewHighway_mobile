@@ -84,11 +84,8 @@ function AppContent() {
       if(userLoggedInData){
         const parsedUserData = JSON.parse(userLoggedInData);
         setUserData(parsedUserData);
-      } else {
-        console.log("No user data found in local storage.");
       }
     } catch (error) {
-      console.log('Error retrieving user data from local storage:', error);
       return null;
     }
   }
@@ -102,7 +99,6 @@ function AppContent() {
       </>
     );
   }
-console.log(isLoggedIn, role, "Login and Role State in AppContent");
 
   return (
     <>
