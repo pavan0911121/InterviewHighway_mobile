@@ -212,9 +212,9 @@ client.get = async function (endpoint: string, customConfig: HeadersConfig = {},
  * POST request
  */
 client.post = async function (endpoint: string, body: any, customConfig: HeadersConfig = {}, isValidate: boolean = true): Promise<APIResponse> {
-  // const token = await getData(Keys.USER_TOKEN);
+  const token = await getData(Keys.USER_TOKEN);
   // const response = await client(token, endpoint, 'POST', body, customConfig, isValidate);
-  const response = await client("", endpoint, 'POST', body, customConfig, isValidate);
+  const response = await client(token, endpoint, 'POST', body, customConfig, isValidate);
 
   return parseAPIResponse(response);
 };

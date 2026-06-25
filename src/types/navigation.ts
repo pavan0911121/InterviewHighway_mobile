@@ -16,6 +16,7 @@ export type JobSeekerBottomTabParamList = {
   MyApplicationsTab: undefined;
   PaymentsTab: undefined;
   ProfileTab: undefined;
+  
 };
 export type EmployerBottomTabParamList = {
   EmployerDashboardTab: undefined;
@@ -24,6 +25,14 @@ export type EmployerBottomTabParamList = {
   EmployerAnalyticsTab: undefined;
   EmployerCreditsTab: undefined;
   EmployerProfileTab: undefined;
+};
+export type StackIdentifiersParamList = {
+  Home: undefined;
+  CourseDetails: undefined;
+  PaymentStatusScreen: undefined;
+  StackIdentifiers:undefined;
+  Lesson: undefined;
+  LessonDetails: undefined;
 };
 
 export type RootStackParamList = AuthStackParamList & AppStackParamList;

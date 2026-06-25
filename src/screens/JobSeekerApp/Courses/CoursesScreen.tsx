@@ -1,19 +1,24 @@
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { Funnel } from 'lucide-react-native/icons';
 import FilterModal from '../Dashboard/FilterModal';
-import { getCourses } from '../../../Redux/slices/coursesSlice';
+import { getCourses, getEnrollmentCourses } from '../../../Redux/slices/coursesSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { Search } from 'lucide-react-native';
 
+
+type CourseStackParams = {
+  CourseDetails: { courseData: any };
+};
+
 const CoursesScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<CourseStackParams>>();
   const [showFilterModal, setShowFilterModal] = useState(false);
   const dispatch = useDispatch();
-    const selector = useSelector((state: any) => state.courses);
+  const selector = useSelector((state: any) => state.courses);
 
   useEffect(() => {
     getCoursesData();
@@ -21,8 +26,8 @@ const CoursesScreen = () => {
   const getCoursesData = async () => {
     try {
       // Make API call to fetch courses
-      const response = await dispatch(getCourses() as any);
-      console.log('Courses Response:', response);
+      await dispatch(getCourses() as any);
+      
     } catch (error) {
       console.log('Error fetching courses:', error);
     }
@@ -36,9 +41,9 @@ const CoursesScreen = () => {
 
   const courses = selector?.courses
   const handleApplyFilters = (filters: any) => {
-    console.log('Applied Filters:', filters);
     // You can dispatch an action here to filter jobs based on the selected filters
   };
+  console.log(selector?.courses, "courses in screen");
   return (
     <SafeAreaView style={styles.container}>
       {/* Sticky Header */}
@@ -70,7 +75,7 @@ const CoursesScreen = () => {
 
           <View style={styles.marketplaceSection}>
             <View style={styles.marketplaceIcon}>
-               <Search color={'#00A63E'}/>
+              <Search color={'#00A63E'} />
             </View>
             <View style={styles.marketplaceContent}>
               <Text style={styles.marketplaceTitle}>Course Marketplace</Text>
@@ -95,7 +100,7 @@ const CoursesScreen = () => {
 
         {/* Courses List */}
         <View style={styles.coursesContainer}>
-          {courses?.map((course:any) => (
+          {courses && courses?.map((course: any) => (
             <View key={course?.id} style={styles.courseCard}>
               <View style={styles.courseHeader}>
                 <View>
@@ -113,7 +118,10 @@ const CoursesScreen = () => {
 
               <View style={styles.courseFooter}>
                 <Text style={styles.courseId}>{course?.currency}{course?.price}</Text>
-                <TouchableOpacity style={styles.viewButton}>
+                <TouchableOpacity
+                  style={styles.viewButton}
+                  onPress={() => navigation.navigate('CourseDetails', { courseData: course })}
+                >
                   <Text style={styles.viewButtonIcon}>▶</Text>
                   <Text style={styles.viewButtonText}>View Course</Text>
                 </TouchableOpacity>

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Linking } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { DrawerNavigationProp, DrawerContentComponentProps } from '@react-navigation/drawer'
@@ -16,6 +16,7 @@ import { clearUserData } from '../Redux/slices/loginSlice'
 import { clearProfileData } from '../Redux/slices/profileSlice'
 import { clearPaymentData } from '../Redux/slices/paymentsSlice'
 
+
 interface MenuItem {
   id: string
   label: string
@@ -23,6 +24,7 @@ interface MenuItem {
 }
 
 const SideMenu: React.FC<DrawerContentComponentProps> = ({ navigation }) => {
+  const [loader, setLoader] = useState(false)
   const insets = useSafeAreaInsets()
   const dispatch = useDispatch()
   const menuItems: MenuItem[] = [
@@ -40,35 +42,29 @@ const SideMenu: React.FC<DrawerContentComponentProps> = ({ navigation }) => {
   }
 
   const handleSignOut = async () => {
-    
+
     await dispatch(clearEmplloyerAnalyticsData());
     await dispatch(clearEmplloyerApplicationsData());
     await dispatch(clearEmployerCreditsData());
     await dispatch(clearEmployerDashboardData());
     await dispatch(clearEmployerProfileData());
     await dispatch(clearEmployerJobPostingsData());
-    
-    
     await dispatch(clearHomeData());
     await dispatch(clearUserData());
     await dispatch(clearProfileData());
     await dispatch(clearPaymentData());
     await dispatch(clearCoursesData());
-    
-    // Clear AsyncStorage - remove all auth-related keys
-    await AsyncStore.multiRemove([
-      AsyncStore.Keys.USER_TOKEN,
-      AsyncStore.Keys.IS_LOGIN,
-      AsyncStore.Keys.USER_DATA,
-      AsyncStore.Keys.IS_VERIFIED,
-      AsyncStore.Keys.USER_ID,
-      AsyncStore.Keys.ROLE,
-      AsyncStore.Keys.EMP_ID,
-      AsyncStore.Keys.ORG_ID,
-    ]);
-    
-    // Close drawer - the app will re-check AsyncStorage and navigate to login
-    navigation.closeDrawer()
+
+    await AsyncStore.storeData(AsyncStore.Keys.USER_TOKEN, '');
+    await AsyncStore.storeData(AsyncStore.Keys.USER_DATA, '');
+    await AsyncStore.storeData(AsyncStore.Keys.IS_VERIFIED, '');
+    await AsyncStore.storeData(AsyncStore.Keys.USER_ID, '');
+    await AsyncStore.storeData(AsyncStore.Keys.ROLE, '');
+    await AsyncStore.storeData(AsyncStore.Keys.EMP_ID, '');
+    await AsyncStore.storeData(AsyncStore.Keys.ORG_ID, '');
+    await AsyncStore.storeData(AsyncStore.Keys.IS_LOGIN, 'false');
+    navigation.closeDrawer();
+
   }
 
   return (

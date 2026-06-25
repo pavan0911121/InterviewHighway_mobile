@@ -4,7 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createDrawerNavigator } from '@react-navigation/drawer';
-import { AuthStackParamList, AppStackParamList, JobSeekerBottomTabParamList, EmployerBottomTabParamList } from '../types/navigation';
+import { AuthStackParamList, AppStackParamList, JobSeekerBottomTabParamList, EmployerBottomTabParamList, StackIdentifiersParamList } from '../types/navigation';
 import { Home, BookOpen, Briefcase, CreditCard, User, BarChart3, TrendingUp, Building, Inbox } from 'lucide-react-native';
 
 // Import screens
@@ -23,9 +23,15 @@ import {
   CreditsScreen,
   CompanyProfileScreen
 } from '../screens';
+import Login from '../screens/Auth/LoginScreen';
 import PaymentsTabScreen from '../screens/JobSeekerApp/Payments/PaymentsTabScreen';
 import AccountSelectionPage from '../screens/Auth/AccountSelectionPage';
 import SideMenu from '../components/SideMenu';
+import CourseDetails from '../screens/JobSeekerApp/Courses/CourseDetails';
+import PaymentStatusScreen from '../screens/JobSeekerApp/Courses/PaymentStatusScreen';
+import { ActivityIndicator } from 'react-native';
+import Lesson from '../screens/JobSeekerApp/Courses/Lesson';
+import LessonDetails from '../screens/JobSeekerApp/Courses/LessonDetails';
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 const AppStack = createNativeStackNavigator<AppStackParamList>();
@@ -33,6 +39,9 @@ const JobSeekerTab = createBottomTabNavigator<JobSeekerBottomTabParamList>();
 const EmployerTab = createBottomTabNavigator<EmployerBottomTabParamList>();
 const JobSeekerDrawer = createDrawerNavigator();
 const EmployerDrawer = createDrawerNavigator();
+const Stack = createNativeStackNavigator<StackIdentifiersParamList>();
+
+
 
 function JobSeekerBottomTabNavigator() {
   return (
@@ -109,6 +118,25 @@ function JobSeekerDrawerNavigator() {
       <JobSeekerDrawer.Screen
         name="JobSeekerTabs"
         component={JobSeekerBottomTabNavigator}
+      />
+      {/* Other Stack screens */}
+      <Stack.Screen
+       name="CourseDetails"
+       component={CourseDetails}
+     />
+     <Stack.Screen
+       name="PaymentStatusScreen"
+       component={PaymentStatusScreen}
+     />
+      <Stack.Screen
+        name="Lesson"
+        component={Lesson}
+        options={{ animation: 'slide_from_right' }}
+      />
+      <Stack.Screen
+        name="LessonDetails"
+        component={LessonDetails}
+        options={{ animation: 'slide_from_right' }}
       />
     </JobSeekerDrawer.Navigator>
   );
@@ -214,6 +242,7 @@ function AuthNavigator() {
       <AuthStack.Screen
         name="Login"
         component={LoginScreen}
+        
       />
       <AuthStack.Screen
         name="AccountTypeSelection"
@@ -246,16 +275,18 @@ interface AppNavigatorProps {
 }
 
 function RootNavigator({ isUserLoggedIn, userType }: AppNavigatorProps) {
-  
+  let content = <ActivityIndicator size="large" color="#007AFF" />;
+  if (isUserLoggedIn && userType === 'job_seeker') {
+    content = <JobSeekerAppNavigator />;
+  } else if (isUserLoggedIn && userType === 'employer') {
+    content = <EmployerAppNavigator />;
+  }else  {
+    content = <AuthNavigator />;
+  }
+
   return (
     <NavigationContainer key={`${isUserLoggedIn}-${userType}`}>
-      {isUserLoggedIn && userType === "job_seeker" ? (
-        <JobSeekerAppNavigator />
-      ) : isUserLoggedIn && userType === "employer" ? (
-        <EmployerAppNavigator />
-      ) : (
-        <AuthNavigator />
-      )}
+      {content}
     </NavigationContainer>
   );
 }

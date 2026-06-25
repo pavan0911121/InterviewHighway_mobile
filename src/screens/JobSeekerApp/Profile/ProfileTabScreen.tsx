@@ -6,6 +6,7 @@ import { JobSeekerBottomTabParamList } from '../../../types/navigation';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BookText, BriefcaseBusiness, Camera, CodeXml, Eye, FileText, Globe, GraduationCap, HardDriveUpload, Info, Lightbulb, Link, MapPin, Shield, SquarePen, Upload, UserRound, UserRoundPen, Video, VideoOff } from 'lucide-react-native';
 import { useDispatch, useSelector } from 'react-redux';
+import UploadVideo from '../../components/UploadVideo';
 import * as AsyncStore from "../../../AsyncStore";
 import { getProfileData } from '../../../Redux/slices/profileSlice';
 
@@ -15,12 +16,11 @@ export default function ProfileTabScreen({ navigation }: Props) {
   const dispatch = useDispatch();
   const selector = useSelector((state: any) => state.profile);
 
-
   useEffect(() => {
     fetchProfileData();
   }, []);
 
-const fetchProfileData = async () => {
+  const fetchProfileData = async () => {
     try {
       // Fetch user data from async storage
 
@@ -29,7 +29,7 @@ const fetchProfileData = async () => {
         const parsedUserData = JSON.parse(userLoggedInData);
         const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
         // const userId = parsedUserData?.id || null;
-        if ( userId) {
+        if (userId) {
           const resultId = userId.replace(/"/g, '');
           const response = await dispatch(getProfileData(resultId) as any);
         }
@@ -148,14 +148,14 @@ const fetchProfileData = async () => {
               </View>
               <Text style={styles.videoHeaderTitle}>Video Introduction</Text>
             </View>
-
-            <TouchableOpacity style={styles.uploadVideoButton}>
+            <UploadVideo buttonLabel="Upload Video" modalTitle="Upload Video Introduction" />
+            {/* <TouchableOpacity style={styles.uploadVideoButton}>
               <HardDriveUpload fill={'#165DFC'} color={'#165DFC'} />
               <Text style={styles.uploadVideoText}>Upload Video</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
             <View style={styles.videoUploadBox}>
-              <Text style={styles.videoUploadIcon}>📹</Text>
+              <Video size={40} color="#6B7280" />
               <Text style={styles.noVideoText}>No video uploaded yet</Text>
               <Text style={styles.uploadVideoDescription}>Upload a video introduction</Text>
             </View>
@@ -368,10 +368,7 @@ const fetchProfileData = async () => {
               <Text style={styles.resumeDescription}>
                 Upload your resume so employers can review your profile
               </Text>
-              <TouchableOpacity style={styles.uploadResumeButton}>
-                <Upload color={'#165DFC'} size={20} />
-                <Text style={styles.uploadResumeText}>Upload Resume</Text>
-              </TouchableOpacity>
+              <UploadVideo buttonLabel="Upload Resume" modalTitle="Upload Resume" />
             </View>
           </View>
 

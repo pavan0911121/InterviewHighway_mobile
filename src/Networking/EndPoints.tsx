@@ -65,6 +65,20 @@ export const PROFILE_ENDPOINTS = {
 
 export const COURSE_ENDPOINTS = {
   courseDetails: `${API_BASE_URL}/rest/v1/courses?select=*&is_published=eq.true&order=created_at.desc`,
+  createOrder:
+    `${RAILWAY_API_BASE_URL}/api/payments/create-order`,
+  verifyOrder:
+    `${RAILWAY_API_BASE_URL}/api/payments/verify`,
+    enrollmentCourses: (userId: string) =>
+    `${RAILWAY_API_BASE_URL}/api/enrollments/user/${userId}`,
+    courseChaptersById: (courseId: string) =>
+    `${API_BASE_URL}/rest/v1/course_chapters?select=id%2Ctitle%2Cdescription%2Cchapter_order%2Cis_published&course_id=eq.${courseId}&is_published=eq.true&order=chapter_order.asc`,
+    courseChapterLessonDetailsById: (chapterId: string) =>
+    `${API_BASE_URL}/rest/v1/course_lessons?select=id&chapter_id=eq.${chapterId}`,
+    lessonDetailsById: (lessonId: string) =>
+    `${RAILWAY_API_BASE_URL}/api/lessons/${lessonId}`,
+     DownloadLessonById: (lessonId: string, DocumentId: string) =>
+    `${RAILWAY_API_BASE_URL}/api/admin/courses/lessons/${lessonId}/resources/${DocumentId}/download`,
 };
 
 // ======================

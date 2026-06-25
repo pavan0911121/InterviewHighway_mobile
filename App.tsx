@@ -6,28 +6,21 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { StatusBar, View, ActivityIndicator } from 'react-native';
-import {
-  SafeAreaProvider,
-} from 'react-native-safe-area-context';
-import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { StatusBar, View, ActivityIndicator, AppState, AppStateStatus } from 'react-native';
 import AppNavigator from './src/navigation/AppNavigator';
 import SplashScreen from './src/screens/SplashScreen';
-import { Provider, useSelector, useDispatch } from 'react-redux';
-import { store } from './src/Redux';
+import { useSelector, useDispatch } from 'react-redux';
 import * as AsyncStore from "./src/AsyncStore";
-import { getUserRole } from './src/Redux/slices/loginSlice';
+import { getUserRole, loginSuccess, clearUserData } from './src/Redux/slices/loginSlice';
 
-
-function AppContent() {
-  // const { isLoggedIn, isLoading: authLoading } = useAuth();
+function App() {
   const [showSplash, setShowSplash] = useState(true);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [role, setRole] = useState<string | null>(null);
   const [userData, setUserData] = useState(null);
-  const selector = useSelector((state:any) => state.login);
+  const [token, setToken] = useState<string | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const selector = useSelector((state: any) => state.login);
   const dispatch = useDispatch();
-  
   
   useEffect(() => {
     const isRunningTests = typeof process !== 'undefined' &&
@@ -37,60 +30,95 @@ function AppContent() {
       setShowSplash(false);
       return;
     }
-    LocalStorageaData();
-    // Show splash screen for 1.4 seconds
-    const timeout = setTimeout(() => {
-      setShowSplash(false);
-    }, 1400);
-    return () => clearTimeout(timeout);
-  }, [role, selector?.userId]);
-  
-  // Update login state when Redux state changes
-  useEffect(() => {
-    if (selector?.isAuthenticated && selector?.token) {
-      setIsLoggedIn(true);
-      if (selector?.user) {
-        setUserData(selector?.user);
-      }
-      // Get role from Redux state if available
-      if (selector?.role) {
-        setRole(selector?.role);
-      }
-    } else {
-      setIsLoggedIn(false);
-    }
-  }, [selector?.isAuthenticated, selector?.token, selector?.user, selector?.role]);
 
-  // Fetch role immediately after login if user exists but role doesn't
+    let timeout: NodeJS.Timeout;
+    let mounted = true;
+
+    const loadStorage = async () => {
+      await LocalStorageaData();
+      if (mounted) {
+        timeout = setTimeout(() => {
+          setShowSplash(false);
+        }, 1400);
+      }
+    };
+
+    loadStorage();
+
+    const handleAppState = (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active') {
+        LocalStorageaData();
+      }
+    };
+
+    const sub = AppState.addEventListener('change', handleAppState);
+
+    return () => {
+      mounted = false;
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+      sub.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    LocalStorageaData();
+  }, [selector?.isAuthenticated, selector?.userId, selector?.role]);
+
+  useEffect(() => {
+    setUserData(selector?.user ?? null);
+    setRole(selector?.role ?? null);
+  }, [selector?.user, selector?.role]);
+
   useEffect(() => {
     if (selector?.isAuthenticated && selector?.user && !selector?.role) {
-      dispatch(getUserRole(selector?.user?.id)as any);
+      dispatch(getUserRole(selector.user.id) as any);
     }
   }, [selector?.isAuthenticated, selector?.user, selector?.role, dispatch]);
+
+
   const LocalStorageaData = async () => {
     try {
-      const token = await AsyncStore.getData(AsyncStore?.Keys?.USER_TOKEN);
+      const tokenValue = await AsyncStore.getData(AsyncStore?.Keys?.USER_TOKEN);
       const userLoggedInData = await AsyncStore.getData(AsyncStore?.Keys?.USER_DATA);
       const userRole = await AsyncStore.getData(AsyncStore?.Keys?.ROLE);
-      
-      if(token){
-        setIsLoggedIn(true);
+      const isLogin = await AsyncStore.getData(AsyncStore?.Keys?.IS_LOGIN);
+
+      setToken(tokenValue ?? null);
+      setIsLoggedIn(isLogin === 'true');
+
+      // If token exists in storage but Redux isn't updated, dispatch loginSuccess
+      if (tokenValue && !selector?.isAuthenticated) {
+        try {
+          const parsedUser = userLoggedInData ? JSON.parse(userLoggedInData) : null;
+          dispatch((loginSuccess as any)({ user: parsedUser, token: tokenValue, isAuthenticated: true }));
+        } catch (e) {
+          dispatch((loginSuccess as any)({ user: null, token: tokenValue, isAuthenticated: true }));
+        }
       }
-      if(userRole){
-        // Parse the stringified role
+
+      // If token removed from storage but Redux still thinks authenticated, clear Redux
+      if (!tokenValue && selector?.isAuthenticated) {
+        dispatch(clearUserData() as any);
+      }
+
+      if (userRole) {
         const parsedRole = JSON.parse(userRole);
         setRole(parsedRole);
       }
-      if(userLoggedInData){
+      if (userLoggedInData) {
         const parsedUserData = JSON.parse(userLoggedInData);
         setUserData(parsedUserData);
       }
     } catch (error) {
-      return null;
+      console.warn('Error loading local storage auth data', error);
+      setToken(null);
     }
-  }
+  };
 
-  // Show splash screen while initializing
+
+
   if (showSplash) {
     return (
       <>
@@ -99,33 +127,20 @@ function AppContent() {
       </>
     );
   }
-
   return (
     <>
-      <StatusBar barStyle="dark-content" />
+      {/* <StatusBar barStyle="dark-content" /> */}
       {isLoggedIn && role ? (
         <AppNavigator isUserLoggedIn={isLoggedIn} userType={role as any} />
       ) : isLoggedIn && !role ? (
-        // Show loading while fetching role
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <ActivityIndicator size="large" color="#007AFF" />
         </View>
       ) : (
         <AppNavigator isUserLoggedIn={false} userType={null} />
       )}
-    </>
-  );
-}
 
-function App() {
-  return (
-    <Provider store={store}>
-      <SafeAreaProvider>
-        <AuthProvider>
-          <AppContent />
-        </AuthProvider>
-      </SafeAreaProvider>
-    </Provider>
+    </>
   );
 }
 

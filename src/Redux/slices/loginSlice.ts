@@ -200,6 +200,7 @@ const loginSlice = createSlice({
       state.role = null;
       state.isVerified = false;
       state.user = null;
+      state.userId = null;
       state.token = null;
       state.isAuthenticated = false;
       state.error = null;
@@ -267,6 +268,9 @@ const loginSlice = createSlice({
         const roleData = action.payload?.[0]?.user_type;
         if (state.user) {
           state.user.role = roleData;
+        }
+        if (roleData) {
+          state.role = roleData;
           AsyncStore.storeData(AsyncStore.Keys.ROLE, JSON.stringify(roleData));
         }
       })
