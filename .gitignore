@@ -64,3 +64,8 @@ ios/Podfile.lock
 
 # Gradle
 .gradle
+# Ignore Gradle build output directory
+build
+
+# Ignore Kotlin plugin data
+.kotlin

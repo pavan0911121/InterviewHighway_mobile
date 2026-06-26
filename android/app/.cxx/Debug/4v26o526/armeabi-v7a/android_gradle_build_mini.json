@@ -5,7 +5,9 @@
     "/Users/pavankarthik/InterviewHighway_mobile/node_modules/@react-native-community/slider/android/src/main/jni/CMakeLists.txt",
     "/Users/pavankarthik/InterviewHighway_mobile/node_modules/@react-native-google-signin/google-signin/android/build/generated/source/codegen/jni/CMakeLists.txt",
     "/Users/pavankarthik/InterviewHighway_mobile/node_modules/@react-native-picker/picker/android/src/main/jni/CMakeLists.txt",
+    "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-document-picker/android/build/generated/source/codegen/jni/CMakeLists.txt",
     "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-gesture-handler/android/build/generated/source/codegen/jni/CMakeLists.txt",
+    "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-razorpay/android/build/generated/source/codegen/jni/CMakeLists.txt",
     "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni/CMakeLists.txt",
     "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-safe-area-context/android/src/main/jni/CMakeLists.txt",
     "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-screens/android/src/main/jni/CMakeLists.txt",
@@ -74,6 +76,11 @@
         "/private/var/root/.gradle/caches/8.13/transforms/bf534975a15cab713fd8c8a94be4d904/transformed/react-android-0.84.1-debug/prefab/modules/reactnative/libs/android.armeabi-v7a/libreactnative.so"
       ]
     },
+    "react_codegen_rndocumentpicker::@1e246c1f1267e461f98b": {
+      "artifactName": "react_codegen_rndocumentpicker",
+      "abi": "armeabi-v7a",
+      "runtimeFiles": []
+    },
     "react_codegen_rnsvg::@4f40eb209d0c0b4a3b65": {
       "artifactName": "react_codegen_rnsvg",
       "abi": "armeabi-v7a",
@@ -101,6 +108,11 @@
     },
     "react_codegen_rnasyncstorage::@1596841e19ec5b9eeffe": {
       "artifactName": "react_codegen_rnasyncstorage",
+      "abi": "armeabi-v7a",
+      "runtimeFiles": []
+    },
+    "react_codegen_RNRazorpayCheckoutSpec::@ba471378ee2eecf9e7b3": {
+      "artifactName": "react_codegen_RNRazorpayCheckoutSpec",
       "abi": "armeabi-v7a",
       "runtimeFiles": []
     },
