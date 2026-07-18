@@ -144,6 +144,7 @@ export const registerJobSeeker = createAsyncThunk(
     }
   }
 );
+//Register Employer Api
 
 // USER_ENDPOINTS
 

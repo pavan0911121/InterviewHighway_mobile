@@ -43,7 +43,6 @@ const CoursesScreen = () => {
   const handleApplyFilters = (filters: any) => {
     // You can dispatch an action here to filter jobs based on the selected filters
   };
-  console.log(selector?.courses, "courses in screen");
   return (
     <SafeAreaView style={styles.container}>
       {/* Sticky Header */}

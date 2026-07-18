@@ -27,9 +27,6 @@ const CourseDetails: React.FC<{ route: any }> = ({ route }) => {
   const { courseData } = route?.params
   const selector = useSelector((state: any) => state.courses);
   const courseDetails = courseData
-  const lessonId = selector?.lessonId
-  console.log(lessonId, "courseDetails");
-  const courseId = courseDetails?.id
   useEffect(() => {
     handleEnrollmentCourses()
     if(courseDetails?.id){
@@ -41,7 +38,6 @@ const CourseDetails: React.FC<{ route: any }> = ({ route }) => {
     if (userLoggedID) {
       const parsedUserData = JSON.parse(userLoggedID);
       const response = await dispatch(getEnrollmentCourses(parsedUserData) as any);
-      console.log('1234567:', response);
     }
   }
   const handlePayment = () => {
@@ -81,9 +77,7 @@ const CourseDetails: React.FC<{ route: any }> = ({ route }) => {
       console.log(error, "error");
       Alert.alert(`Payment has been cancelled`);
     });
-
   };
-console.log(selector?.enrolledCourse,"selector?.enrolledCourse");
 
   return (
     <SafeAreaView style={styles.safeAreaContainer}>

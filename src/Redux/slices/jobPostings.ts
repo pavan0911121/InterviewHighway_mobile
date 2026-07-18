@@ -8,14 +8,16 @@ interface jobPostingsState {
     isLoading: boolean;
     error: string | null;
     total: number
-   
+    jobCreationStatus: string | null; // Add this if you want to store the status of job creation
+
 }
 
 const initialState: jobPostingsState = {
     data: null,
     isLoading: false,
     error: null,
-    total: 0
+    total: 0,
+    jobCreationStatus: null, // Initialize jobCreationStatus as null
 };
 //job posting stats API call
 export const getJobPostingStats = createAsyncThunk(
@@ -23,6 +25,23 @@ export const getJobPostingStats = createAsyncThunk(
     async (userId: string, { rejectWithValue }) => {
         try {
             const response = await client.get(EMPLOYER_ENDPOINTS.employerJobsList(userId));
+            return response.data || response;
+        } catch (error: any) {
+            console.log('Error fetching job posting stats:', error);
+            return rejectWithValue({
+                message: error?.message || 'Failed to fetch job posting stats',
+                code: error?.code || 'ERROR',
+            });
+        }
+    }
+);
+
+// Create the jobPostings slice
+export const postCreateJob = createAsyncThunk(
+    "jobPostings/postCreateJob",
+    async (jobData: any, { rejectWithValue }) => {
+        try {
+            const response = await client.post(EMPLOYER_ENDPOINTS.createJob(), jobData);
             return response.data || response;
         } catch (error: any) {
             console.log('Error fetching job posting stats:', error);
@@ -68,6 +87,25 @@ const jobPostingsSlice = createSlice({
                 state.error = action.payload as string;
                 console.log('Error fetching job posting stats:', action.payload);
             })
+            // postCreateJob async thunk handlers
+            .addCase(postCreateJob.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(postCreateJob.fulfilled, (state, action) => {
+                state.isLoading = false;
+                state.data = action.payload; // Assuming the API returns an object with the created job data
+                console.log(state.data, "state data");
+                state.error = null;
+                state.jobCreationStatus = 'success';
+                console.log('Job created successfully:', action.payload);
+            })
+            .addCase(postCreateJob.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.payload as string;
+                state.jobCreationStatus = 'error';
+                console.log('Error creating job:', action.payload);
+            });
     }
 });
 

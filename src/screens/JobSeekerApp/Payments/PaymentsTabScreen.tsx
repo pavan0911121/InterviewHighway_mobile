@@ -72,7 +72,6 @@ const PaymentsTabScreen = ({ }) => {
     return data.map((item: any) => {
       const amountInRupees = item.amount / 100
       const gstData = calculateGST(item.amount)
-      console.log(item?.courses?.title, "data in transformApiResponse");
       return {
         id: item.id || '',
         courseName: item?.courses?.title || 'Unknown Course',
@@ -94,7 +93,6 @@ const PaymentsTabScreen = ({ }) => {
       }
     })
   }
-  console.log(selector?.data?.transactions, "transaccvtttc");
 
   // Fetch payment history on mount
   useEffect(() => {
@@ -107,7 +105,6 @@ const PaymentsTabScreen = ({ }) => {
     if (selector?.data) {
       if (selector?.data?.transactions) {
         const transformedTransactions = transformApiResponse(selector?.data?.transactions)
-        console.log(transformedTransactions, "transformedTransactions");
 
         setTransactions(transformedTransactions)
       }

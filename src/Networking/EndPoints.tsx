@@ -198,6 +198,8 @@ export const EMPLOYER_ENDPOINTS = {
   // Analytics - Count Stats
   analyticsCount: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/employer/dashboard/stats?userId=${userId}`,
+  createJob: () =>
+     `${RAILWAY_API_BASE_URL}/api/employer/jobs`,
 };
 
 // ============================================================================

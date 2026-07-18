@@ -23,7 +23,6 @@ const Lesson: React.FC<{ route: any }> = ({ route }) => {
       dispatch(getCourseChapterLessonDetailsById(chapterId) as any);
     }
   }, [chapterId]);
-  console.log(enrolledCourseId, "courseData");
   const toggleChapter = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpanded((prev) => !prev);

@@ -37,7 +37,6 @@ const ApplicationsScreen = () => {
   const selector = useSelector((state: any) => state.employerApplications);
   const selectorData = selector?.data?.applications;
   const isLoading = selector?.loading;
-  console.log(selectorData, "selector data");
 
   // Calculate application stats from selectorData using useMemo
   const applicationStats = useMemo(() => {

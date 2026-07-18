@@ -181,14 +181,11 @@ const coursesSlice = createSlice({
             .addCase(getCourses.fulfilled, (state, action) => {
                 state.isLoading = false;
                 state.courses = action.payload; // Assuming the API returns an array of courses
-                console.log(state.courses, "state courses");
                 state.error = null;
-                console.log('Courses fetched successfully:', action.payload);
             })
             .addCase(getCourses.rejected, (state, action) => {
                 state.isLoading = false;
                 state.error = action.payload as string;
-                console.log('Error fetching courses:', action.payload);
             })
             // createOrder async thunk handlers 
             .addCase(createOrder.pending, (state) => {
@@ -200,12 +197,10 @@ const coursesSlice = createSlice({
                 state.isLoading = false;
                 state.error = null;
                 state.orderData = action.payload;
-                console.log('Order created successfully:', action.payload);
             })
             .addCase(createOrder.rejected, (state, action) => {
                 state.isLoading = false;
                 state.error = action.payload as string;
-                console.log('Error creating order:', action.payload);
             });
         // verifyOrder async thunk handlers
         builder
@@ -218,12 +213,10 @@ const coursesSlice = createSlice({
                 state.isLoading = false;
                 state.error = null;
                 state.verifyData = action.payload;
-                console.log('Order verified successfully:', action.payload);
             })
             .addCase(verifyOrder.rejected, (state, action) => {
                 state.isLoading = false;
                 state.error = action.payload as string;
-                console.log('Error verifying order:', action.payload);
             });
         // getEnrollmentCourses async thunk handlers
         builder
@@ -235,16 +228,13 @@ const coursesSlice = createSlice({
             .addCase(getEnrollmentCourses.fulfilled, (state, action) => {
                 state.isLoading = false;
                 state.error = null;// Assuming the API returns an array of enrolled courses
-                console.log(action.payload,"payload from enrolled courses");
                 state.enrolledCourse = action.payload.enrollments;
             })
             .addCase(getEnrollmentCourses.rejected, (state, action) => {
-                console.log(action?.payload,"payloadfrom enrolled");
                 state.isLoading = false;
                 state.error = action.payload as string;
                 const payload: any = action.payload;
                 state.courseEnrollmentMessage = payload?.message ?? (typeof payload === 'string' ? payload : null);
-                console.log('Error fetching enrollment courses:', action.payload);
             });
         // getCourseChaptersById async thunk handlers
         builder
@@ -260,7 +250,6 @@ const coursesSlice = createSlice({
                 // You can store the chapters in the state if needed
             })
             .addCase(getCourseChaptersById.rejected, (state, action) => {
-                console.log(action?.payload,"payloadfrom course chapters");
                 state.isLoading = false;
                 state.error = action.payload as string;
             });
@@ -278,7 +267,6 @@ const coursesSlice = createSlice({
                 // You can store the lessons in the state if needed
             })
             .addCase(getCourseChapterLessonDetailsById.rejected, (state, action) => {
-                console.log(action?.payload,"payloadfrom course chapter lessons");
                 state.isLoading = false;
                 state.error = action.payload as string;
             });
@@ -296,7 +284,6 @@ const coursesSlice = createSlice({
                 // You can store the lesson details in the state if needed
             })
             .addCase(getLessonDetailsById.rejected, (state, action) => {
-                console.log(action?.payload,"payloadfrom lesson details");
                 state.isLoading = false;
                 state.error = action.payload as string;
             });

@@ -40,6 +40,7 @@ const CreditsScreen = () => {
     }
   }
   const credits = selector?.data?.credits
+  console.log(credits?.credits_available,"selector from credits screen")
   const tiers = selector?.tiers?.tiers
 
   // Sample data - replace with API data later
@@ -427,12 +428,12 @@ const CreditsScreen = () => {
                   )}
 
                   {!isFreeTier && (
-                    <TouchableOpacity style={getButtonStyle()}>
-                      <Sparkles size={18} color={'#fff'} />
+                    <View style={getButtonStyle()}>
+                      <Sparkles size={18} color={'#ffffff'} />
                       <Text style={isStandardTier ? styles.getStartedButtonText : styles.proGetStartedButtonText}>
                         Get Started Free
                       </Text>
-                    </TouchableOpacity>
+                    </View>
                   )}
 
                   {/* Perfect For */}
@@ -1115,7 +1116,7 @@ const styles = StyleSheet.create({
   getStartedButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#00C853',
+    backgroundColor: '#858282',
     paddingHorizontal: 24,
     paddingVertical: 14,
     borderRadius: 12,
@@ -1293,7 +1294,7 @@ const styles = StyleSheet.create({
   proGetStartedButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#165DFC',
+    backgroundColor: '#858282',
     paddingHorizontal: 24,
     paddingVertical: 14,
     borderRadius: 12,
@@ -1305,7 +1306,7 @@ const styles = StyleSheet.create({
   proGetStartedButtonText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#fff',
+    color: '#ffffff',
     fontFamily: 'Geist-VariableFont_wght',
   },
   proPerfectForBox: {

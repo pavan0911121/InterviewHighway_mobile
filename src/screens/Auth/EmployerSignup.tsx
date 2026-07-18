@@ -11,6 +11,10 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Picker } from '@react-native-picker/picker'
 import { ArrowLeft } from 'lucide-react-native'
 import React, { useState } from 'react'
+import DocumentPicker from 'react-native-document-picker'
+import { registerJobSeeker } from '../../Redux/slices/loginSlice'
+import { useDispatch } from 'react-redux'
+import { AppDispatch } from '../../Redux'
 
 const EmployerSignup = ({ navigation }: any) => {
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1)
@@ -32,6 +36,7 @@ const EmployerSignup = ({ navigation }: any) => {
 
   // Step 3 - Verification & Security
   const [registrationDocument, setRegistrationDocument] = useState<any>(null)
+  const [selectedDocumentName, setSelectedDocumentName] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -40,6 +45,7 @@ const EmployerSignup = ({ navigation }: any) => {
   const [hiringTipsAccepted, setHiringTipsAccepted] = useState(false)
 
   const [errors, setErrors] = useState<any>({})
+  const dispatch = useDispatch<AppDispatch>();
 
   const validateStep1 = () => {
     // const newErrors: any = {}
@@ -56,10 +62,10 @@ const EmployerSignup = ({ navigation }: any) => {
     // Email validation: must have @ and valid TLD (.com, .org, etc.)
     const emailRegex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/
     const isEmailValid = officialEmail.trim() && emailRegex.test(officialEmail)
-    
+
     // Phone validation: must be exactly 10 digits
     const isPhoneValid = contactPhone.trim() && contactPhone.length === 10 && /^\d{10}$/.test(contactPhone)
-    
+
     return isEmailValid && isPhoneValid
   }
 
@@ -105,9 +111,59 @@ const EmployerSignup = ({ navigation }: any) => {
     }
   }
 
-  const handleCreateAccount = () => {
+  const handleDocumentPick = async () => {
+    try {
+      const result = await DocumentPicker.pickSingle({
+        type: [DocumentPicker.types.pdf, 'image/png', 'image/jpeg'],
+        copyTo: 'cachesDirectory',
+      })
+
+      const fileSize = result.size ?? 0
+      if (fileSize > 5 * 1024 * 1024) {
+        Alert.alert('File too large', 'Please select a file smaller than 5MB.')
+        return
+      }
+
+      setRegistrationDocument(result)
+      setSelectedDocumentName(result.name || 'Selected document')
+      setErrors((prev: any) => ({ ...prev, registrationDocument: undefined }))
+    } catch (err: any) {
+      if (DocumentPicker.isCancel(err)) {
+        return
+      }
+      Alert.alert('Upload failed', 'Unable to select a document. Please try again.')
+    }
+  }
+
+  const handleCreateAccount = async () => {
     if (validateStep3()) {
-      console.log('Account created successfully')
+      const payload = {
+        email: officialEmail,
+        password: password,
+        data: {
+          full_name: firstName ,
+          user_type: "employer",
+          phone: contactPhone,
+          location: null,
+          experience: null,
+          current_role: null,
+          company_name: companyName,
+          industry: industry,
+          company_size: companySize,
+          designation: designation,
+          company_location: headquarters,
+          company_description: description,
+          company_website: website,
+        },
+        gotrue_meta_security: {},
+        code_challenge: "9gZyCba9j0WMskuP-auXOCEyFEPB849bUHzouLBZXhI",
+        code_challenge_method: "s256"
+      }
+      const response = await dispatch(registerJobSeeker((payload)) as any);
+      console.log("response", response)
+      if (response?.payload?.id) {
+        navigation.navigate('Login')
+      }
       // TODO: Implement account creation logic
     }
   }
@@ -115,7 +171,6 @@ const EmployerSignup = ({ navigation }: any) => {
   const handleSignIn = () => {
     navigation?.navigate('SignIn')
   }
-
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -124,7 +179,7 @@ const EmployerSignup = ({ navigation }: any) => {
         <TouchableOpacity style={styles.backButton} onPress={() => navigation?.goBack()}>
           <ArrowLeft size={30} color="#000000" />
         </TouchableOpacity>
-        
+
         {/* Header Section */}
         <View style={styles.headerSection}>
           <Text style={styles.mainTitle}>Employer</Text>
@@ -361,8 +416,8 @@ const EmployerSignup = ({ navigation }: any) => {
                 <TouchableOpacity style={styles.previousButton} onPress={handlePreviousStep}>
                   <Text style={styles.previousButtonText}>Previous</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
-                  style={[styles.nextButton, !isStep2Valid() && styles.buttonDisabled]} 
+                <TouchableOpacity
+                  style={[styles.nextButton, !isStep2Valid() && styles.buttonDisabled]}
                   onPress={handleNextStep}
                   disabled={!isStep2Valid()}
                 >
@@ -391,16 +446,17 @@ const EmployerSignup = ({ navigation }: any) => {
                 <Text style={styles.label}>
                   Company Registration Document <Text style={styles.required}>*</Text>
                 </Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.uploadContainer, errors.registrationDocument && styles.uploadContainerError]}
-                  onPress={() => {
-                    // TODO: Implement file picker
-                    Alert.alert('File Upload', 'File picker would open here')
-                  }}
+                  onPress={handleDocumentPick}
                 >
                   <Text style={styles.uploadIcon}>📄</Text>
-                  <Text style={styles.uploadText}>Upload Company Registration</Text>
-                  <Text style={styles.uploadSubtext}>PDF, JPG, or PNG (Max 5MB)</Text>
+                  <Text style={styles.uploadText}>
+                    {selectedDocumentName || 'Upload Company Registration'}
+                  </Text>
+                  <Text style={styles.uploadSubtext}>
+                    {selectedDocumentName ? 'Tap to choose a different file' : 'PDF, JPG, or PNG (Max 5MB)'}
+                  </Text>
                 </TouchableOpacity>
                 {errors.registrationDocument && <Text style={styles.errorText}>{errors.registrationDocument}</Text>}
               </View>
