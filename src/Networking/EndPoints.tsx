@@ -32,7 +32,7 @@ export const AUTH_ENDPOINTS = {
 export const USER_ENDPOINTS = {
   role: (userId: string) =>
     `${API_BASE_URL}/rest/v1/users?select=user_type&auth_user_id=eq.${userId}`,
-  
+
   isVerified: (userId: string) =>
     `${API_BASE_URL}/rest/v1/users?select=id%2Cis_verified&auth_user_id=eq.${userId}`,
 };
@@ -42,19 +42,19 @@ export const USER_ENDPOINTS = {
 // ======================
 
 export const PROFILE_ENDPOINTS = {
-  
+
   profilePercentage: (userId: string) =>
     `${API_BASE_URL}/rest/v1/profiles?select=*&user_id=eq.${userId}`,
-  
+
   profileData: (userId: string) =>
     `${API_BASE_URL}/rest/v1/profiles?select=*&user_id=eq.${userId}`,
-  
+
   personalDataUpdate: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/profiles/user/${userId}/personal`,
-  
+
   bioUpdate: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/profiles/user/${userId}/bio`,
-  
+
   socialLinksUpdate: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/profiles/user/${userId}/links`,
 };
@@ -69,15 +69,15 @@ export const COURSE_ENDPOINTS = {
     `${RAILWAY_API_BASE_URL}/api/payments/create-order`,
   verifyOrder:
     `${RAILWAY_API_BASE_URL}/api/payments/verify`,
-    enrollmentCourses: (userId: string) =>
+  enrollmentCourses: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/enrollments/user/${userId}`,
-    courseChaptersById: (courseId: string) =>
+  courseChaptersById: (courseId: string) =>
     `${API_BASE_URL}/rest/v1/course_chapters?select=id%2Ctitle%2Cdescription%2Cchapter_order%2Cis_published&course_id=eq.${courseId}&is_published=eq.true&order=chapter_order.asc`,
-    courseChapterLessonDetailsById: (chapterId: string) =>
+  courseChapterLessonDetailsById: (chapterId: string) =>
     `${API_BASE_URL}/rest/v1/course_lessons?select=id&chapter_id=eq.${chapterId}`,
-    lessonDetailsById: (lessonId: string) =>
+  lessonDetailsById: (lessonId: string) =>
     `${RAILWAY_API_BASE_URL}/api/lessons/${lessonId}`,
-     DownloadLessonById: (lessonId: string, DocumentId: string) =>
+  DownloadLessonById: (lessonId: string, DocumentId: string) =>
     `${RAILWAY_API_BASE_URL}/api/admin/courses/lessons/${lessonId}/resources/${DocumentId}/download`,
 };
 
@@ -87,7 +87,7 @@ export const COURSE_ENDPOINTS = {
 
 export const SKILLS_ENDPOINTS = {
   getAllSkills: `${RAILWAY_API_BASE_URL}/api/skills`,
-  
+
   addSkill: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/skills/user/${userId}`,
 };
@@ -107,9 +107,9 @@ export const JOBS_ENDPOINTS = {
 export const VIDEO_ENDPOINTS = {
   getVideoData: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/video/user/${userId}`,
-  
+
   uploadVideo: `${RAILWAY_API_BASE_URL}/api/video/upload`,
-  
+
   deleteVideo: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/video/user/${userId}`,
 };
@@ -138,7 +138,7 @@ export const EDUCATION_ENDPOINTS = {
 
 export const RESUME_ENDPOINTS = {
   uploadResume: `${RAILWAY_API_BASE_URL}/api/resumes`,
-  
+
   getUserResumes: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/resumes/user/${userId}`,
 };
@@ -163,44 +163,60 @@ export const EMPLOYER_ENDPOINTS = {
   // Dashboard stats
   employerDashboardStats: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/employer/dashboard/stats?userId=${userId}`,
-  
+
   // Jobs list
   employerJobsList: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/employer/jobs?userId=${userId}`,
-  
+
   // Applications list
   employerApplicationsList: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/employer/applications?userId=${userId}`,
-  
+
+  //Employer checking the candidate profile details
+  employerCheckCandidateDetails: (candidateId: string) =>
+    `${API_BASE_URL}/rest/v1/profiles?select=*&user_id=eq.${candidateId}`,
+
   // Credit tiers
   employerCreditTiers: `${RAILWAY_API_BASE_URL}/api/employer/credits/tiers`,
-  
+
   // Employer credits
   employerCredits: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/employer/credits?userId=${userId}`,
-  
+
   // Transactions
   employerTransactions: (userId: string, limit: number = 20, offset: number = 0) =>
     `${RAILWAY_API_BASE_URL}/api/employer/credits/transactions?userId=${userId}&limit=${limit}&offset=${offset}`,
-  
+
   // Company profile
   employerCompanyProfile: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/employer/profile?userId=${userId}`,
-  
+
   // Analytics - Applications Timeline
   analyticsApplicationsTimeline: (userId: string, period: string = '30d') =>
     `${RAILWAY_API_BASE_URL}/api/employer/dashboard/applications-timeline?userId=${userId}&period=${period}`,
-  
+
   // Analytics - Job Performance
   analyticsJobsPerformance: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/employer/dashboard/jobs-performance?userId=${userId}`,
-  
+
   // Analytics - Count Stats
   analyticsCount: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/employer/dashboard/stats?userId=${userId}`,
   createJob: () =>
-     `${RAILWAY_API_BASE_URL}/api/employer/jobs`,
+    `${RAILWAY_API_BASE_URL}/api/employer/jobs`,
+  viewDetails: (userId: string, jobId: string) =>
+    `${RAILWAY_API_BASE_URL}/api/employer/jobs/${jobId}?userId=${userId}`,
+  duplicateJob: (userId: string, jobId: string) =>
+    `${RAILWAY_API_BASE_URL}/api/employer/jobs/${jobId}?userId=${userId}`,
+  editJob: (userId: string, jobId: string) =>
+    `${RAILWAY_API_BASE_URL}/api/employer/jobs/${jobId}?userId=${userId}`,
+  publishJob: (jobId: string) =>
+    `${RAILWAY_API_BASE_URL}/api/employer/jobs/${jobId}`,
+  deleteJob: (userId: string, jobId: string) =>
+    `${RAILWAY_API_BASE_URL}/api/employer/jobs/${jobId}?userId=${userId}`,
+
 };
+
 
 // ============================================================================
 // CONVENIENT EXPORTS - All endpoints in one object

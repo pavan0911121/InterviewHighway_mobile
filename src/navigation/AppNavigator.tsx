@@ -32,6 +32,7 @@ import PaymentStatusScreen from '../screens/JobSeekerApp/Courses/PaymentStatusSc
 import { ActivityIndicator } from 'react-native';
 import Lesson from '../screens/JobSeekerApp/Courses/Lesson';
 import LessonDetails from '../screens/JobSeekerApp/Courses/LessonDetails';
+import CandidateProfile from '../screens/EmployerApp/Applications/CandidateProfile';
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 const AppStack = createNativeStackNavigator<AppStackParamList>();
@@ -228,6 +229,12 @@ function EmployerDrawerNavigator() {
         name="EmployerTabs"
         component={EmployerBottomTabNavigator}
       />
+      <Stack.Screen
+        name="CandidateProfile"
+        component={CandidateProfile}
+        options={{ animation: 'slide_from_right' }}
+      />
+
     </EmployerDrawer.Navigator>
   );
 }

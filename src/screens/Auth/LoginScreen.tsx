@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Image,
   Alert,
+  Linking,
   // CheckBox,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -26,7 +27,11 @@ import supabase from '../../../supabase';
 import { useEffect } from 'react';
 import * as AsyncStore from '../../AsyncStore';
 // import { signInWithEmail, prepareGoogleAuthData } from '../../utils/supabaseAuth';
-
+interface MenuItem {
+  id: string
+  label: string
+  url: string
+}
 
 const googleIcon = require('../../assets/google.png');
 
@@ -115,7 +120,7 @@ const LoginScreen: React.FC = () => {
       };
 
       const result = await dispatch(postUserData(data) as any);
-      const userId = await dispatch(getVerifiedUser(result?.payload?.user?.id) as any)
+      const userId = await dispatch(getVerifiedUser(result?.payload?.user?.id) as any);   
 
       if (result.type.includes('fulfilled')) {
         // Login successful
@@ -220,6 +225,14 @@ const LoginScreen: React.FC = () => {
       setIsLoading(false);
     }
   };
+   const menuItems: MenuItem[] = [
+    { id: '1', label: 'About us', url: 'https://interviewhighway.com/about' },
+    { id: '2', label: 'Acceptable Use Policy', url: 'https://interviewhighway.com/acceptable-use' },
+    { id: '3', label: 'Employer Service Agreement', url: 'https://interviewhighway.com/employer-agreement' },
+    { id: '4', label: 'Terms of Use', url: 'https://interviewhighway.com/terms' },
+    { id: '5', label: 'Privacy Policy', url: 'https://interviewhighway.com/privacy' },
+    { id: '6', label: 'Demo', url: 'https://interviewhighway.com/demo' },
+  ]
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -374,6 +387,51 @@ const LoginScreen: React.FC = () => {
             >
               <Text style={styles.signUpLinkText}>Sign Up</Text>
             </TouchableOpacity>
+          </View>
+
+          {/* Footer Section */}
+          <View style={styles.footerContainer}>
+            {/* Agreement Text */}
+            <Text style={styles.agreementText}>
+              By signing in, you agree to our{' '}
+              <TouchableOpacity onPress={() =>  Linking.openURL('https://interviewhighway.com/terms')}>
+                <Text style={styles.footerLink}>Terms of Service</Text>
+              </TouchableOpacity>
+              {' '}and{' '}
+              <TouchableOpacity onPress={() =>  Linking.openURL('https://interviewhighway.com/privacy')}>
+                <Text style={styles.footerLink}>Privacy Policy</Text>
+              </TouchableOpacity>
+            </Text>
+
+            {/* Footer Links Grid */}
+            <View style={styles.footerLinksGrid}>
+              <TouchableOpacity style={styles.footerLinkItem} onPress={() => Linking.openURL('https://interviewhighway.com/about')}>
+                <Text style={styles.footerLinkText}>About Us</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.footerLinkItem} onPress={() => Linking.openURL('https://interviewhighway.com/acceptable-use')}>
+                <Text style={styles.footerLinkText}>Acceptable Use Policy</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.footerLinkItem} onPress={() => Linking.openURL('https://interviewhighway.com/employer-agreement')}>
+                <Text style={styles.footerLinkText}>Employer Service Agreement</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.footerLinkItem} onPress={() => Linking.openURL('https://interviewhighway.com/cookies')}>
+                <Text style={styles.footerLinkText}>Cookie Policy</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.footerLinkItem} onPress={() => Linking.openURL('https://interviewhighway.com/terms')}>
+                <Text style={styles.footerLinkText}>Terms of Use</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.footerLinkItem} onPress={() => Linking.openURL('https://interviewhighway.com/privacy')}>
+                <Text style={styles.footerLinkText}>Privacy Policy</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.footerLinkItem} onPress={() => Linking.openURL('https://interviewhighway.com/demo')}>
+                <Text style={styles.footerLinkText}>Demo</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Copyright Text */}
+            <Text style={styles.copyrightText}>
+              © 2026 InterviewHighway. All rights reserved.
+            </Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -568,6 +626,53 @@ const styles = StyleSheet.create({
     fontFamily: 'Geist-VariableFont_wght',
     fontWeight: '600',
     color: '#1853E9',
+  },
+  // Footer Styles
+  footerContainer: {
+    marginTop: 40,
+    paddingHorizontal: 16,
+    paddingVertical: 24,
+    backgroundColor: '#F8F9FA',
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+  },
+  agreementText: {
+    fontSize: 12,
+    fontFamily: 'Geist-VariableFont_wght',
+    fontWeight: '400',
+    color: '#999',
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 18,
+  },
+  footerLink: {
+    color: '#1853E9',
+    fontWeight: '600',
+  },
+  footerLinksGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 4,
+    marginBottom: 20,
+  },
+  footerLinkItem: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  footerLinkText: {
+    fontSize: 11,
+    fontFamily: 'Geist-VariableFont_wght',
+    fontWeight: '400',
+    color: '#999',
+    textDecorationLine: 'none',
+  },
+  copyrightText: {
+    fontSize: 11,
+    fontFamily: 'Geist-VariableFont_wght',
+    fontWeight: '400',
+    color: '#CCC',
+    textAlign: 'center',
   },
 });
 

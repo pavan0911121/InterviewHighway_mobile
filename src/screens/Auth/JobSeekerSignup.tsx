@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View, TouchableOpacity, ScrollView, TextInput } from 'react-native'
 import React, { useState, useMemo } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { ArrowLeft } from 'lucide-react-native'
+import { ArrowLeft, Eye, EyeOff } from 'lucide-react-native'
 import { useDispatch, useSelector } from 'react-redux'
 import { checkEmail, registerJobSeeker, updateExperience, updateUserData } from '../../Redux/slices/loginSlice'
 
@@ -48,7 +48,7 @@ const JobSeekerSignup = ({ navigation }: any) => {
   const handleNextStep = (step: 1 | 2 | 3) => {
     if (step === 1) {
       dispatch(updateUserData({ firstName, lastName, email, mobileNumber: phone }))
-    }else if (step === 2) {
+    } else if (step === 2) {
       dispatch(updateExperience({ experienceLevel, currentRole, preferredLocation }))
     }
     if (currentStep < 3) {
@@ -65,16 +65,16 @@ const JobSeekerSignup = ({ navigation }: any) => {
   const isStep1Valid = () => {
     // Check if first name is not empty
     const isFirstNameValid = firstName.trim().length > 0
-    
+
     // Check if last name is not empty
     const isLastNameValid = lastName.trim().length > 0
-    
+
     // Check if phone is exactly 10 digits
     const isPhoneValid = phone.trim().length === 10 && /^\d{10}$/.test(phone)
-    
+
     // Check if email is verified (API confirmed it's available)
     const isEmailValid = emailStatus === 'valid'
-    
+
     // Return true only if all conditions are met
     return isFirstNameValid && isLastNameValid && isPhoneValid && isEmailValid
   }
@@ -146,18 +146,18 @@ const JobSeekerSignup = ({ navigation }: any) => {
     }
   }
 
-  const handleCreateAccount = async() => {
-    const payload = { 
-      firstName: firstName, 
-      lastName: lastName, 
-      email: email, 
-      mobileNumber: phone, 
-      experienceLevel: experienceLevel, 
-      currentRole: currentRole, 
-      preferredLocation: preferredLocation, 
-      keySkills: keySkills, 
-      password: password, 
-      jobAlerts: jobAlerts 
+  const handleCreateAccount = async () => {
+    const payload = {
+      firstName: firstName,
+      lastName: lastName,
+      email: email,
+      mobileNumber: phone,
+      experienceLevel: experienceLevel,
+      currentRole: currentRole,
+      preferredLocation: preferredLocation,
+      keySkills: keySkills,
+      password: password,
+      jobAlerts: jobAlerts
     }
     const response = await dispatch(registerJobSeeker((payload)) as any);
     if (response?.payload?.id) {
@@ -404,8 +404,7 @@ const JobSeekerSignup = ({ navigation }: any) => {
                   <TouchableOpacity
                     style={styles.eyeIcon}
                     onPress={() => setShowPassword(!showPassword)}
-                  >
-                    <Text style={styles.eyeIconText}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
+                  >{showPassword ? <Eye /> : <EyeOff />}
                   </TouchableOpacity>
                 </View>
               </View>
@@ -488,7 +487,7 @@ const JobSeekerSignup = ({ navigation }: any) => {
                     style={styles.eyeIcon}
                     onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                   >
-                    <Text style={styles.eyeIconText}>{showConfirmPassword ? '👁️' : '👁️‍🗨️'}</Text>
+                    {showConfirmPassword ? <Eye /> : <EyeOff />}
                   </TouchableOpacity>
                 </View>
               </View>

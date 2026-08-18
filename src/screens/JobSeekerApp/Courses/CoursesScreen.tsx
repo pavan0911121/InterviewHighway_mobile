@@ -119,6 +119,7 @@ const CoursesScreen = () => {
                 <Text style={styles.courseId}>{course?.currency}{course?.price}</Text>
                 <TouchableOpacity
                   style={styles.viewButton}
+                  // onPress={() => console.log('View Course pressed for course:', course?.id)}
                   onPress={() => navigation.navigate('CourseDetails', { courseData: course })}
                 >
                   <Text style={styles.viewButtonIcon}>▶</Text>

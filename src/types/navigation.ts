@@ -33,6 +33,7 @@ export type StackIdentifiersParamList = {
   StackIdentifiers:undefined;
   Lesson: undefined;
   LessonDetails: undefined;
+  CandidateProfile:undefined;
 };
 
 export type RootStackParamList = AuthStackParamList & AppStackParamList;

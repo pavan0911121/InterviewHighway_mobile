@@ -286,7 +286,7 @@ const loginSlice = createSlice({
       })
       .addCase(getVerifiedUser.fulfilled, (state, action) => {
         state.error = null;
-        const isVerified = action.payload?.[0]?.is_verified || false;
+        const isVerified = action.payload?.[0]?.is_verified;
         const userId = action.payload?.[0]?.id || null;
         state.userId = userId;
         if (userId) {

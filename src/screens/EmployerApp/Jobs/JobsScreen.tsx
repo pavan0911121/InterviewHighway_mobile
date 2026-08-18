@@ -7,7 +7,7 @@ import { useNavigation } from '@react-navigation/native'
 import { DrawerNavigationProp } from '@react-navigation/drawer'
 import { useDispatch, useSelector } from 'react-redux'
 import * as AsyncStore from "../../../AsyncStore";
-import { getJobPostingStats, postCreateJob } from '../../../Redux/slices/jobPostings'
+import { deleteJobPosting, duplicateJobDetails, editJobDetails, getJobPostingStats, postCreateJob, publishJob, viewJobDetails } from '../../../Redux/slices/jobPostings'
 import { Briefcase, CheckCircle, CircleX, Clock, Currency, DollarSign, EllipsisVertical, Eye, FileText, MapPin, PauseCircle, Plus, Search, Users, X, ChevronRight, Home, ChevronLeft } from 'lucide-react-native'
 
 
@@ -17,6 +17,10 @@ const JobsScreen = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [selectedJobForMenu, setSelectedJobForMenu] = useState<any>(null);
+  const [jobMenuVisible, setJobMenuVisible] = useState(false);
+  const [isEditingJob, setIsEditingJob] = useState(false);
+  const [isViewingDetailsOnly, setIsViewingDetailsOnly] = useState(false);
   const [jobFormData, setJobFormData] = useState({
     // Step 1
     title: '',
@@ -35,12 +39,39 @@ const JobsScreen = () => {
     benefits: '',
     application_deadline: '',
     // Step 4 & 5
-    requires_video_intro: 'required',
+    requires_video_intro: true,
     status: 'draft',
     userId: null as string | null
   });
   const navigation = useNavigation()
   const dispatch = useDispatch();
+
+  const normalizeEmploymentType = (value: any) => {
+    if (!value || typeof value !== 'string') return '';
+
+    const normalized = value.trim().toLowerCase().replace(/[\s_-]+/g, '');
+
+    if (normalized === 'fulltime' || normalized === 'fulltimejob') return 'fulltime';
+    if (normalized === 'parttime' || normalized === 'parttimejob') return 'parttime';
+    if (normalized === 'contract' || normalized === 'contractjob') return 'contract';
+    if (normalized === 'internship' || normalized === 'internshipjob') return 'internship';
+
+    return normalized;
+  };
+
+  const normalizeExperienceLevel = (value: any) => {
+    if (!value || typeof value !== 'string') return '';
+
+    const normalized = value.trim().toLowerCase().replace(/[\s_-]+/g, '');
+
+    if (normalized === 'entrylevel' || normalized === 'entry') return 'Entry level (0-2 years)';
+    if (normalized === 'midlevel' || normalized === 'mid') return 'Mid level (3-5 years)';
+    if (normalized === 'seniorlevel' || normalized === 'senior') return 'Senior level (6-10 years)';
+    if (normalized === 'leadprincipal' || normalized === 'lead' || normalized === 'principal') return 'Lead/Principal (10+ years)';
+
+    return value;
+  };
+
 
   //get user data from async storage and set it to state
   const LocalStorageaData = async () => {
@@ -49,7 +80,7 @@ const JobsScreen = () => {
       if (userLoggedInData) {
         const parsedUserData = JSON.parse(userLoggedInData);
         const userId = parsedUserData?.id;
-        if(userId){
+        if (userId) {
           setUserId(userId);
         }
         const response = await dispatch(getJobPostingStats(userId) as any);
@@ -59,6 +90,117 @@ const JobsScreen = () => {
       console.log("Error fetching user data from AsyncStorage:", error);
     }
   }
+
+  const handleCreateNewJob = () => {
+    // Reset form data to empty for new job creation
+    setJobFormData({
+      title: '',
+      location: '',
+      is_remote: false,
+      employment_type: '',
+      experience_level: '',
+      description: '',
+      requirements: '',
+      responsibilities: '',
+      salary_min: '',
+      salary_max: '',
+      currency: 'INR',
+      benefits: '',
+      application_deadline: '',
+      requires_video_intro: true,
+      status: 'draft',
+      userId: userId
+    });
+    setCurrentStep(1);
+    setIsEditingJob(false);
+    setIsViewingDetailsOnly(false);
+    setModalVisible(true);
+  };
+
+  const handlejobMenuOption = async (option: string) => {
+    try {
+      const userLoggedInData = await AsyncStore.getData(AsyncStore?.Keys?.USER_DATA);
+      if (userLoggedInData) {
+        const parsedUserData = JSON.parse(userLoggedInData);
+        const userId = parsedUserData?.id;
+        if (userId) {
+          setUserId(userId);
+        }
+        if (option === 'View Details' || option === 'Edit Job') {
+          const response = await dispatch(viewJobDetails({ userId, jobId: selectedJobForMenu?.id }) as any);
+          const jobData = response?.payload?.job || selector?.jobData;
+
+          if (jobData) {
+            setJobFormData({
+              title: jobData?.title || '',
+              location: jobData?.location || '',
+              is_remote: jobData?.is_remote || false,
+              employment_type: normalizeEmploymentType(jobData?.employment_type),
+              experience_level: normalizeExperienceLevel(jobData?.experience_level),
+              description: jobData?.description || '',
+              requirements: jobData?.requirements || '',
+              responsibilities: jobData?.responsibilities || '',
+              salary_min: jobData?.salary_min || '',
+              salary_max: jobData?.salary_max || '',
+              currency: jobData?.currency || 'INR',
+              benefits: jobData?.benefits || '',
+              application_deadline: jobData?.application_deadline || '',
+              requires_video_intro: jobData?.requires_video_intro !== undefined ? jobData?.requires_video_intro : true,
+              status: jobData?.status || 'draft',
+              userId: userId,
+            });
+
+            setCurrentStep(1);
+            setIsEditingJob(option === 'Edit Job');
+            setIsViewingDetailsOnly(option === 'View Details');
+            setJobMenuVisible(false);
+            setModalVisible(true);
+          }
+        } else if (option === 'Duplicate Job') {
+          const response = await dispatch(duplicateJobDetails({ userId, jobId: selectedJobForMenu?.id }) as any);
+          const jobData = response?.payload?.job || selector?.jobData;
+
+          if (jobData) {
+            setJobFormData({
+              title: jobData?.title || '',
+              location: jobData?.location || '',
+              is_remote: jobData?.is_remote || false,
+              employment_type: normalizeEmploymentType(jobData?.employment_type),
+              experience_level: normalizeExperienceLevel(jobData?.experience_level),
+              description: jobData?.description || '',
+              requirements: jobData?.requirements || '',
+              responsibilities: jobData?.responsibilities || '',
+              salary_min: jobData?.salary_min || '',
+              salary_max: jobData?.salary_max || '',
+              currency: jobData?.currency || 'INR',
+              benefits: jobData?.benefits || '',
+              application_deadline: jobData?.application_deadline || '',
+              requires_video_intro: jobData?.requires_video_intro !== undefined ? jobData?.requires_video_intro : true,
+              status: jobData?.status || 'draft',
+              userId: userId,
+            });
+            setCurrentStep(1);
+            setJobMenuVisible(false);
+            setModalVisible(true);
+            LocalStorageaData(); // Refresh job stats after duplicating a job
+          }
+        }
+        else if (option === 'Publish Job'|| option === 'Pause Job'|| option === 'Resume Job'||option === 'Close Job') {
+          const body = { status: option === 'Pause Job' ? 'paused' : option === 'Close Job' ? 'closed' : 'active', userId: userId };
+          const response = await dispatch(publishJob({  jobId: selectedJobForMenu?.id, body:body }) as any);
+          setJobMenuVisible(false);
+          LocalStorageaData(); // Refresh job stats after publishing, pausing, or resuming a job
+        }else if (option === 'Delete Job') {
+          const response = await dispatch(deleteJobPosting({ userId, jobId: selectedJobForMenu?.id }) as any);
+          setJobMenuVisible(false);
+          LocalStorageaData(); // Refresh job stats after deleting a job
+        }
+      }
+    } catch (error) {
+      console.log("Error fetching user data from AsyncStorage:", error);
+    }
+
+  };
 
   // Fetch user data on component mount
   useEffect(() => {
@@ -75,11 +217,10 @@ const JobsScreen = () => {
     }
   }, [userId])
 
-  const selector = useSelector((state: any) => state.jobPostings);
-  const dashboardSelector = useSelector((state: any) => state.employerDashboard);
+  const selector = useSelector((state: any) => state?.jobPostings);
+  const dashboardSelector = useSelector((state: any) => state?.employerDashboard);
   const selectorData = selector?.data?.jobs;
   const isLoading = selector?.loading;
-
   // Calculate job stats from selectorData using useMemo
   const jobStats = useMemo(() => {
     if (!selectorData || !Array.isArray(selectorData)) {
@@ -120,11 +261,31 @@ const JobsScreen = () => {
     }
     setCurrentStep(currentStep + 1);
   };
-const handleSaveDraft = () => {
-  // Validate required fields for steps 1 and 2
- const body = jobFormData
- dispatch(postCreateJob(body) as any);
- setModalVisible(false) // Debugging line to check the state of jobFormData
+  const handleSaveDraft = () => {
+    // Validate required fields for steps 1 and 2
+    try {
+      const body = jobFormData
+      dispatch(postCreateJob(body) as any);
+      setModalVisible(false) // Debugging line to check the state of jobFormData
+      LocalStorageaData();
+    } catch (error) {
+      console.error("Error saving draft:", error);
+    }
+  }
+  const handleSaveChanges = async () => {
+    try {
+      const userLoggedInData = await AsyncStore.getData(AsyncStore?.Keys?.USER_DATA);
+      if (userLoggedInData) {
+        const parsedUserData = JSON.parse(userLoggedInData);
+        const userId = parsedUserData?.id;
+
+        const body = jobFormData
+        dispatch(editJobDetails({ userId: userId as string, jobId: selectedJobForMenu?.id as string, jobData: body }) as any);
+        setModalVisible(false) // Debugging line to check the state of jobFormData
+      }
+    } catch (error) {
+      console.error("Error saving changes:", error);
+    }
   }
   return (
     <SafeAreaView style={styles.container}>
@@ -153,7 +314,7 @@ const handleSaveDraft = () => {
           {/* Create Job Button */}
           <TouchableOpacity
             style={styles.createJobButton}
-            onPress={() => setModalVisible(true)}
+            onPress={() => handleCreateNewJob()}
           >
             <Plus color={'#fff'} />
             <Text style={styles.createJobButtonText}>Create Job</Text>
@@ -228,13 +389,16 @@ const handleSaveDraft = () => {
 
           {/* Job Listings */}
           <View style={styles.jobListingsContainer}>
-            {selectorData && selectorData.length > 0 ? (
+            {selectorData && selectorData?.length > 0 ? (
               selectorData.map((job: any) => (
                 <View key={job.id} style={styles.jobCard}>
                   {/* Header with Title and Menu */}
                   <View style={styles.jobHeaderRow}>
                     <Text style={styles.jobTitle}>{job.title}</Text>
-                    <TouchableOpacity>
+                    <TouchableOpacity onPress={() => {
+                      setSelectedJobForMenu(job);
+                      setJobMenuVisible(true);
+                    }}>
                       <EllipsisVertical color={'black'} />
                     </TouchableOpacity>
                   </View>
@@ -327,10 +491,13 @@ const handleSaveDraft = () => {
             {/* Modal Header */}
             <View style={styles.modalHeader}>
               <View style={styles.headerLeft}>
-                <Text style={styles.modalTitle}>Create New Job</Text>
+                <Text style={styles.modalTitle}>{isViewingDetailsOnly ? 'Job Details' : isEditingJob ? 'Edit Job' : 'Create New Job'}</Text>
                 <Text style={styles.modalStep}>Step {currentStep} of 5</Text>
               </View>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
+              <TouchableOpacity onPress={() => {
+                setModalVisible(false);
+                setIsViewingDetailsOnly(false);
+              }}>
                 <X color={'#000'} size={24} />
               </TouchableOpacity>
             </View>
@@ -377,9 +544,10 @@ const handleSaveDraft = () => {
                         setJobFormData({ ...jobFormData, title: text.slice(0, 100) })
                       }
                       maxLength={100}
+                      editable={!isViewingDetailsOnly}
                     />
                     <Text style={styles.charCount}>
-                      {jobFormData.title.length}/100 characters
+                      {jobFormData?.title?.length}/100 characters
                     </Text>
                   </View>
 
@@ -396,6 +564,7 @@ const handleSaveDraft = () => {
                       onChangeText={(text) =>
                         setJobFormData({ ...jobFormData, location: text })
                       }
+                      editable={!isViewingDetailsOnly}
                     />
                   </View>
 
@@ -430,8 +599,8 @@ const handleSaveDraft = () => {
                     </Text>
                     <View style={styles.pickerWrapper}>
                       <Picker
-                        selectedValue={jobFormData.employment_type}
-                        onValueChange={(value) => setJobFormData({ ...jobFormData, employment_type: value })}
+                        selectedValue={jobFormData?.employment_type}
+                        onValueChange={(value) => setJobFormData({ ...jobFormData, employment_type: value || jobFormData.employment_type })}
                         style={styles.picker}
                         itemStyle={styles.pickerItem}
                       >
@@ -451,8 +620,8 @@ const handleSaveDraft = () => {
                     </Text>
                     <View style={styles.pickerWrapper}>
                       <Picker
-                        selectedValue={jobFormData.experience_level}
-                        onValueChange={(value) => setJobFormData({ ...jobFormData, experience_level: value })}
+                        selectedValue={jobFormData?.experience_level}
+                        onValueChange={(value) => setJobFormData({ ...jobFormData, experience_level: value || jobFormData.experience_level })}
                         style={styles.picker}
                         itemStyle={styles.pickerItem}
                       >
@@ -495,9 +664,10 @@ const handleSaveDraft = () => {
                       onChangeText={(text) =>
                         setJobFormData({ ...jobFormData, description: text })
                       }
+                      editable={!isViewingDetailsOnly}
                     />
                     <Text style={styles.charCount}>
-                      {jobFormData.description.split(/\s+/).filter(w => w.length > 0).length} words (minimum 25 words required)
+                      {jobFormData?.description?.split(/\s+/).filter(w => w.length > 0)?.length} words (minimum 25 words required)
                     </Text>
                   </View>
 
@@ -836,42 +1006,138 @@ const handleSaveDraft = () => {
 
             {/* Modal Footer - Buttons */}
             <View style={styles.modalFooter}>
-              {currentStep > 1 && (
-                <TouchableOpacity
-                  style={styles.backButton}
-                  onPress={() => setCurrentStep(currentStep - 1)}
-                >
-                  <ChevronLeft color={'#000000'} size={20} />
-                  <Text style={styles.backButtonText}>Back</Text>
-                </TouchableOpacity>
-              )}
-              {currentStep < 5 ? (
-                <TouchableOpacity
-                  style={[
-                    styles.nextButton,
-                    currentStep === 1 && { marginLeft: 'auto' },
-                    isNextButtonDisabled() && styles.nextButtonDisabled,
-                  ]}
-                  onPress={() => handleNextButton()}
-                  disabled={isNextButtonDisabled()}
-                >
-                  <Text style={[styles.nextButtonText, isNextButtonDisabled() && styles.nextButtonTextDisabled]}>Next</Text>
-                  <ChevronRight color={isNextButtonDisabled() ? '#999' : '#fff'} size={20} />
-                </TouchableOpacity>
-              ) : (
+              {isViewingDetailsOnly ? (
                 <TouchableOpacity
                   style={[styles.saveButton, { marginLeft: 'auto' }]}
                   onPress={() => {
-                    handleSaveDraft()
+                    setModalVisible(false);
+                    setIsViewingDetailsOnly(false);
                   }}
                 >
-                  <CheckCircle color={'#fff'} size={20} />
-                  <Text style={styles.saveButtonText}>Save as Draft</Text>
+                  <X color={'#fff'} size={20} />
+                  <Text style={styles.saveButtonText}>Close</Text>
                 </TouchableOpacity>
+              ) : (
+                <>
+                  {currentStep > 1 && (
+                    <TouchableOpacity
+                      style={styles.backButton}
+                      onPress={() => setCurrentStep(currentStep - 1)}
+                    >
+                      <ChevronLeft color={'#000000'} size={20} />
+                      <Text style={styles.backButtonText}>Back</Text>
+                    </TouchableOpacity>
+                  )}
+                  {currentStep < 5 ? (
+                    <TouchableOpacity
+                      style={[
+                        styles.nextButton,
+                        currentStep === 1 && { marginLeft: 'auto' },
+                        isNextButtonDisabled() && styles.nextButtonDisabled,
+                      ]}
+                      onPress={() => handleNextButton()}
+                      disabled={isNextButtonDisabled()}
+                    >
+                      <Text style={[styles.nextButtonText, isNextButtonDisabled() && styles.nextButtonTextDisabled]}>Next</Text>
+                      <ChevronRight color={isNextButtonDisabled() ? '#999' : '#fff'} size={20} />
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={[styles.saveButton, { marginLeft: 'auto' }]}
+                      onPress={() => {
+                        isEditingJob ? handleSaveChanges() :
+                          handleSaveDraft()
+                      }}
+                    >
+                      <CheckCircle color={'#fff'} size={20} />
+                      <Text style={styles.saveButtonText}>{isEditingJob ? 'Save Changes' : 'Save as Draft'}</Text>
+                    </TouchableOpacity>
+                  )}
+                </>
               )}
             </View>
           </View>
         </View>
+      </Modal>
+
+      {/* Job Menu Bottom Sheet */}
+      <Modal
+        visible={jobMenuVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setJobMenuVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.bottomSheetOverlay}
+          activeOpacity={1}
+          onPress={() => setJobMenuVisible(false)}
+        >
+          <View style={styles.bottomSheetContainer}>
+            {/* Handle Bar */}
+            <View style={styles.handleBar} />
+
+            {/* View Details */}
+            <TouchableOpacity style={styles.menuItem} onPress={() => { handlejobMenuOption('View Details') }}>
+              <Text style={styles.menuItemText}>View Details</Text>
+            </TouchableOpacity>
+
+            {/* Conditional Menu Items Based on Status */}
+            {selectedJobForMenu?.status === 'active' && (
+              <>
+                <TouchableOpacity style={styles.menuItem} onPress={() => { handlejobMenuOption('Duplicate Job') }}>
+                  <Text style={styles.menuItemText}>Duplicate Job</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.menuItem} onPress={() => { handlejobMenuOption('Pause Job') }}>
+                  <Text style={styles.menuItemText}>Pause Job</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.menuItem} onPress={() => { handlejobMenuOption('Close Job') }}>
+                  <Text style={styles.menuItemText}>Close Job</Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            {selectedJobForMenu?.status === 'draft' && (
+              <>
+                <TouchableOpacity style={styles.menuItem} onPress={() => { handlejobMenuOption('Edit Job') }}>
+                  <Text style={styles.menuItemText}>Edit Job</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.menuItem} onPress={() => { handlejobMenuOption('Duplicate Job') }}>
+                  <Text style={styles.menuItemText}>Duplicate Job</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.menuItem} onPress={() => { handlejobMenuOption('Publish Job') }}>
+                  <Text style={styles.menuItemText}>Publish Job</Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            {selectedJobForMenu?.status === 'closed' && (
+              <>
+                <TouchableOpacity style={styles.menuItem} onPress={() => { handlejobMenuOption('Duplicate Job') }}>
+                  <Text style={styles.menuItemText}>Duplicate Job</Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            {selectedJobForMenu?.status === 'paused' && (
+              <>
+                <TouchableOpacity style={styles.menuItem} onPress={() => { handlejobMenuOption('Duplicate Job') }}>
+                  <Text style={styles.menuItemText}>Duplicate Job</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.menuItem} onPress={() => { handlejobMenuOption('Resume Job') }}>
+                  <Text style={styles.menuItemText}>Resume Job</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.menuItem} onPress={() => { handlejobMenuOption('Close Job') }}>
+                  <Text style={styles.menuItemText}>Close Job</Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            {/* Delete Job - Always shown */}
+            <TouchableOpacity style={[styles.menuItem, styles.deleteMenuItem]} onPress={() => { handlejobMenuOption('Delete Job') }}>
+              <Text style={[styles.menuItemText, styles.deleteMenuItemText]}>Delete Job</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
       </Modal>
     </SafeAreaView>
   )
@@ -1127,6 +1393,50 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#165DFC',
     fontFamily: 'Geist-VariableFont_wght',
+  },
+  // Job Menu Bottom Sheet Styles
+  bottomSheetOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  bottomSheetContainer: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  handleBar: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#E5E5E5',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 12,
+    marginBottom: 16,
+  },
+  menuItem: {
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  menuItemText: {
+    fontSize: 14,
+    color: '#000',
+    fontFamily: 'Geist-VariableFont_wght',
+    fontWeight: '500',
+  },
+  deleteMenuItem: {
+    borderBottomWidth: 0,
+  },
+  deleteMenuItemText: {
+    color: '#FF3B30',
   },
   // Modal Styles
   modalOverlay: {

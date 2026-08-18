@@ -1,8 +1,8 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Linking } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { DrawerNavigationProp, DrawerContentComponentProps } from '@react-navigation/drawer'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import * as AsyncStore from '../AsyncStore'
 import { clearCoursesData } from '../Redux/slices/coursesSlice'
 import { clearEmplloyerAnalyticsData } from '../Redux/slices/employerAnalyticsSlice'
@@ -15,6 +15,7 @@ import { clearEmployerJobPostingsData } from '../Redux/slices/jobPostings'
 import { clearUserData } from '../Redux/slices/loginSlice'
 import { clearProfileData } from '../Redux/slices/profileSlice'
 import { clearPaymentData } from '../Redux/slices/paymentsSlice'
+import { Shield, ShieldOff } from 'lucide-react-native'
 
 
 interface MenuItem {
@@ -26,7 +27,16 @@ interface MenuItem {
 const SideMenu: React.FC<DrawerContentComponentProps> = ({ navigation }) => {
   const [loader, setLoader] = useState(false)
   const insets = useSafeAreaInsets()
+  const [role, setRole] = useState<string | null>(null)
+  const [userName, setUserName] = useState<string | null>(null)
+  const [email, setEmail] = useState<string | null>(null)
+  const [isVerified, setIsVerified] = useState<boolean | null>(null)
   const dispatch = useDispatch()
+
+  useEffect(() => {
+    LocalStorageaData();
+  }, [])
+  const selector = useSelector((state: any) => state?.login);
   const menuItems: MenuItem[] = [
     { id: '1', label: 'About us', url: 'https://interviewhighway.com/about' },
     { id: '2', label: 'Acceptable Use Policy', url: 'https://interviewhighway.com/acceptable-use' },
@@ -67,6 +77,28 @@ const SideMenu: React.FC<DrawerContentComponentProps> = ({ navigation }) => {
 
   }
 
+  //get user data from async storage and set it to state
+  const LocalStorageaData = async () => {
+    try {
+      const userLoggedInData = await AsyncStore.getData(AsyncStore?.Keys?.USER_DATA);
+      const userRole = await AsyncStore.getData(AsyncStore?.Keys?.ROLE);
+      const verify = await AsyncStore.getData(AsyncStore?.Keys?.IS_VERIFIED);
+      setIsVerified(verify === 'true');
+      if (userLoggedInData) {
+        const parsedUserData = JSON.parse(userLoggedInData);
+        setUserName(parsedUserData?.user_metadata?.full_name || null);
+        setEmail(parsedUserData?.email || null)
+        console.log('User data from AsyncStorage:', parsedUserData);
+      }
+      if (userRole) {
+        setRole(userRole);
+        console.log('User role from AsyncStorage:', userRole);
+      }
+    } catch (error) {
+      console.log("Error fetching user data from AsyncStorage:", error);
+    }
+  }
+
   return (
     <ScrollView style={[styles.menuPanel, { paddingTop: insets.top + 16 }]} scrollEnabled={false}>
       {/* Header */}
@@ -77,12 +109,28 @@ const SideMenu: React.FC<DrawerContentComponentProps> = ({ navigation }) => {
       {/* User Profile Section */}
       <View style={styles.userSection}>
         <View style={styles.avatarContainer}>
-          <Text style={styles.avatarText}>PA</Text>
+          <Text style={styles.avatarText}>{email ? email.charAt(0).toUpperCase() : 'IH'}</Text>
         </View>
         <View style={styles.userInfo}>
-          <Text style={styles.userName}>pavan</Text>
-          <Text style={styles.userEmail}>pavankarthik901@gmail.com</Text>
-          <Text style={styles.userStatus}>⭕ Not Verified</Text>
+          {role !== 'employer' &&
+            <Text style={styles.userName}>{userName}</Text>
+          }
+          <Text style={styles.userEmail}>{email}</Text>
+          {
+            role !== 'employer' ? (
+              <View style={styles.userStatusContainer}>
+                {isVerified ? (
+                  <Shield color={'#00A746'} size={16} />
+                ) : (
+                  <ShieldOff color={'#FF2434'} size={16} />
+                )}
+                <Text style={isVerified ? styles.userStatus : styles.userStatusNotVerified}>
+                  {isVerified ? 'Verified' : 'Not Verified'}
+                </Text>
+              </View>
+            ) : null
+          }
+
         </View>
       </View>
 
@@ -163,6 +211,7 @@ const styles = StyleSheet.create({
     color: '#000',
     fontFamily: 'Geist-VariableFont_wght',
     marginBottom: 2,
+    textTransform: 'capitalize',
   },
   userEmail: {
     fontSize: 12,
@@ -170,9 +219,19 @@ const styles = StyleSheet.create({
     fontFamily: 'Geist-VariableFont_wght',
     marginBottom: 4,
   },
+  userStatusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
   userStatus: {
     fontSize: 12,
-    color: '#999',
+    color: '#00A746',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  userStatusNotVerified: {
+    fontSize: 12,
+    color: '#FF2434',
     fontFamily: 'Geist-VariableFont_wght',
   },
   menuItemsContainer: {
