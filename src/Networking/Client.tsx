@@ -329,7 +329,7 @@ export const parseAPIResponse = async (response: Response): Promise<APIResponse>
     const parsedJSON = JSON.parse(responseText);
 
     if (response.ok) {
-      console.log(`✓ API Response successful [${response.status}]`);
+      //console.log(`✓ API Response successful [${response.status}]`);
       return { success: true, data: parsedJSON, status: response.status };
     }
 

@@ -88,11 +88,9 @@ const SideMenu: React.FC<DrawerContentComponentProps> = ({ navigation }) => {
         const parsedUserData = JSON.parse(userLoggedInData);
         setUserName(parsedUserData?.user_metadata?.full_name || null);
         setEmail(parsedUserData?.email || null)
-        console.log('User data from AsyncStorage:', parsedUserData);
       }
       if (userRole) {
         setRole(userRole);
-        console.log('User role from AsyncStorage:', userRole);
       }
     } catch (error) {
       console.log("Error fetching user data from AsyncStorage:", error);

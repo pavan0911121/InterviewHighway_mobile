@@ -59,9 +59,7 @@ const employerProfileSlice = createSlice({
             .addCase(getEmployerProfile.fulfilled, (state, action) => {
                 state.isLoading = false;
                 state.courses = action.payload; // Assuming the API returns an array of courses
-                console.log(state.courses, "state courses");
                 state.error = null;
-                console.log('Employer profile fetched successfully:', action.payload);
             })
             .addCase(getEmployerProfile.rejected, (state, action) => {
                 state.isLoading = false;

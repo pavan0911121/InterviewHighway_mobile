@@ -40,7 +40,6 @@ const CreditsScreen = () => {
     }
   }
   const credits = selector?.data?.credits
-  console.log(credits?.credits_available,"selector from credits screen")
   const tiers = selector?.tiers?.tiers
 
   // Sample data - replace with API data later

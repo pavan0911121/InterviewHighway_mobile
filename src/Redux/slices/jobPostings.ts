@@ -161,9 +161,7 @@ const jobPostingsSlice = createSlice({
             .addCase(getJobPostingStats.fulfilled, (state, action) => {
                 state.isLoading = false;
                 state.data = action.payload; // Assuming the API returns an object with job posting stats
-                console.log(state.data, "state data");
                 state.error = null;
-                console.log('Job posting stats fetched successfully:', action.payload);
             })
             .addCase(getJobPostingStats.rejected, (state, action) => {
                 state.isLoading = false;
@@ -178,10 +176,8 @@ const jobPostingsSlice = createSlice({
             .addCase(postCreateJob.fulfilled, (state, action) => {
                 state.isLoading = false;
                 state.data = action.payload; // Assuming the API returns an object with the created job data
-                console.log(state.data, "state data");
                 state.error = null;
                 state.jobCreationStatus = 'success';
-                console.log('Job created successfully:', action.payload);
             })
             .addCase(postCreateJob.rejected, (state, action) => {
                 state.isLoading = false;

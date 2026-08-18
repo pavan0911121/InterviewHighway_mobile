@@ -160,7 +160,6 @@ const EmployerSignup = ({ navigation }: any) => {
         code_challenge_method: "s256"
       }
       const response = await dispatch(registerJobSeeker((payload)) as any);
-      console.log("response", response)
       if (response?.payload?.id) {
         navigation.navigate('Login')
       }

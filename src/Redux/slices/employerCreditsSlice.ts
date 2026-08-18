@@ -95,9 +95,7 @@ const employerCreditsSlice = createSlice({
             .addCase(getEmployerCredits.fulfilled, (state, action) => {
                 state.isLoading = false;
                 state.data = action.payload; // Assuming the API returns an object with employer credits
-                console.log(state.data, "state data");
                 state.error = null;
-                console.log('Employer credits fetched successfully:', action.payload);
             })
             .addCase(getEmployerCredits.rejected, (state, action) => {
                 state.isLoading = false;
@@ -114,7 +112,6 @@ const employerCreditsSlice = createSlice({
                 // Assuming the API returns an object with credit tiers, you can store it in a separate property if needed
                 state.tiers = action.payload;
                 state.error = null;
-                console.log('Employer credit tiers fetched successfully:', action.payload);
             })
             .addCase(getEmployerCreditTiers.rejected, (state, action) => {
                 state.isLoading = false;
@@ -132,7 +129,6 @@ const employerCreditsSlice = createSlice({
                 // Assuming the API returns an array of transactions, you can store it in a separate property if needed
                 state.transactions = action.payload;
                 state.error = null;
-                console.log('Employer credit transactions fetched successfully:', action.payload);
             })
             .addCase(getEmployerCreditTransactions.rejected, (state, action) => {
                 state.isLoading = false;

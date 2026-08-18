@@ -77,9 +77,7 @@ const employerAnalyticsSlice = createSlice({
             .addCase(getEmployerAnalytics.fulfilled, (state, action) => {
                 state.isLoading = false;
                 state.data = action.payload; // Assuming the API returns an object with employer analytics
-                console.log(state.data, "state data");
                 state.error = null;
-                console.log('Employer analytics fetched successfully:', action.payload);
             })
             .addCase(getEmployerAnalytics.rejected, (state, action) => {
                 state.isLoading = false;
@@ -90,14 +88,11 @@ const employerAnalyticsSlice = createSlice({
             .addCase(getEmployerTimeline.pending, (state) => {
                 state.isLoading = true;
                 state.error = null;
-
             })
             .addCase(getEmployerTimeline.fulfilled, (state, action) => {
                 state.isLoading = false;
                 state.timelineData = action.payload; // Assuming the API returns an array with employer timeline analytics
-                console.log(state.timelineData, "state timeline data");
                 state.error = null;
-                console.log('Employer timeline analytics fetched successfully:', action.payload);
             })
             .addCase(getEmployerTimeline.rejected, (state, action) => {
                 state.isLoading = false;

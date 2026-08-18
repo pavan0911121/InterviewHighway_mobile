@@ -75,9 +75,7 @@ const employerApplicationsSlice = createSlice({
             .addCase(getApplicationsList.fulfilled, (state, action) => {
                 state.isLoading = false;
                 state.data = action.payload; // Assuming the API returns an object with applications list
-                console.log(state.data, "state data");
                 state.error = null;
-                console.log('Applications list fetched successfully:', action.payload);
             })
             .addCase(getApplicationsList.rejected, (state, action) => {
                 state.isLoading = false;
@@ -91,7 +89,7 @@ const employerApplicationsSlice = createSlice({
             .addCase(getCandidateDetails.fulfilled, (state, action) => {
                 state.isLoading = false;
                 state.candidateData = action.payload; // Assuming the API returns an object with candidate details
-                console.log('Candidate details fetched successfully:', action.payload);
+                state.error = null;
             })
             .addCase(getCandidateDetails.rejected, (state, action) => {
                 state.isLoading = false;

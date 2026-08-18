@@ -41,7 +41,6 @@ export default function HomeTabScreen({ navigation }: Props) {
   }
 
   const handleApplyFilters = (filters: any) => {
-    console.log('Applied Filters:', filters);
     // You can dispatch an action here to filter jobs based on the selected filters
   };
   return (

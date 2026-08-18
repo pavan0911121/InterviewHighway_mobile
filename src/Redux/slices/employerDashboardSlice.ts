@@ -57,9 +57,7 @@ const employerDashboardSlice = createSlice({
             .addCase(getEmployerDashboardStats.fulfilled, (state, action) => {
                 state.isLoading = false;
                 state.data = action.payload; // Assuming the API returns an object with dashboard stats
-                console.log(state.data, "state data");
                 state.error = null;
-                console.log('Employer dashboard stats fetched successfully:', action.payload);
             })
             .addCase(getEmployerDashboardStats.rejected, (state, action) => {
                 state.isLoading = false;
