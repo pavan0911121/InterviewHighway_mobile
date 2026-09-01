@@ -23,6 +23,7 @@ export const AUTH_ENDPOINTS = {
   userData: `${API_BASE_URL}/auth/v1/user`,
   checkEmail: `${RAILWAY_API_BASE_URL}/api/check-email`,
   signup: `${API_BASE_URL}/auth/v1/signup?redirect_to=https%3A%2F%2Finterviewhighway.com%2Fauth%2Fcallback`,
+  refreshToken: `${API_BASE_URL}/auth/v1/token?grant_type=refresh_token`,
 };
 
 // ===========================
@@ -189,6 +190,10 @@ export const EMPLOYER_ENDPOINTS = {
 
   // Company profile
   employerCompanyProfile: (userId: string) =>
+    `${RAILWAY_API_BASE_URL}/api/employer/profile?userId=${userId}`,
+
+  // Update company profile
+  updateEmployerCompanyProfile: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/employer/profile?userId=${userId}`,
 
   // Analytics - Applications Timeline

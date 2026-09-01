@@ -15,6 +15,7 @@ interface coursesState {
     chapterId?: string | null;
     lessonId?: string | null;
     lessonsData?: object | null;
+    chapterData?: object | null;
 }
 
 const initialState: coursesState = {
@@ -29,6 +30,7 @@ const initialState: coursesState = {
     chapterId: null,
     lessonId: null,
     lessonsData: null,
+    chapterData: null,
 };
 //Recommended jobs API call
 export const getCourses = createAsyncThunk(
@@ -247,6 +249,7 @@ const coursesSlice = createSlice({
                 state.isLoading = false;
                 state.error = null;// Assuming the API returns an array of course chapters
                 state.chapterId = action.payload[0]?.id; // Assuming the API returns an array of chapters and you want the first chapter's ID
+                state.chapterData = action.payload; // Store the chapter data in the state
                 // You can store the chapters in the state if needed
             })
             .addCase(getCourseChaptersById.rejected, (state, action) => {

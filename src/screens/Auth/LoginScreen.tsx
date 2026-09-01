@@ -178,6 +178,7 @@ const LoginScreen: React.FC = () => {
             if(data?.session?.access_token) {
               // Store token and login status
               await AsyncStore.storeData(AsyncStore.Keys.USER_TOKEN, data?.session?.access_token);
+              await AsyncStore.storeData(AsyncStore.Keys.REFRESH_TOKEN, data?.session?.refresh_token);
               await AsyncStore.storeData(AsyncStore.Keys.IS_LOGIN, "true");
               await AsyncStore.storeData(AsyncStore.Keys.USER_DATA, JSON.stringify(data?.session?.user));
 

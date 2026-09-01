@@ -41,7 +41,6 @@ const LessonDetails = () => {
     const navigation = useNavigation<any>();
     const lessonId = selector?.lessonId
 
-
     useEffect(() => {
         if (lessonId) {
             dispatch(getLessonDetailsById(lessonId) as any);
@@ -49,13 +48,14 @@ const LessonDetails = () => {
     }, [lessonId]);
 
     const handleDownload = async (documentId: string) => {
-        if (!lessonId) return
-
-        const downloadUrl = COURSE_ENDPOINTS.DownloadLessonById(lessonId, documentId)
-        setIsLoadingPdf(true)
-        setCurrentDownloadingId(documentId)
-
+        
         try {
+            if (!lessonId) return
+    
+            const downloadUrl = COURSE_ENDPOINTS.DownloadLessonById(lessonId, documentId)
+            
+            setIsLoadingPdf(true)
+            setCurrentDownloadingId(documentId)
             const tokenValue = await AsyncStore.getData(AsyncStore?.Keys?.USER_TOKEN)
             const authHeader = tokenValue ? { Authorization: `Bearer ${tokenValue}` } : {}
             const resource = selector?.lessonsData?.resources?.find((item: any) => item.id === documentId)
@@ -64,7 +64,7 @@ const LessonDetails = () => {
             const extension = resourceName.includes('.') ? resourceName.split('.').pop()?.toLowerCase() : 'pdf'
             const fileName = resourceName.includes('.') ? safeName : `${safeName}.${extension}`
             const filePath = `${RNFS.DocumentDirectoryPath}/${fileName}`
-
+            
             const downloadOptions = {
                 fromUrl: downloadUrl,
                 toFile: filePath,
@@ -72,10 +72,12 @@ const LessonDetails = () => {
                 background: false,
                 discretionary: false,
             }
-
+            
             const result = await RNFS.downloadFile(downloadOptions).promise
+            console.log("download", result);
             if (result.statusCode === 200 || result.statusCode === 201) {
                 setDownloadedPdfPaths(prev => ({ ...prev, [documentId]: filePath }))
+                await FileViewer.open(filePath, { showOpenWithDialog: true })
             } else {
                 throw new Error(`Document download failed: status ${result.statusCode}`)
             }

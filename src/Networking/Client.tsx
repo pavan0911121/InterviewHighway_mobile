@@ -362,7 +362,7 @@ export const parseAPIResponse = async (response: Response): Promise<APIResponse>
     }
 
     const errorBody = err instanceof Error ? err.message : String(err);
-    console.error('JSON Parse Error:', errorBody);
+    console.error('JSON Parse Error:232', errorBody);
     return Promise.reject({
       type: 'InvalidJSON',
       status: response.status,

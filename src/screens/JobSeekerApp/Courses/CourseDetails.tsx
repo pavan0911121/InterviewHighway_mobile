@@ -17,68 +17,62 @@ import { useDispatch, useSelector } from 'react-redux';
 // @ts-ignore
 import RazorpayCheckout from 'react-native-razorpay';
 import { BookOpen, Clock4, CreditCard, Lock, MoveLeft, Play, Shield, TrendingUp, User } from 'lucide-react-native';
-import * as AsyncStore from "../../../AsyncStore";
 
 const { width } = Dimensions.get('window');
 
 const CourseDetails: React.FC<{ route: any }> = ({ route }) => {
   const navigation = useNavigation<any>();
   const dispatch = useDispatch();
-  const { courseData } = route?.params
+  const { courseData, isEnrolled } = route?.params
   const selector = useSelector((state: any) => state.courses);
   const courseDetails = courseData
   useEffect(() => {
-    handleEnrollmentCourses()
-    if(courseDetails?.id){
+
+    if (courseDetails?.id) {
       dispatch(getCourseChaptersById(courseDetails?.id) as any);
     }
   }, [])
-  const handleEnrollmentCourses = async () => {
-    const userLoggedID = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
-    if (userLoggedID) {
-      const parsedUserData = JSON.parse(userLoggedID);
-      const response = await dispatch(getEnrollmentCourses(parsedUserData) as any);
-    }
-  }
-  const handlePayment = () => {
+  const handlePayment = async () => {
     const body = {
       courseId: courseDetails?.id,
-      amount: 10,
-      currency: "INR"
+      amount: courseDetails?.price,
+      currency: courseDetails?.currency,
     }
-    dispatch(createOrder(body) as any);
-    var options = {
-      description: 'Test Order from mobile app',
-      image: '../../../assets/logo.png',
-      currency: 'INR',
-      key: 'rzp_live_STwYEZ6DIV5kWw', // Your api key
-      amount: '10',
-      name: 'InterviewHighway',
-      order_id: selector?.orderData?.order?.id,
-      prefill: {
-        email: '',
-        contact: '',
-        name: ''
-      },
-      theme: { color: '#53a20e' }
-    }
-    RazorpayCheckout.open(options).then((data: any) => {
-      // handle success
-      const body = {
-        razorpay_order_id: selector?.orderData?.order?.id,
-        razorpay_payment_id: data.razorpay_payment_id,
-        razorpay_signature: data.razorpay_signature,
+    const response = await dispatch(createOrder(body) as any);
+    if (response?.payload?.order?.id) {
+      var options = {
+        description: courseDetails?.description,
+        image: '../../../assets/logo.png',
+        currency: courseDetails?.currency,
+        key: 'rzp_live_STwYEZ6DIV5kWw', // Your api key
+        amount: courseDetails?.price,
+        name: 'InterviewHighway',
+        order_id: response?.payload?.order?.id,
+        prefill: {
+          email: '',
+          contact: '',
+          name: ''
+        },
+        theme: { color: '#53a20e' }
       }
-      dispatch(verifyOrder(body) as any);
-      (navigation.navigate as any)('PaymentStatusScreen', { status: "Success" });
-    }).catch((error: any) => {
-      // handle failure
-      (navigation.navigate as any)('PaymentStatusScreen', { status: "Failed" });
-      console.log(error, "error");
-      Alert.alert(`Payment has been cancelled`);
-    });
+      RazorpayCheckout.open(options).then((data: any) => {
+        // handle success
+        const body = {
+          razorpay_order_id: response?.payload?.order?.id,
+          razorpay_payment_id: data.razorpay_payment_id,
+          razorpay_signature: data.razorpay_signature,
+        }
+        dispatch(verifyOrder(body) as any);
+        (navigation.navigate as any)('PaymentStatusScreen', { status: "Success", courseData: courseDetails });
+      }).catch((error: any) => {
+        // handle failure
+        (navigation.navigate as any)('PaymentStatusScreen', { status: "Failed", courseData: courseDetails });
+        console.log(error, "error");
+        Alert.alert(`Payment has been cancelled`);
+      })
+    }
   };
-
+  const chapterData = selector?.chapterData?.[0];
   return (
     <SafeAreaView style={styles.safeAreaContainer}>
       {selector?.isLoading ?
@@ -104,12 +98,14 @@ const CourseDetails: React.FC<{ route: any }> = ({ route }) => {
             <View style={styles.avatar}>
               <User color={'#fff'} />
             </View>
-            <Text style={styles.instructorText}>Instructor: {courseDetails?.instructor_name}</Text>
+            <Text style={styles.instructorText}>Instructor: {courseDetails?.instructor_name || courseDetails?.instructorName}</Text>
           </View>
 
           {/* Course Image */}
           <Image
-            source={require('../../../assets/py.webp')} // replace with your image
+            source={{
+              uri: courseDetails?.thumbnail_url || courseDetails?.thumbnailUrl
+            }}
             style={styles.image}
             resizeMode="cover"
           />
@@ -137,12 +133,12 @@ const CourseDetails: React.FC<{ route: any }> = ({ route }) => {
 
           {/* Modules */}
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>There are {courseDetails?.total_chapters} modules in this course</Text>
+            <Text style={styles.cardTitle}>There are {courseDetails?.total_chapters || 1} modules in this course</Text>
 
             <View style={styles.moduleBox}>
-              <Text style={styles.moduleTitle}>Module 1: python</Text>
-              <Text style={styles.moduleSub}>python1</Text>
-              <Text style={styles.moduleMeta}>{courseDetails?.total_chapters} lessons · <Lock size={13} color={'#999'} /> Enrollment required</Text>
+              <Text style={styles.moduleTitle}>Module {courseDetails?.total_chapters || 1}: {chapterData?.title}</Text>
+              <Text style={styles.moduleSub}>{chapterData?.subtitle}</Text>
+              <Text style={styles.moduleMeta}>lessons {chapterData?.chapter_order}· <Lock size={13} color={'#999'} /> Enrollment required</Text>
             </View>
           </View>
 
@@ -154,7 +150,7 @@ const CourseDetails: React.FC<{ route: any }> = ({ route }) => {
               <View style={styles.avatar}>
                 <User color={'#fff'} />
               </View>
-              <Text style={styles.instructorText}>{courseDetails?.instructor_name}</Text>
+              <Text style={styles.instructorText}>{courseDetails?.instructor_name || courseDetails?.instructorName}</Text>
             </View>
           </View>
 
@@ -162,8 +158,8 @@ const CourseDetails: React.FC<{ route: any }> = ({ route }) => {
           <View style={styles.card}>
             <Text style={styles.price}>INR{courseDetails?.price}</Text>
             <Text style={styles.subText}>One-time payment</Text>
-            {selector?.enrolledCourse?.length > 0 ? (
-              <TouchableOpacity style={[styles.button, { backgroundColor: '#4CAF50' }]} onPress={() => navigation.navigate('Lesson', {enrolledCourseId: selector?.enrolledCourse[0]?.course?.id})}>
+            {isEnrolled ? (
+              <TouchableOpacity style={[styles.button, { backgroundColor: '#4CAF50' }]} onPress={() => navigation.navigate('Lesson', { enrolledCourseId: courseDetails?.id })}>
                 <Play size={16} color={'#FFF'} />
                 <Text style={styles.buttonText}>Continue Learning</Text>
               </TouchableOpacity>
@@ -172,7 +168,7 @@ const CourseDetails: React.FC<{ route: any }> = ({ route }) => {
                 <View style={styles.securityRow}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                     <Shield size={16} color={'#777'} />
-                    <Text style={styles.security}>Secure Payment · ₹10</Text>
+                    <Text style={styles.security}>Secure Payment · ₹{courseDetails?.price}</Text>
                   </View>
 
                   <Text style={styles.security}>SSL Protected</Text>
@@ -203,16 +199,19 @@ const CourseDetails: React.FC<{ route: any }> = ({ route }) => {
           {/* Details */}
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Details to know</Text>
+            {(courseDetails?.duration_hours || courseDetails?.durationHours) && (
+              <View style={styles.detailRow}>
+                <View>
+                  <Clock4 size={16} color={'#777'} />
+                </View>
 
-            <View style={styles.detailRow}>
-              <View>
-                <Clock4 size={16} color={'#777'} />
+                <View>
+                  <Text style={styles.detailLabel}> Duration</Text>
+                  <Text style={styles.detailValue}>{courseDetails?.duration_hours || courseDetails?.durationHours} hours</Text>
+                </View>
+
               </View>
-              <View>
-                <Text style={styles.detailLabel}> Duration</Text>
-                <Text style={styles.detailValue}>4 hours</Text>
-              </View>
-            </View>
+            )}
 
             <View style={styles.detailRow}>
               <View>
@@ -221,7 +220,7 @@ const CourseDetails: React.FC<{ route: any }> = ({ route }) => {
               <View>
 
                 <Text style={styles.detailLabel}>Level</Text>
-                <Text style={styles.detailValue}>Beginner</Text>
+                <Text style={styles.detailValue}>{courseDetails?.level}</Text>
               </View>
             </View>
             <View style={styles.detailRow}>

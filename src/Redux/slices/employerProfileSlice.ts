@@ -34,6 +34,23 @@ export const getEmployerProfile = createAsyncThunk(
     }
 );
 
+//Update employer company profile API call
+export const updateEmployerProfile = createAsyncThunk(
+    "profile/updateEmployerProfile",
+    async ({ userId, profileData }: { userId: string; profileData: object }, { rejectWithValue }) => {
+        try {
+            const response = await client.put(EMPLOYER_ENDPOINTS.updateEmployerCompanyProfile(userId), profileData);
+            return response.data || response;
+        } catch (error: any) {
+            console.log('Error updating employer profile:', error);
+            return rejectWithValue({
+                message: error?.message || 'Failed to update employer profile',
+                code: error?.code || 'ERROR',
+            });
+        }
+    }
+);
+
 const employerProfileSlice = createSlice({
     name: 'profile',
     initialState,
@@ -65,6 +82,21 @@ const employerProfileSlice = createSlice({
                 state.isLoading = false;
                 state.error = action.payload as string;
                 console.log('Error fetching employer profile:', action.payload);
+            })
+            // updateEmployerProfile async thunk handlers
+            .addCase(updateEmployerProfile.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(updateEmployerProfile.fulfilled, (state, action) => {
+                state.isLoading = false;
+                state.courses = action.payload;
+                state.error = null;
+            })
+            .addCase(updateEmployerProfile.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.payload as string;
+                console.log('Error updating employer profile:', action.payload);
             })
     }
 });

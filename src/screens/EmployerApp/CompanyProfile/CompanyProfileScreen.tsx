@@ -1,19 +1,35 @@
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Image, ActivityIndicator } from 'react-native'
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Image, ActivityIndicator, Linking, TextInput, Alert } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
+import { Picker } from '@react-native-picker/picker'
+import DocumentPicker from 'react-native-document-picker'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { DrawerNavigationProp } from '@react-navigation/drawer'
 import { useDispatch, useSelector } from 'react-redux'
 import * as AsyncStore from "../../../AsyncStore";
-import { getEmployerProfile } from '../../../Redux/slices/employerProfileSlice'
-import { Briefcase, Building2, Globe, MapPin, ShieldCheck, Users } from 'lucide-react-native'
+import { getEmployerProfile, updateEmployerProfile } from '../../../Redux/slices/employerProfileSlice'
+import { Briefcase, Building2, Globe, MapPin, ShieldCheck, Upload, Users } from 'lucide-react-native'
 
+const INDUSTRY_OPTIONS = ['Technology', 'Finance & Banking', 'Healthcare', 'Education', 'Retail & E-commerce', 'Manufacturing', 'Consulting', 'Media & Entertainment', 'Other']
+const COMPANY_SIZE_OPTIONS = ['1-10 employees', '11-50 employees', '51-200 employees', '201-500 employees', '501-1000 employees', '1000+ employees']
 
 const CompanyProfileScreen = () => {
   const navigation = useNavigation()
-  
+
   const dispatch = useDispatch();
+
+  const [isEditing, setIsEditing] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [selectedLogo, setSelectedLogo] = useState<any>(null)
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    website_url: '',
+    industry: '',
+    company_size: '',
+    location: '',
+  })
 
   useEffect(() => {
     LocalStorageaData();
@@ -35,6 +51,61 @@ const CompanyProfileScreen = () => {
   const selector = useSelector((state: any) => state.employerProfile);
   const isLoading = selector?.isLoading;
   const companyData = selector?.courses?.data
+
+  const handleEditProfile = () => {
+    setFormData({
+      name: companyData?.name || '',
+      description: companyData?.description || '',
+      website_url: companyData?.website_url || '',
+      industry: companyData?.industry || '',
+      company_size: companyData?.company_size || '',
+      location: companyData?.location || '',
+    })
+    setSelectedLogo(null)
+    setIsEditing(true)
+  }
+
+  const handleCancelEdit = () => {
+    setSelectedLogo(null)
+    setIsEditing(false)
+  }
+
+  const handlePickLogo = async () => {
+    try {
+      const result = await DocumentPicker.pickSingle({
+        type: [DocumentPicker.types.images],
+      })
+      setSelectedLogo(result)
+    } catch (err: any) {
+      if (DocumentPicker.isCancel(err)) {
+        return
+      }
+      Alert.alert('Upload failed', 'Unable to select an image. Please try again.')
+    }
+  }
+
+  const handleSaveChanges = async () => {
+    try {
+      setIsSaving(true)
+      const userLoggedInData = await AsyncStore.getData(AsyncStore?.Keys?.USER_DATA);
+      if (userLoggedInData) {
+        const parsedUserData = JSON.parse(userLoggedInData);
+        const userId = parsedUserData?.id;
+        const profileData: any = { ...formData }
+        if (selectedLogo) {
+          profileData.logo = selectedLogo
+        }
+        await dispatch(updateEmployerProfile({ userId, profileData }) as any);
+        setIsEditing(false)
+        setSelectedLogo(null)
+      }
+    } catch (error) {
+      console.log("Error saving company profile:", error);
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Sticky Header */}
@@ -58,7 +129,7 @@ const CompanyProfileScreen = () => {
               <Text style={styles.headerTitle}>Company Profile</Text>
               <Text style={styles.headerSubtitle}>Manage your company information and branding</Text>
             </View>
-            <TouchableOpacity style={styles.editButton}>
+            <TouchableOpacity style={styles.editButton} onPress={handleEditProfile} disabled={isEditing}>
               {/* <MaterialCommunityIcons name="pencil" size={16} color="#fff" /> */}
               <Text style={styles.editButtonText}>Edit Profile</Text>
             </TouchableOpacity>
@@ -68,10 +139,21 @@ const CompanyProfileScreen = () => {
           <View style={styles.logoCard}>
 
             <View style={styles.logoUploadContainer}>
-              <Image
-                source={{ uri: 'https://reybgptehrkxuqtjwbqp.supabase.co/storage/v1/object/public/companies/company-logos/fe99cd44-52c4-40d5-9415-de482efc0c6c-1773225303366.jpeg' }}
-                style={styles.companyLogo}
-              />
+              <TouchableOpacity
+                style={styles.logoImageWrapper}
+                onPress={isEditing ? handlePickLogo : undefined}
+                activeOpacity={isEditing ? 0.7 : 1}
+              >
+                <Image
+                  source={{ uri: selectedLogo?.uri || 'https://reybgptehrkxuqtjwbqp.supabase.co/storage/v1/object/public/companies/company-logos/fe99cd44-52c4-40d5-9415-de482efc0c6c-1773225303366.jpeg' }}
+                  style={styles.companyLogo}
+                />
+                {isEditing && (
+                  <View style={styles.logoUploadBadge}>
+                    <Upload color={'#fff'} size={14} />
+                  </View>
+                )}
+              </TouchableOpacity>
               <View >
                 <Text style={styles.logoTitle}>Company Logo</Text>
                 <Text style={styles.logoDescription}>{'Upload your company logo.\nRecommended size: 200x200px.\nMax 5MB (JPEG, PNG, GIF, WebP).'}</Text>
@@ -87,7 +169,17 @@ const CompanyProfileScreen = () => {
                 <Building2 color={'#666'} size={16} />
                 <Text style={styles.infoLabel}>Company Name</Text>
               </View>
-              <Text style={styles.infoValue}>{companyData?.name}</Text>
+              {isEditing ? (
+                <TextInput
+                  style={styles.editInput}
+                  value={formData.name}
+                  onChangeText={(text) => setFormData({ ...formData, name: text })}
+                  placeholder="Enter company name"
+                  placeholderTextColor="#999"
+                />
+              ) : (
+                <Text style={styles.infoValue}>{companyData?.name}</Text>
+              )}
             </View>
 
             <View style={styles.divider} />
@@ -98,7 +190,19 @@ const CompanyProfileScreen = () => {
                 <Briefcase color={'#666'} size={16} />
                 <Text style={styles.infoLabel}>About Company</Text>
               </View>
-              <Text style={styles.infoValue}>{companyData?.description}</Text>
+              {isEditing ? (
+                <TextInput
+                  style={[styles.editInput, styles.editInputMultiline]}
+                  value={formData.description}
+                  onChangeText={(text) => setFormData({ ...formData, description: text })}
+                  placeholder="Tell candidates about your company"
+                  placeholderTextColor="#999"
+                  multiline
+                  numberOfLines={4}
+                />
+              ) : (
+                <Text style={styles.infoValue}>{companyData?.description}</Text>
+              )}
             </View>
 
             <View style={styles.divider} />
@@ -110,9 +214,26 @@ const CompanyProfileScreen = () => {
                 {/* <MaterialCommunityIcons name="globe" size={16} color="#666" /> */}
                 <Text style={styles.infoLabel}>Website</Text>
               </View>
-              <TouchableOpacity>
-                <Text style={styles.infoValueLink}>{companyData?.website_url}</Text>
-              </TouchableOpacity>
+              {isEditing ? (
+                <TextInput
+                  style={styles.editInput}
+                  value={formData.website_url}
+                  onChangeText={(text) => setFormData({ ...formData, website_url: text })}
+                  placeholder="www.example.com"
+                  placeholderTextColor="#999"
+                  autoCapitalize="none"
+                  keyboardType="url"
+                />
+              ) : (
+                <TouchableOpacity onPress={() => {
+                  const url = companyData?.website_url?.startsWith('http') ? companyData?.website_url : `https://${companyData?.website_url}`;
+                  if (url) {
+                    Linking.openURL(url);
+                  }
+                }}>
+                  <Text style={styles.infoValueLink}>{companyData?.website_url}</Text>
+                </TouchableOpacity>
+              )}
             </View>
 
             <View style={styles.divider} />
@@ -123,7 +244,22 @@ const CompanyProfileScreen = () => {
                 <Briefcase color={'#666'} size={16} />
                 <Text style={styles.infoLabel}>Industry</Text>
               </View>
-              <Text style={styles.infoValue}>{companyData?.industry}</Text>
+              {isEditing ? (
+                <View style={styles.pickerWrapper}>
+                  <Picker
+                    selectedValue={formData.industry}
+                    onValueChange={(value) => setFormData({ ...formData, industry: value })}
+                    style={styles.picker}
+                  >
+                    <Picker.Item label="Select industry" value="" />
+                    {INDUSTRY_OPTIONS.map((option) => (
+                      <Picker.Item key={option} label={option} value={option} />
+                    ))}
+                  </Picker>
+                </View>
+              ) : (
+                <Text style={styles.infoValue}>{companyData?.industry}</Text>
+              )}
             </View>
 
             <View style={styles.divider} />
@@ -134,7 +270,22 @@ const CompanyProfileScreen = () => {
                 <Users color={'#666'} size={16} />
                 <Text style={styles.infoLabel}>Company Size</Text>
               </View>
-              <Text style={styles.infoValue}>{companyData?.company_size}</Text>
+              {isEditing ? (
+                <View style={styles.pickerWrapper}>
+                  <Picker
+                    selectedValue={formData.company_size}
+                    onValueChange={(value) => setFormData({ ...formData, company_size: value })}
+                    style={styles.picker}
+                  >
+                    <Picker.Item label="Select company size" value="" />
+                    {COMPANY_SIZE_OPTIONS.map((option) => (
+                      <Picker.Item key={option} label={`${option} employees`} value={option} />
+                    ))}
+                  </Picker>
+                </View>
+              ) : (
+                <Text style={styles.infoValue}>{companyData?.company_size}</Text>
+              )}
             </View>
 
             <View style={styles.divider} />
@@ -145,13 +296,46 @@ const CompanyProfileScreen = () => {
                <MapPin color={'#666'} size={16} />
                 <Text style={styles.infoLabel}>Location</Text>
               </View>
-              <Text style={styles.infoValue}>{companyData?.location}</Text>
+              {isEditing ? (
+                <TextInput
+                  style={styles.editInput}
+                  value={formData.location}
+                  onChangeText={(text) => setFormData({ ...formData, location: text })}
+                  placeholder="Enter company location"
+                  placeholderTextColor="#999"
+                />
+              ) : (
+                <Text style={styles.infoValue}>{companyData?.location}</Text>
+              )}
             </View>
 
             {/* Last Updated */}
             <View style={styles.lastUpdatedContainer}>
               <Text style={styles.lastUpdatedText}>Last updated: {companyData?.updated_at}</Text>
             </View>
+
+            {isEditing && (
+              <View style={styles.editActionsRow}>
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={handleCancelEdit}
+                  disabled={isSaving}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.saveButton}
+                  onPress={handleSaveChanges}
+                  disabled={isSaving}
+                >
+                  {isSaving ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.saveButtonText}>Save Changes</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
 
           {/* Company Verification Section */}
@@ -275,6 +459,22 @@ const styles = StyleSheet.create({
     // gap: 12,
     flexDirection: 'row',
   },
+  logoImageWrapper: {
+    position: 'relative',
+  },
+  logoUploadBadge: {
+    position: 'absolute',
+    bottom: -4,
+    right: -4,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#165DFC',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
   companyLogo: {
     width: 80,
     height: 80,
@@ -329,6 +529,32 @@ const styles = StyleSheet.create({
     fontFamily: 'Geist-VariableFont_wght',
     lineHeight: 20,
   },
+  editInput: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    fontFamily: 'Geist-VariableFont_wght',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#FAFAFA',
+  },
+  editInputMultiline: {
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  pickerWrapper: {
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    backgroundColor: '#FAFAFA',
+    overflow: 'hidden',
+  },
+  picker: {
+    color: '#333',
+  },
   divider: {
     height: 1,
     backgroundColor: '#E8E8E8',
@@ -343,6 +569,39 @@ const styles = StyleSheet.create({
     color: '#999',
     fontFamily: 'Geist-VariableFont_wght',
     fontWeight: '400',
+  },
+  editActionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+    marginTop: 18,
+  },
+  cancelButton: {
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  cancelButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  saveButton: {
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#165DFC',
+    minWidth: 120,
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+    fontFamily: 'Geist-VariableFont_wght',
   },
   verificationCard: {
     backgroundColor: '#fff',

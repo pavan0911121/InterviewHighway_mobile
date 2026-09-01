@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
@@ -13,7 +13,9 @@ import { getProfileData } from '../../../Redux/slices/profileSlice';
 type Props = BottomTabScreenProps<JobSeekerBottomTabParamList, 'ProfileTab'>;
 
 export default function ProfileTabScreen({ navigation }: Props) {
+  const [videoTitle, setVideoTitle] = useState('');
   const dispatch = useDispatch();
+  
   const selector = useSelector((state: any) => state.profile);
 
   useEffect(() => {
@@ -42,6 +44,14 @@ export default function ProfileTabScreen({ navigation }: Props) {
   };
   const userData = selector && selector?.data && selector?.data[0];
   const isLoading = selector?.isLoading;
+  const handleUploadVideo = () => {
+    // Handle video upload logic here
+    
+  };
+  const handleVideoTitleChange = (title: string) => {
+    setVideoTitle(title);
+    // You now have the title in the parent
+  };
   return (
     <SafeAreaView style={styles.container}>
       {/* Sticky Header */}
@@ -148,7 +158,7 @@ export default function ProfileTabScreen({ navigation }: Props) {
               </View>
               <Text style={styles.videoHeaderTitle}>Video Introduction</Text>
             </View>
-            <UploadVideo buttonLabel="Upload Video" modalTitle="Upload Video Introduction" />
+            <UploadVideo buttonLabel="Upload Video" modalTitle="Upload Video Introduction" onVideoTitleChange={handleVideoTitleChange}/>
             {/* <TouchableOpacity style={styles.uploadVideoButton}>
               <HardDriveUpload fill={'#165DFC'} color={'#165DFC'} />
               <Text style={styles.uploadVideoText}>Upload Video</Text>

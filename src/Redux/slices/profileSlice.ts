@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import client from '../../Networking/Client';
-import { COURSE_ENDPOINTS, PROFILE_ENDPOINTS} from '../../Networking/EndPoints';
+import { VIDEO_ENDPOINTS, PROFILE_ENDPOINTS} from '../../Networking/EndPoints';
 
 
 interface profileState {
@@ -17,6 +17,9 @@ const initialState: profileState = {
     error: null,
     total: 0
 };
+type Config = {
+  headers?: string;
+};
 //Recommended jobs API call
 export const getProfileData = createAsyncThunk(
     "profile/getProfileData",
@@ -28,6 +31,26 @@ export const getProfileData = createAsyncThunk(
             console.log('Error fetching profile data:', error);
             return rejectWithValue({
                 message: error?.message || 'Failed to fetch profile data',
+                code: error?.code || 'ERROR',
+            });
+        }
+    }
+);
+//Upload video API call
+export const uploadVideo = createAsyncThunk(
+    "profile/uploadVideo",
+    async (formData: FormData, { rejectWithValue }) => {
+        try {
+            const response = await client.post(VIDEO_ENDPOINTS.uploadVideo, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data' ,
+                },
+            });
+            return response.data || response;
+        } catch (error: any) {
+            console.log('Error uploading video:', error);
+            return rejectWithValue({
+                message: error?.message || 'Failed to upload video',
                 code: error?.code || 'ERROR',
             });
         }

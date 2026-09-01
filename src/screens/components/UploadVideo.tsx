@@ -19,6 +19,7 @@ interface UploadVideoProps {
   modalTitle?: string;
   dropTitle?: string;
   fileTypesText?: string;
+  onVideoTitleChange?: (title: string) => void;
 }
 
 export default function UploadVideo({
@@ -26,6 +27,7 @@ export default function UploadVideo({
   modalTitle = 'Upload Video Introduction',
   dropTitle = 'Drag and drop your video here',
   fileTypesText = 'MP4, MOV, AVI, WebM * Max file size: 100MB',
+  onVideoTitleChange = (title: string) => { },
 }: UploadVideoProps) {
   const [showModal, setShowModal] = useState(false);
   const [videoTitle, setVideoTitle] = useState('');
@@ -47,13 +49,13 @@ export default function UploadVideo({
     }
   };
 
-//   const pickFromGallery = () => {
-//     const options: ImageLibraryOptions = {
-//       mediaType: 'video',
-//       selectionLimit: 1,
-//     };
-//     launchImageLibrary(options, handlePickerResponse);
-//   };
+  //   const pickFromGallery = () => {
+  //     const options: ImageLibraryOptions = {
+  //       mediaType: 'video',
+  //       selectionLimit: 1,
+  //     };
+  //     launchImageLibrary(options, handlePickerResponse);
+  //   };
 
   const pickFromFiles = async () => {
     try {
@@ -85,7 +87,7 @@ export default function UploadVideo({
         }
       );
     } else {
-    //   pickFromGallery();
+      //   pickFromGallery();
     }
   };
 
@@ -133,13 +135,16 @@ export default function UploadVideo({
             <TextInput
               style={styles.introVideoInput}
               value={videoTitle}
-              onChangeText={setVideoTitle}
+              onChangeText={(text) => {
+                setVideoTitle(text);
+                onVideoTitleChange?.(text);
+              }}
               placeholder="Enter a title for your video"
               placeholderTextColor="#9CA3AF"
             />
             <Text style={styles.introVideoValidation}>0/100 characters</Text>
             <View style={styles.introVideoGuidelines}>
-              <Text style={styles.introVideoGuidelinesTitle}><Lightbulb size={16}  fill="#10388B" />Video Guidelines</Text>
+              <Text style={styles.introVideoGuidelinesTitle}><Lightbulb size={16} fill="#10388B" />Video Guidelines</Text>
               <Text style={styles.introVideoGuidelineText}>• Keep it professional and concise</Text>
               <Text style={styles.introVideoGuidelineText}>• Use MP4 or MOV file format</Text>
               <Text style={styles.introVideoGuidelineText}>• Your video will be reviewed before approval</Text>
@@ -307,7 +312,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Geist-VariableFont_wght',
     lineHeight: 18,
   },
-  introVideoValidation:{
+  introVideoValidation: {
     fontSize: 12,
     color: '#6B7280',
     fontFamily: 'Geist-VariableFont_wght',

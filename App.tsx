@@ -11,7 +11,7 @@ import AppNavigator from './src/navigation/AppNavigator';
 import SplashScreen from './src/screens/SplashScreen';
 import { useSelector, useDispatch } from 'react-redux';
 import * as AsyncStore from "./src/AsyncStore";
-import { getUserRole, loginSuccess, clearUserData } from './src/Redux/slices/loginSlice';
+import { getUserRole, loginSuccess, clearUserData, refreshToken } from './src/Redux/slices/loginSlice';
 
 function App() {
   const [showSplash, setShowSplash] = useState(true);
@@ -21,8 +21,9 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const selector = useSelector((state: any) => state.login);
   const dispatch = useDispatch();
-  
+
   useEffect(() => {
+
     const isRunningTests = typeof process !== 'undefined' &&
       (process.env as NodeJS.ProcessEnv)?.JEST_WORKER_ID !== undefined;
 
@@ -30,7 +31,6 @@ function App() {
       setShowSplash(false);
       return;
     }
-
     let timeout: NodeJS.Timeout;
     let mounted = true;
 
@@ -63,6 +63,25 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (selector?.errorCode) {
+      if (selector.errorCode == 401) {
+        handleRefreshToken();
+      }
+    }
+     
+  }, [selector?.errorCode]);
+
+  const handleRefreshToken = async () => {
+    const refreshTokenValue = await AsyncStore.getData(AsyncStore?.Keys?.REFRESH_TOKEN);
+    const payload = {
+      'refresh_token': refreshTokenValue
+    }
+    dispatch(refreshToken(payload) as any);
+
+    handleUserRole(selector?.role);
+  }
+
+  useEffect(() => {
     LocalStorageaData();
   }, [selector?.isAuthenticated, selector?.userId, selector?.role]);
 
@@ -73,10 +92,13 @@ function App() {
 
   useEffect(() => {
     if (selector?.isAuthenticated && selector?.user && !selector?.role) {
-      dispatch(getUserRole(selector.user.id) as any);
+      handleUserRole(selector?.user?.id);
     }
   }, [selector?.isAuthenticated, selector?.user, selector?.role, dispatch]);
 
+  const handleUserRole = (userId: string | null) => {
+    const response = dispatch(getUserRole(userId) as any);
+  }
 
   const LocalStorageaData = async () => {
     try {

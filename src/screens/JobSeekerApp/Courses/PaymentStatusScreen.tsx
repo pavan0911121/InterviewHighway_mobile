@@ -1,22 +1,41 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Linking } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { CircleX, Info, RefreshCcw } from 'lucide-react-native';
+import { ArrowLeft, CircleCheckBig, CircleX, CreditCard, Info, PartyPopper, RefreshCcw } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSelector } from 'react-redux';
 
 const FONT_FAMILY = 'Geist-VariableFont_wght';
 
 interface PaymentStatusProps {
   goBack: () => void;
+  transaction?: any;
+  navigation?: any;
+  courseDetails?: any;
 }
 
-const PaymentSuccess = ({ goBack }: PaymentStatusProps) => (
+const formatTransactionDate = (timestamp?: string) => {
+  if (!timestamp) return '';
+  const date = new Date(timestamp);
+  const datePart = date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  const timePart = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase();
+  return `${datePart} at ${timePart}`;
+};
 
-  <ScrollView contentContainerStyle={styles.container}>
+const dashboardNavigation = (navigation: any) => {
+  navigation.navigate('JobSeekerDrawer', {
+    screen: 'HomeTab',
+  });
+}
+
+const PaymentSuccess = ({ goBack, transaction, navigation }: PaymentStatusProps) => (
+
+  <SafeAreaView style={styles.safeAreaContainer}>
+    <ScrollView contentContainerStyle={styles.container}>
     <View style={styles.iconCircle}>
-      <Text style={styles.successIcon}>✔️</Text>
+      <CircleCheckBig color={'#00AA28'}/>
     </View>
-    <Text style={styles.successTitle}>Payment Successful! 🎉</Text>
+    <Text style={styles.successTitle}>Payment Successful! <PartyPopper color={'#D9A403'} fill={'#A039E0'}/></Text>
     <Text style={styles.successSubtitle}>Welcome to your learning journey! You now have full access to the course content.</Text>
 
     <View style={styles.card}>
@@ -24,21 +43,21 @@ const PaymentSuccess = ({ goBack }: PaymentStatusProps) => (
       <View style={styles.cardRow}>
         <View style={styles.cardCol}>
           <Text style={styles.cardLabel}>Amount Paid</Text>
-          <Text style={styles.cardValue}>₹10</Text>
+          <Text style={styles.cardValue}>₹{transaction?.amount/100}</Text>
         </View>
         <View style={styles.cardCol}>
           <Text style={styles.cardLabel}>Transaction Date</Text>
-          <Text style={styles.cardValue}>31 May 2026 at 06:58 pm</Text>
+          <Text style={styles.cardValue}>{formatTransactionDate(transaction?.created_at)}</Text>
         </View>
       </View>
       <View style={styles.cardRow}>
         <View style={styles.cardCol}>
           <Text style={styles.cardLabel}>Payment ID:</Text>
-          <Text style={styles.cardValue}>pay_SvzHJPOfci3Zz</Text>
+          <Text style={styles.cardValue}>{transaction?.payment_id}</Text>
         </View>
         <View style={styles.cardCol}>
           <Text style={styles.cardLabel}>Order ID:</Text>
-          <Text style={styles.cardValue}>order_1780234109521</Text>
+          <Text style={styles.cardValue}>{transaction?.order_id}</Text>
         </View>
       </View>
     </View>
@@ -61,7 +80,7 @@ const PaymentSuccess = ({ goBack }: PaymentStatusProps) => (
     </View>
 
     <TouchableOpacity style={styles.secondaryBtn}><Text style={styles.secondaryBtnText}>Download Receipt</Text></TouchableOpacity>
-    <TouchableOpacity style={styles.secondaryBtn}><Text style={styles.secondaryBtnText}>View Dashboard</Text></TouchableOpacity>
+    <TouchableOpacity style={styles.secondaryBtn} onPress={() => dashboardNavigation(navigation)}><Text style={styles.secondaryBtnText}>View Dashboard</Text></TouchableOpacity>
     <TouchableOpacity style={styles.secondaryBtn}><Text style={styles.secondaryBtnText}>Share Success</Text></TouchableOpacity>
 
     <View style={styles.whatsNextCard}>
@@ -80,9 +99,10 @@ const PaymentSuccess = ({ goBack }: PaymentStatusProps) => (
     <Text style={styles.footerNote}>A confirmation email has been sent to your registered email</Text>
     <Text style={styles.footerNote}>30-day money-back guarantee applies</Text>
   </ScrollView>
+  </SafeAreaView>
 );
 
-const PaymentFailed = ({ goBack }: PaymentStatusProps) => (
+const PaymentFailed = ({ goBack , courseDetails}: PaymentStatusProps) => (
   <SafeAreaView style={styles.safeAreaContainer}>
 
     <ScrollView contentContainerStyle={styles.container}>
@@ -91,7 +111,7 @@ const PaymentFailed = ({ goBack }: PaymentStatusProps) => (
 
       </View>
       <Text style={styles.failedTitle}>Payment Failed</Text>
-      <Text style={styles.failedSubtitle}>We couldn't process your payment for "Test Course" (₹10). Don't worry, we'll help you resolve this.</Text>
+      <Text style={styles.failedSubtitle}>We couldn't process your payment for "{courseDetails?.title}" (₹{courseDetails?.price}). Don't worry, we'll help you resolve this.</Text>
 
       <View style={styles.cardFailed}>
         <View>
@@ -108,7 +128,7 @@ const PaymentFailed = ({ goBack }: PaymentStatusProps) => (
           <RefreshCcw size={20} color="#000000" />
           <Text style={styles.tryAgainTitle}>Try Again</Text>
         </View>
-        <Text style={styles.tryAgainDesc}>Retry your payment for "Test Course" (₹10)</Text>
+        <Text style={styles.tryAgainDesc}>Retry your payment for "{courseDetails?.title}" (₹{courseDetails?.price})</Text>
         {/* <Text style={styles.tryAgainAttempt}>Attempt 1 of 3</Text> */}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
           <Info size={20} color="#0081FF" />
@@ -116,8 +136,8 @@ const PaymentFailed = ({ goBack }: PaymentStatusProps) => (
         </View>
         <Text style={styles.tryAgainList}>• Check your internet connection{"\n"}• Verify your payment method details{""}• Ensure sufficient balance in your account{""}• Try a different payment method if available</Text>
         <View style={styles.tryAgainBtnRow}>
-          <TouchableOpacity style={styles.primaryBtn}><Text style={styles.primaryBtnText}>Retry Payment</Text></TouchableOpacity>
-          <TouchableOpacity style={styles.secondaryBtn} onPress={() => goBack()}><Text style={styles.secondaryBtnText}>Go Back</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.primaryBtn}><CreditCard color={'#fff'}/><Text style={styles.primaryBtnText}>Retry Payment</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.secondaryBtn} onPress={() => goBack()}><ArrowLeft color={'#000000'}/><Text style={styles.secondaryBtnText}>Go Back</Text></TouchableOpacity>
         </View>
       </View>
 
@@ -125,7 +145,7 @@ const PaymentFailed = ({ goBack }: PaymentStatusProps) => (
         <Text style={styles.helpTitle}>Need Help?</Text>
         <Text style={styles.helpDesc}>Our support team is here to help resolve payment issues</Text>
         <View style={styles.helpBtnRow}>
-          <TouchableOpacity style={styles.secondaryBtn} onPress={() => Linking.openURL('mailto:support@example.com')}><Text style={styles.secondaryBtnText}>Email Support</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.secondaryBtn} onPress={() => Linking.openURL('mailto:support@interviewhighway.com')}><Text style={styles.secondaryBtnText}>Email Support</Text></TouchableOpacity>
           <TouchableOpacity style={styles.secondaryBtn} onPress={() => Linking.openURL('tel:1800123456')}><Text style={styles.secondaryBtnText}>Call Support</Text></TouchableOpacity>
         </View>
         <Text style={styles.helpContact}>Phone Support: Available 9 AM - 9 PM IST</Text>
@@ -150,18 +170,21 @@ const PaymentFailed = ({ goBack }: PaymentStatusProps) => (
 
 const PaymentStatusScreen = () => {
   const route = useRoute();
-  const { success } = route.params as { success?: boolean };
+  const { status, courseData } = route.params as { status?: string, courseData?: any };
+  const isSuccess = status === 'Success';
   const navigation = (useNavigation() as any);
+  const selector = useSelector((state: any) => state.courses);
   const goBack = () => {
     navigation.goBack();
   }
-  return success ? <PaymentSuccess goBack={goBack as () => void} /> : <PaymentFailed goBack={goBack as () => void} />;
+  return isSuccess ? <PaymentSuccess goBack={goBack as () => void} transaction={selector?.verifyData?.transaction} navigation={navigation} /> : <PaymentFailed goBack={goBack as () => void} navigation={navigation} courseDetails={courseData} />;
+
 };
 
 const styles = StyleSheet.create({
   safeAreaContainer: {
     flex: 1,
-    backgroundColor: '#F5F7FA',
+    backgroundColor: '#FFF',
   },
   container: {
     padding: 16,
@@ -313,18 +336,22 @@ const styles = StyleSheet.create({
     fontFamily: FONT_FAMILY,
   },
   primaryBtn: {
-    backgroundColor: '#1DBF73',
+    backgroundColor: '#000000',
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
     marginTop: 8,
     marginBottom: 8,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 10,
   },
   primaryBtnText: {
     color: '#fff',
     fontWeight: '700',
     fontSize: 15,
     fontFamily: FONT_FAMILY,
+    textAlign: 'center',
   },
   secondaryBtn: {
     borderWidth: 1,
@@ -334,6 +361,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
     width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 10,
   },
   secondaryBtnText: {
     color: '#222',
@@ -467,7 +497,7 @@ const styles = StyleSheet.create({
     fontFamily: FONT_FAMILY,
   },
   tryAgainBtnRow: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     justifyContent: 'space-between',
     marginTop: 8,
   },
@@ -494,7 +524,7 @@ const styles = StyleSheet.create({
     fontFamily: FONT_FAMILY,
   },
   helpBtnRow: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     justifyContent: 'space-between',
     marginBottom: 8,
   },
@@ -524,6 +554,11 @@ const styles = StyleSheet.create({
     color: '#444',
     fontSize: 13,
     fontFamily: FONT_FAMILY,
+  },
+   emojis: {
+    fontSize: 24,
+    fontFamily: 'Apple Color Emoji',
+    marginTop: 8,
   },
 });
 

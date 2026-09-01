@@ -28,6 +28,9 @@ interface AuthState {
   currentRole?: string | null;
   preferredLocation?: string | null;
   userId: string | null;
+  errorUserData?: string | null;
+  errorCode: string | null;
+  refreshToken?: string | null;
 }
 
 const initialState: AuthState = {
@@ -47,6 +50,9 @@ const initialState: AuthState = {
   currentRole: null,
   preferredLocation: null,
   userId: null,
+  errorUserData: null,
+  errorCode: null,
+  refreshToken: null,
 
 };
 //Login API call
@@ -103,10 +109,12 @@ export const getUserRole = createAsyncThunk(
     try {
       const response = await client.get(USER_ENDPOINTS.role(userId));
       return response.data || response;
+      
     } catch (error: any) {
+      console.log('User role response:', error);
       console.error('Error fetching user role data:', error);
       return rejectWithValue({
-        message: error?.message || 'Failed to fetch user role data',
+        message: error || 'Failed to fetch user role data',
         code: error?.code || 'ERROR',
       });
     }
@@ -144,7 +152,23 @@ export const registerJobSeeker = createAsyncThunk(
     }
   }
 );
-//Register Employer Api
+//refreshtoken API call
+export const refreshToken = createAsyncThunk(
+  "login/refreshToken",
+  async (payload: any, { rejectWithValue }) => {
+    try {
+      const response = await client.post(AUTH_ENDPOINTS.refreshToken, payload);
+      return response.data || response;
+    } catch (error: any) {
+      console.error('Error refreshing token:', error);
+      return rejectWithValue({
+        message: error?.message || 'Failed to refresh token',
+        code: error?.code || 'ERROR',
+      });
+    }
+  }
+);
+
 
 // USER_ENDPOINTS
 
@@ -230,7 +254,9 @@ const loginSlice = createSlice({
         if (token) {
           state.token = token;
           state.isAuthenticated = true;
+          state.refreshToken = dataObj?.refresh_token;
           AsyncStore.storeData(AsyncStore.Keys.USER_TOKEN, token);
+          AsyncStore.storeData(AsyncStore.Keys.REFRESH_TOKEN, dataObj?.refresh_token);
           AsyncStore.storeData(AsyncStore.Keys.IS_LOGIN, "true");
         }
 
@@ -316,7 +342,9 @@ const loginSlice = createSlice({
       })
       .addCase(getUserRole.rejected, (state, action) => {
         state.isLoading = false;
+        state.errorUserData = (action.payload as any)?.message 
         state.error = (action.payload as any)?.message || 'Failed to fetch user role data';
+        state.errorCode = (action.payload as any)?.message?.status
       });
     // checkEmail async thunk handlers
     builder

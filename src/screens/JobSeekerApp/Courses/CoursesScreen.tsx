@@ -7,11 +7,13 @@ import { Funnel } from 'lucide-react-native/icons';
 import FilterModal from '../Dashboard/FilterModal';
 import { getCourses, getEnrollmentCourses } from '../../../Redux/slices/coursesSlice';
 import { useDispatch, useSelector } from 'react-redux';
-import { Search } from 'lucide-react-native';
+import { Search, BookOpen, Play, GraduationCap } from 'lucide-react-native';
+import * as AsyncStore from "../../../AsyncStore";
+
 
 
 type CourseStackParams = {
-  CourseDetails: { courseData: any };
+  CourseDetails: { courseData: any; isEnrolled: boolean };
 };
 
 const CoursesScreen = () => {
@@ -22,7 +24,15 @@ const CoursesScreen = () => {
 
   useEffect(() => {
     getCoursesData();
+    handleEnrollmentCourses()
   }, []);
+  const handleEnrollmentCourses = async () => {
+    const userLoggedID = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
+    if (userLoggedID) {
+      const parsedUserData = JSON.parse(userLoggedID);
+      const response = await dispatch(getEnrollmentCourses(parsedUserData) as any);
+    }
+  }
   const getCoursesData = async () => {
     try {
       // Make API call to fetch courses
@@ -43,6 +53,24 @@ const CoursesScreen = () => {
   const handleApplyFilters = (filters: any) => {
     // You can dispatch an action here to filter jobs based on the selected filters
   };
+  const isCourseEnrolled = (courseId: string) =>
+    selector?.enrolledCourse?.some((enrollment: any) => enrollment?.course?.id === courseId) || false;
+
+  const getEnrollmentStatus = (progress: number, completionDate: string | null) => {
+    if (completionDate) return 'Completed';
+    if (progress > 0) return 'In Progress';
+    return 'Not Started';
+  };
+
+  const formatEnrollmentDate = (dateString: string) => {
+    const enrolledDate = new Date(dateString);
+    const today = new Date();
+    const isToday = enrolledDate.toDateString() === today.toDateString();
+    if (isToday) return 'Enrolled Today';
+    return `Enrolled ${enrolledDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+  };
+
+  const enrolledCourses = selector?.enrolledCourse || [];
   return (
     <SafeAreaView style={styles.container}>
       {/* Sticky Header */}
@@ -70,6 +98,68 @@ const CoursesScreen = () => {
             <Text style={styles.headerSubtitle}>
               Continue your enrolled courses or discover new ones to advance your career
             </Text>
+          </View>
+
+          <View style={styles.myCoursesCard}>
+            <View style={styles.myCoursesHeaderRow}>
+              <View style={styles.myCoursesIcon}>
+                <BookOpen size={18} color={'#165DFC'} />
+              </View>
+              <View style={styles.myCoursesHeaderText}>
+                <Text style={styles.myCoursesTitle}>My Courses</Text>
+                <Text style={styles.myCoursesSubtitle}>Continue where you left off</Text>
+              </View>
+              <View style={styles.enrolledBadge}>
+                <Text style={styles.enrolledBadgeText}>{enrolledCourses?.length || 0} Enrolled</Text>
+              </View>
+            </View>
+
+            {enrolledCourses?.map((enrollment: any) => (
+              <View key={enrollment?.id} style={styles.myCourseItem}>
+                <View style={styles.myCourseItemHeader}>
+                  <Text style={styles.myCourseItemTitle}>{enrollment?.course?.title}</Text>
+                  <View style={styles.statusBadge}>
+                    <Text style={styles.statusBadgeText}>
+                      {getEnrollmentStatus(enrollment?.progressPercentage, enrollment?.completionDate)}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={styles.myCourseInstructor}>by {enrollment?.course?.instructorName}</Text>
+
+                <View style={styles.progressRow}>
+                  <Text style={styles.progressLabel}>Progress</Text>
+                  <Text style={styles.progressPercent}>{enrollment?.progressPercentage || 0}%</Text>
+                </View>
+                <View style={styles.progressBarTrack}>
+                  <View style={[styles.progressBarFill, { width: `${enrollment?.progressPercentage || 0}%` }]} />
+                </View>
+                <Text style={styles.myCourseStatusText}>
+                  {enrollment?.progressPercentage > 0 ? 'Continue where you left off' : 'Ready to start learning'}
+                </Text>
+
+                <View style={styles.enrolledDateRow}>
+                  <GraduationCap size={13} color={'#797979'} />
+                  <Text style={styles.enrolledDateText}>{formatEnrollmentDate(enrollment?.enrollmentDate)}</Text>
+                </View>
+
+                <View style={styles.myCourseTagRow}>
+                  <View style={styles.myCourseTagPurple}>
+                    <Text style={styles.myCourseTagPurpleText}>{enrollment?.course?.category}</Text>
+                  </View>
+                  <View style={styles.myCourseTagGreen}>
+                    <Text style={styles.myCourseTagGreenText}>{enrollment?.course?.level}</Text>
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  style={styles.startLearningButton}
+                  onPress={() => navigation.navigate('CourseDetails', { courseData: enrollment?.course, isEnrolled: isCourseEnrolled(enrollment?.course?.id) })}
+                >
+                  <Play size={16} color={'#FFFFFF'} />
+                  <Text style={styles.startLearningButtonText}>Start Learning</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
           </View>
 
           <View style={styles.marketplaceSection}>
@@ -119,7 +209,7 @@ const CoursesScreen = () => {
                 <Text style={styles.courseId}>{course?.currency}{course?.price}</Text>
                 <TouchableOpacity
                   style={styles.viewButton}
-                  onPress={() => navigation.navigate('CourseDetails', { courseData: course })}
+                  onPress={() => navigation.navigate('CourseDetails', { courseData: course, isEnrolled: isCourseEnrolled(course?.id) })}
                 >
                   <Text style={styles.viewButtonIcon}>▶</Text>
                   <Text style={styles.viewButtonText}>View Course</Text>
@@ -356,6 +446,179 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#FFFFFF',
     fontWeight: '500',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  myCoursesCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#EAEBEE',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  myCoursesHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  myCoursesIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: '#E6EEFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  myCoursesHeaderText: {
+    flex: 1,
+  },
+  myCoursesTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#000',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  myCoursesSubtitle: {
+    fontSize: 13,
+    color: '#797979',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  enrolledBadge: {
+    backgroundColor: '#E6EEFF',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  enrolledBadgeText: {
+    fontSize: 12,
+    color: '#165DFC',
+    fontWeight: '500',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  myCourseItem: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#EAEBEE',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 16,
+  },
+  myCourseItemHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  myCourseItemTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#000',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  statusBadge: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  statusBadgeText: {
+    fontSize: 12,
+    color: '#363535',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  myCourseInstructor: {
+    fontSize: 13,
+    color: '#797979',
+    fontFamily: 'Geist-VariableFont_wght',
+    marginTop: 4,
+    marginBottom: 12,
+  },
+  progressRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  progressLabel: {
+    fontSize: 13,
+    color: '#797979',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  progressPercent: {
+    fontSize: 13,
+    color: '#363535',
+    fontWeight: '600',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  progressBarTrack: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#EAEBEE',
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#7C3AED',
+  },
+  myCourseStatusText: {
+    fontSize: 13,
+    color: '#797979',
+    fontFamily: 'Geist-VariableFont_wght',
+    marginTop: 10,
+  },
+  enrolledDateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+  },
+  enrolledDateText: {
+    fontSize: 12,
+    color: '#797979',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  myCourseTagRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+  },
+  myCourseTagPurple: {
+    backgroundColor: '#F3E8FF',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  myCourseTagPurpleText: {
+    fontSize: 12,
+    color: '#9333EA',
+    fontWeight: '500',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  myCourseTagGreen: {
+    backgroundColor: '#E0F7E0',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  myCourseTagGreenText: {
+    fontSize: 12,
+    color: '#22C55E',
+    fontWeight: '500',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  startLearningButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#165DFC',
+    paddingVertical: 12,
+    borderRadius: 8,
+    gap: 8,
+    marginTop: 16,
+  },
+  startLearningButtonText: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontWeight: '600',
     fontFamily: 'Geist-VariableFont_wght',
   },
 });
