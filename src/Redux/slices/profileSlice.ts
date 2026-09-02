@@ -123,11 +123,23 @@ const profileSlice = createSlice({
             .addCase(uploadVideo.rejected, (state, action) => {
                 state.isVideoUploading = false;
                 state.videoUploadError = (action.payload as any)?.message || 'Failed to upload video';
+                state.videoData = null;
             })
             // getVideoData async thunk handlers
-            .addCase(getVideoData.fulfilled, (state, action) => {
-                state.videoData = action.payload;
+            .addCase(getVideoData.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
             })
+            .addCase(getVideoData.fulfilled, (state, action) => {
+                state.isLoading = false;
+                state.videoData = action.payload;
+                state.error = null;
+            })
+            .addCase(getVideoData.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.payload as string;
+                state.videoData = null;
+            });
     }
 });
 

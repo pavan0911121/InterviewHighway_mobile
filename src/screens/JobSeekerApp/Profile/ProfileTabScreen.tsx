@@ -4,18 +4,19 @@ import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { JobSeekerBottomTabParamList } from '../../../types/navigation';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { BookText, BriefcaseBusiness, Camera, CodeXml, Eye, FileText, Globe, GraduationCap, HardDriveUpload, Info, Lightbulb, Link, MapPin, Shield, SquarePen, Upload, UserRound, UserRoundPen, Video, VideoOff } from 'lucide-react-native';
+import { BookText, BriefcaseBusiness, Camera, CodeXml, Eye, FileText, Globe, GraduationCap, HardDriveUpload, Info, Lightbulb, Link, MapPin, Shield, SquarePen, Upload, UserRound, UserRoundPen, Video as VideoIcon, VideoOff } from 'lucide-react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import UploadVideo from '../../components/UploadVideo';
 import * as AsyncStore from "../../../AsyncStore";
 import { getProfileData, getVideoData } from '../../../Redux/slices/profileSlice';
+import Video from 'react-native-video';
 
 type Props = BottomTabScreenProps<JobSeekerBottomTabParamList, 'ProfileTab'>;
 
 export default function ProfileTabScreen({ navigation }: Props) {
   const [videoTitle, setVideoTitle] = useState('');
   const dispatch = useDispatch();
-  
+
   const selector = useSelector((state: any) => state.profile);
 
   useEffect(() => {
@@ -163,23 +164,31 @@ export default function ProfileTabScreen({ navigation }: Props) {
           <View style={styles.videoSection}>
             <View style={styles.videoHeader}>
               <View style={styles.videoHeaderIcon}>
-                <Video fill={'#165DFC'} color={'white'} />
+                <VideoIcon fill={'#165DFC'} color={'white'} />
               </View>
               <Text style={styles.videoHeaderTitle}>Video Introduction</Text>
             </View>
             <UploadVideo
-              buttonLabel="Upload Video"
+              buttonLabel={hasVideo ? 'Re-Upload' : 'Upload Video'}
               modalTitle="Upload Video Introduction"
               onVideoTitleChange={handleVideoTitleChange}
               onUploadSuccess={handleVideoUploadSuccess}
+              hasVideo={hasVideo}
             />
+            {hasVideo && (
+              <Video
+                source={{ uri: selector?.videoData?.data?.video_url }}
+                style={{ width: '100%', aspectRatio: 16 / 9 }}
+                controls
+              />
+            )}
             {/* <TouchableOpacity style={styles.uploadVideoButton}>
               <HardDriveUpload fill={'#165DFC'} color={'#165DFC'} />
               <Text style={styles.uploadVideoText}>Upload Video</Text>
             </TouchableOpacity> */}
 
             <View style={styles.videoUploadBox}>
-              <Video size={40} color="#6B7280" />
+              <VideoIcon size={40} color="#6B7280" />
               <Text style={styles.noVideoText}>{hasVideo ? (videoData?.title || 'Video uploaded') : 'No video uploaded yet'}</Text>
               <Text style={styles.uploadVideoDescription}>{hasVideo ? 'Your video introduction is on file' : 'Upload a video introduction'}</Text>
             </View>

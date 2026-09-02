@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 // import { launchImageLibrary, ImageLibraryOptions } from 'react-native-image-picker';
 import DocumentPicker, { types } from 'react-native-document-picker';
-import { CloudUpload, HardDriveUpload, Lightbulb } from 'lucide-react-native';
+import { CloudUpload, HardDriveUpload, Lightbulb, RotateCw } from 'lucide-react-native';
 import { uploadVideo } from '../../Redux/slices/profileSlice';
 import { useDispatch } from 'react-redux';
 import * as AsyncStore from '../../AsyncStore';
@@ -24,6 +24,7 @@ interface UploadVideoProps {
   fileTypesText?: string;
   onVideoTitleChange?: (title: string) => void;
   onUploadSuccess?: (response: any) => void;
+  hasVideo?: boolean;
 }
 
 export default function UploadVideo({
@@ -33,6 +34,7 @@ export default function UploadVideo({
   fileTypesText = 'MP4, MOV, AVI, WebM * Max file size: 100MB',
   onVideoTitleChange = (title: string) => { },
   onUploadSuccess = (response: any) => { },
+  hasVideo = false,
 }: UploadVideoProps) {
   const [showModal, setShowModal] = useState(false);
   const [videoTitle, setVideoTitle] = useState('');
@@ -73,6 +75,10 @@ export default function UploadVideo({
       });
       setSelectedFileName(result.name ?? result.uri ?? 'Selected file');
       setSelectedFile(result);
+      if (!videoTitle && result.name) {
+        setVideoTitle(result.name);
+        onVideoTitleChange?.(result.name);
+      }
     } catch (err: any) {
       if (DocumentPicker.isCancel(err)) {
         return;
@@ -136,11 +142,10 @@ export default function UploadVideo({
       //   pickFromGallery();
     }
   };
-
   return (
     <>
       <TouchableOpacity style={styles.uploadVideoButton} onPress={() => setShowModal(true)}>
-        <HardDriveUpload fill={'#165DFC'} color={'#165DFC'} />
+        {hasVideo ? (<RotateCw size={18}  color={'#165DFC'} />) : (<HardDriveUpload size={24} fill={'#165DFC'} color={'#165DFC'} />)}
         <Text style={styles.uploadVideoText}>{buttonLabel}</Text>
       </TouchableOpacity>
 
@@ -196,9 +201,12 @@ export default function UploadVideo({
               <Text style={styles.introVideoGuidelineText}>• Your video will be reviewed before approval</Text>
             </View>
             <TouchableOpacity
-              style={styles.introVideoActionButton}
+              style={[
+                styles.introVideoActionButton,
+                !videoTitle.trim() && styles.introVideoActionButtonDisabled,
+              ]}
               onPress={handleUpload}
-              disabled={isUploading}
+              disabled={isUploading || !videoTitle.trim()}
             >
               <Text style={styles.introVideoActionButtonText}>
                 {isUploading ? 'Uploading...' : buttonLabel}
@@ -376,6 +384,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingVertical: 14,
     alignItems: 'center',
+  },
+  introVideoActionButtonDisabled: {
+    backgroundColor: '#9CAEFB',
   },
   introVideoActionButtonText: {
     fontSize: 14,
