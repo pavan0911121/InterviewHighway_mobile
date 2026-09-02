@@ -8,7 +8,7 @@ import { BookText, BriefcaseBusiness, Camera, CodeXml, Eye, FileText, Globe, Gra
 import { useDispatch, useSelector } from 'react-redux';
 import UploadVideo from '../../components/UploadVideo';
 import * as AsyncStore from "../../../AsyncStore";
-import { getProfileData } from '../../../Redux/slices/profileSlice';
+import { getProfileData, getVideoData } from '../../../Redux/slices/profileSlice';
 
 type Props = BottomTabScreenProps<JobSeekerBottomTabParamList, 'ProfileTab'>;
 
@@ -34,6 +34,7 @@ export default function ProfileTabScreen({ navigation }: Props) {
         if (userId) {
           const resultId = userId.replace(/"/g, '');
           const response = await dispatch(getProfileData(resultId) as any);
+          dispatch(getVideoData(resultId) as any);
         }
       }
 
@@ -44,13 +45,21 @@ export default function ProfileTabScreen({ navigation }: Props) {
   };
   const userData = selector && selector?.data && selector?.data[0];
   const isLoading = selector?.isLoading;
-  const handleUploadVideo = () => {
-    // Handle video upload logic here
-    
-  };
+  const videoData = selector?.videoData && (Array.isArray(selector.videoData) ? selector.videoData[0] : selector.videoData);
+  const hasVideo = !!videoData;
+
   const handleVideoTitleChange = (title: string) => {
     setVideoTitle(title);
     // You now have the title in the parent
+  };
+
+  const handleVideoUploadSuccess = async () => {
+    // Refresh uploaded video info after a successful upload
+    const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
+    if (userId) {
+      const resultId = userId.replace(/"/g, '');
+      dispatch(getVideoData(resultId) as any);
+    }
   };
   return (
     <SafeAreaView style={styles.container}>
@@ -158,7 +167,12 @@ export default function ProfileTabScreen({ navigation }: Props) {
               </View>
               <Text style={styles.videoHeaderTitle}>Video Introduction</Text>
             </View>
-            <UploadVideo buttonLabel="Upload Video" modalTitle="Upload Video Introduction" onVideoTitleChange={handleVideoTitleChange}/>
+            <UploadVideo
+              buttonLabel="Upload Video"
+              modalTitle="Upload Video Introduction"
+              onVideoTitleChange={handleVideoTitleChange}
+              onUploadSuccess={handleVideoUploadSuccess}
+            />
             {/* <TouchableOpacity style={styles.uploadVideoButton}>
               <HardDriveUpload fill={'#165DFC'} color={'#165DFC'} />
               <Text style={styles.uploadVideoText}>Upload Video</Text>
@@ -166,15 +180,15 @@ export default function ProfileTabScreen({ navigation }: Props) {
 
             <View style={styles.videoUploadBox}>
               <Video size={40} color="#6B7280" />
-              <Text style={styles.noVideoText}>No video uploaded yet</Text>
-              <Text style={styles.uploadVideoDescription}>Upload a video introduction</Text>
+              <Text style={styles.noVideoText}>{hasVideo ? (videoData?.title || 'Video uploaded') : 'No video uploaded yet'}</Text>
+              <Text style={styles.uploadVideoDescription}>{hasVideo ? 'Your video introduction is on file' : 'Upload a video introduction'}</Text>
             </View>
 
             <View style={styles.videoStatusContainer}>
               <Text style={styles.videoStatusTitle}>Video Status</Text>
               <View style={styles.statusBadge}>
-                <View style={styles.statusDot} />
-                <Text style={styles.statusText}>Not uploaded</Text>
+                <View style={[styles.statusDot, hasVideo && { backgroundColor: '#22C55E' }]} />
+                <Text style={styles.statusText}>{hasVideo ? 'Uploaded' : 'Not uploaded'}</Text>
               </View>
             </View>
 

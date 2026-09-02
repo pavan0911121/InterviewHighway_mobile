@@ -13,6 +13,9 @@ import {
 // import { launchImageLibrary, ImageLibraryOptions } from 'react-native-image-picker';
 import DocumentPicker, { types } from 'react-native-document-picker';
 import { CloudUpload, HardDriveUpload, Lightbulb } from 'lucide-react-native';
+import { uploadVideo } from '../../Redux/slices/profileSlice';
+import { useDispatch } from 'react-redux';
+import * as AsyncStore from '../../AsyncStore';
 
 interface UploadVideoProps {
   buttonLabel?: string;
@@ -20,6 +23,7 @@ interface UploadVideoProps {
   dropTitle?: string;
   fileTypesText?: string;
   onVideoTitleChange?: (title: string) => void;
+  onUploadSuccess?: (response: any) => void;
 }
 
 export default function UploadVideo({
@@ -28,10 +32,15 @@ export default function UploadVideo({
   dropTitle = 'Drag and drop your video here',
   fileTypesText = 'MP4, MOV, AVI, WebM * Max file size: 100MB',
   onVideoTitleChange = (title: string) => { },
+  onUploadSuccess = (response: any) => { },
 }: UploadVideoProps) {
   const [showModal, setShowModal] = useState(false);
   const [videoTitle, setVideoTitle] = useState('');
   const [selectedFileName, setSelectedFileName] = useState('');
+  const [selectedFile, setSelectedFile] = useState<any>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const dispatch = useDispatch();
+
 
   const handlePickerResponse = (response: any) => {
     if (response.didCancel) {
@@ -63,11 +72,48 @@ export default function UploadVideo({
         type: [types.pdf, types.doc, types.docx, types.video, types.images, types.plainText],
       });
       setSelectedFileName(result.name ?? result.uri ?? 'Selected file');
+      setSelectedFile(result);
     } catch (err: any) {
       if (DocumentPicker.isCancel(err)) {
         return;
       }
       Alert.alert('Error', err.message || 'Unable to select file.');
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile) {
+      Alert.alert('Error', 'Please select a video file first.');
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      const userId = await AsyncStore.getData(AsyncStore.Keys.USER_ID);
+      const resultUserId = userId ? userId.replace(/"/g, '') : '';
+
+      const formData = new FormData();
+      formData.append('video', {
+        uri: selectedFile.uri,
+        type: selectedFile.type || 'video/mp4',
+        name: selectedFile.name || 'video.mp4',
+      } as any);
+      formData.append('title', videoTitle || selectedFile.name || 'Untitled video');
+      formData.append('userId', resultUserId);
+
+      const response = await dispatch(uploadVideo(formData) as any);
+      if (uploadVideo.fulfilled.match(response)) {
+        Alert.alert('Success', 'Video uploaded successfully.');
+        setShowModal(false);
+        onUploadSuccess(response.payload);
+      } else {
+        const message = (response.payload as any)?.message || 'Failed to upload video.';
+        Alert.alert('Error', message);
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Unable to upload video.');
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -149,8 +195,14 @@ export default function UploadVideo({
               <Text style={styles.introVideoGuidelineText}>• Use MP4 or MOV file format</Text>
               <Text style={styles.introVideoGuidelineText}>• Your video will be reviewed before approval</Text>
             </View>
-            <TouchableOpacity style={styles.introVideoActionButton}>
-              <Text style={styles.introVideoActionButtonText}>{buttonLabel}</Text>
+            <TouchableOpacity
+              style={styles.introVideoActionButton}
+              onPress={handleUpload}
+              disabled={isUploading}
+            >
+              <Text style={styles.introVideoActionButtonText}>
+                {isUploading ? 'Uploading...' : buttonLabel}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>

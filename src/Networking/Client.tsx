@@ -23,7 +23,7 @@ interface HeadersConfig {
 interface RequestConfig {
   method: string;
   headers: HeadersConfig;
-  body?: string;
+  body?: string | FormData;
 }
 
 interface APIResponse {
@@ -79,12 +79,19 @@ export const client = async (
   //   console.warn('Poor network detected - 2G connection');
   // }
 
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
+
   const headers: HeadersConfig = {
     Accept: 'application/json',
     'Content-Type': 'application/json',
     'apikey': 'sb_publishable_tY1AthKjAKBTZP0TxJ1KfQ_PCL8VdIk',
     ...customConfig,
   };
+
+  // Let fetch set the multipart boundary itself when sending FormData
+  if (isFormData) {
+    delete headers['Content-Type'];
+  }
 
   if (authToken) {
     headers['Authorization'] = `Bearer ${authToken}`;
@@ -96,7 +103,7 @@ export const client = async (
   };
 
   if (body && (methodType === 'POST' || methodType === 'PUT')) {
-    config.body = JSON.stringify(body);
+    config.body = isFormData ? body : JSON.stringify(body);
   }
 
   try {

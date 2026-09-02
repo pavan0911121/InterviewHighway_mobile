@@ -7,15 +7,20 @@ interface profileState {
    data: object | null;
     isLoading: boolean;
     error: string | null;
-    total: number
-   
+    total: number;
+    videoData: any | null;
+    isVideoUploading: boolean;
+    videoUploadError: string | null;
 }
 
 const initialState: profileState = {
     data: null,
     isLoading: false,
     error: null,
-    total: 0
+    total: 0,
+    videoData: null,
+    isVideoUploading: false,
+    videoUploadError: null,
 };
 type Config = {
   headers?: string;
@@ -41,16 +46,30 @@ export const uploadVideo = createAsyncThunk(
     "profile/uploadVideo",
     async (formData: FormData, { rejectWithValue }) => {
         try {
-            const response = await client.post(VIDEO_ENDPOINTS.uploadVideo, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data' ,
-                },
-            });
+            // Content-Type (with multipart boundary) is set automatically by fetch for FormData
+            const response = await client.post(VIDEO_ENDPOINTS.uploadVideo, formData);
             return response.data || response;
         } catch (error: any) {
             console.log('Error uploading video:', error);
             return rejectWithValue({
                 message: error?.message || 'Failed to upload video',
+                code: error?.code || 'ERROR',
+            });
+        }
+    }
+);
+
+//get video data API call
+export const getVideoData = createAsyncThunk(
+    "profile/getVideoData",
+    async (userId: string, { rejectWithValue }) => {
+        try {
+            const response = await client.get(VIDEO_ENDPOINTS.getVideoData(userId));
+            return response.data || response;
+        } catch (error: any) {
+            console.log('Error fetching video data:', error);
+            return rejectWithValue({
+                message: error?.message || 'Failed to fetch video data',
                 code: error?.code || 'ERROR',
             });
         }
@@ -67,6 +86,9 @@ const profileSlice = createSlice({
         },
         clearError: (state) => {
             state.error = null;
+        },
+        clearVideoUploadError: (state) => {
+            state.videoUploadError = null;
         },
     },
     extraReducers: (builder) => {
@@ -88,13 +110,31 @@ const profileSlice = createSlice({
                 state.isLoading = false;
                 state.error = action.payload as string;
             })
+            // uploadVideo async thunk handlers
+            .addCase(uploadVideo.pending, (state) => {
+                state.isVideoUploading = true;
+                state.videoUploadError = null;
+            })
+            .addCase(uploadVideo.fulfilled, (state, action) => {
+                state.isVideoUploading = false;
+                state.videoData = action.payload;
+                state.videoUploadError = null;
+            })
+            .addCase(uploadVideo.rejected, (state, action) => {
+                state.isVideoUploading = false;
+                state.videoUploadError = (action.payload as any)?.message || 'Failed to upload video';
+            })
+            // getVideoData async thunk handlers
+            .addCase(getVideoData.fulfilled, (state, action) => {
+                state.videoData = action.payload;
+            })
     }
 });
 
 export const {
     clearProfileData,
-    clearError
-
+    clearError,
+    clearVideoUploadError,
 } = profileSlice.actions;
 
 export default profileSlice.reducer;

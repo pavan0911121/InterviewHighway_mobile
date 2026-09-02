@@ -256,7 +256,6 @@ const loginSlice = createSlice({
           state.isAuthenticated = true;
           state.refreshToken = dataObj?.refresh_token;
           AsyncStore.storeData(AsyncStore.Keys.USER_TOKEN, token);
-          AsyncStore.storeData(AsyncStore.Keys.REFRESH_TOKEN, dataObj?.refresh_token);
           AsyncStore.storeData(AsyncStore.Keys.IS_LOGIN, "true");
         }
 
@@ -375,6 +374,26 @@ const loginSlice = createSlice({
       .addCase(registerJobSeeker.rejected, (state, action) => {
         state.isLoading = false;
         state.error = (action.payload as any)?.message || 'Failed to register job seeker';
+      });
+    // refreshToken async thunk handlers
+    builder
+      .addCase(refreshToken.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(refreshToken.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.error = null;
+        const newToken = action.payload?.access_token || action.payload?.token;
+        if (newToken) {
+          state.token = newToken;
+          AsyncStore.storeData(AsyncStore.Keys.USER_TOKEN, newToken);
+          AsyncStore.storeData(AsyncStore.Keys.REFRESH_TOKEN, action?.payload?.refresh_token);
+        }
+      })
+      .addCase(refreshToken.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = (action.payload as any)?.message || 'Failed to refresh token';
       });
   }
 });
