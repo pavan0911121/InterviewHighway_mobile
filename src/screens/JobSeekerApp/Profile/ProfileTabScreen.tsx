@@ -1,32 +1,160 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, TextInput, Modal, Alert } from 'react-native';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { JobSeekerBottomTabParamList } from '../../../types/navigation';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { BookText, BriefcaseBusiness, Camera, CodeXml, Eye, FileText, Globe, GraduationCap, HardDriveUpload, Info, Lightbulb, Link, MapPin, Shield, SquarePen, Upload, UserRound, UserRoundPen, Video as VideoIcon, VideoOff } from 'lucide-react-native';
+import { Picker } from '@react-native-picker/picker';
+import { Award, BookText, BriefcaseBusiness, Building2, Calendar, Camera, Clock, CodeXml, Download, Eye, FileText, Globe, GraduationCap, HardDriveUpload, Hourglass, Info, Lightbulb, Link, MapPin, Save, Shield, SquarePen, Star, StarOff, Trash2, Upload, User, UserRound, UserRoundPen, Video as VideoIcon, VideoOff, X } from 'lucide-react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import UploadVideo from '../../components/UploadVideo';
 import * as AsyncStore from "../../../AsyncStore";
-import { getProfileData, getVideoData } from '../../../Redux/slices/profileSlice';
+import { addEducation, addSkill, deleteSkill, getAllSkills, getEducation, getPersonalData, getProfileData, getResumes, getUserSkills, getVideoData, getWorkExperience, updateBio } from '../../../Redux/slices/profileSlice';
 import Video from 'react-native-video';
 
 type Props = BottomTabScreenProps<JobSeekerBottomTabParamList, 'ProfileTab'>;
 
+const PROFICIENCY_OPTIONS = ['Beginner', 'Intermediate', 'Advanced', 'Expert'];
+// Maps proficiency label to the numeric level expected by the addSkill API
+const PROFICIENCY_LEVEL_MAP: Record<string, number> = {
+  Basic: 1,
+  Beginner: 2,
+  Intermediate: 3,
+  Advanced: 4,
+  Expert: 5,
+};
+// Reverse lookup to turn a numeric proficiency level back into its label
+const PROFICIENCY_LABEL_BY_LEVEL: Record<number, string> = Object.fromEntries(
+  Object.entries(PROFICIENCY_LEVEL_MAP).map(([label, level]) => [level, label])
+);
+const BIO_MAX_LENGTH = 1000;
+const EMPLOYMENT_TYPE_OPTIONS = ['full-time', 'part-time', 'contract', 'internship', 'freelance'];
+const DEGREE_OPTIONS = [
+  "Bachelor's Degree",
+  "Master's Degree",
+  'Doctoral Degree (PhD)',
+  'Associate Degree',
+  'Diploma',
+  'Certificate',
+  'Professional Degree',
+  'High School Diploma',
+  'Other',
+];
+
+const formatEmploymentType = (type: string) => {
+  if (!type) { return ''; }
+  return type.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+};
+
+const formatMonthYear = (dateStr?: string | null) => {
+  if (!dateStr) { return ''; }
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) { return ''; }
+  return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+};
+
+const getExperienceDuration = (startDate?: string | null, endDate?: string | null, isCurrent?: boolean) => {
+  if (!startDate) { return ''; }
+  const start = new Date(startDate);
+  if (Number.isNaN(start.getTime())) { return ''; }
+  const end = isCurrent || !endDate ? new Date() : new Date(endDate);
+  let totalMonths = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+  if (totalMonths < 0) { totalMonths = 0; }
+  const years = Math.floor(totalMonths / 12);
+  const months = totalMonths % 12;
+  const parts: string[] = [];
+  if (years > 0) { parts.push(`${years} ${years === 1 ? 'year' : 'years'}`); }
+  if (months > 0 || years === 0) { parts.push(`${months} ${months === 1 ? 'month' : 'months'}`); }
+  return parts.join(', ');
+};
+
+const formatFileSize = (bytes?: number | null) => {
+  if (bytes == null || Number.isNaN(bytes)) { return ''; }
+  if (bytes < 1024) { return `${bytes} B`; }
+  const kb = bytes / 1024;
+  if (kb < 1024) { return `${kb.toFixed(2)} KB`; }
+  return `${(kb / 1024).toFixed(2)} MB`;
+};
+
+const formatRelativeTime = (dateStr?: string | null) => {
+  if (!dateStr) { return ''; }
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) { return ''; }
+  const diffMs = Date.now() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (diffDays <= 0) { return 'today'; }
+  if (diffDays === 1) { return '1 day ago'; }
+  if (diffDays < 30) { return `${diffDays} days ago`; }
+  const diffMonths = Math.floor(diffDays / 30);
+  if (diffMonths === 1) { return 'over a month ago'; }
+  if (diffMonths < 12) { return `${diffMonths} months ago`; }
+  const diffYears = Math.floor(diffMonths / 12);
+  return `${diffYears} ${diffYears === 1 ? 'year' : 'years'} ago`;
+};
+
 export default function ProfileTabScreen({ navigation }: Props) {
   const [videoTitle, setVideoTitle] = useState('');
+  const [isEditingPersonal, setIsEditingPersonal] = useState(false);
+  const [personalForm, setPersonalForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    location: '',
+    current_role: '',
+  });
+  const [isEditingBio, setIsEditingBio] = useState(false);
+  const [bio, setBio] = useState('');
+  const [isEditingSocialLinks, setIsEditingSocialLinks] = useState(false);
+  const [linkedinUrl, setLinkedinUrl] = useState('');
+  const [websiteUrl, setWebsiteUrl] = useState('');
+  const [linkedinDraft, setLinkedinDraft] = useState('');
+  const [websiteDraft, setWebsiteDraft] = useState('');
+  const [isAddSkillModalVisible, setIsAddSkillModalVisible] = useState(false);
+  const [editingSkillId, setEditingSkillId] = useState<string | null>(null);
+  const [addSkillTab, setAddSkillTab] = useState<'list' | 'custom'>('list');
+  const [selectedSkillId, setSelectedSkillId] = useState('');
+  const [selectedSkillName, setSelectedSkillName] = useState('');
+  const [customSkillName, setCustomSkillName] = useState('');
+  const [proficiencyLevel, setProficiencyLevel] = useState('Intermediate');
+  const [yearsOfExperience, setYearsOfExperience] = useState('1');
+  const [isExperienceModalVisible, setIsExperienceModalVisible] = useState(false);
+  const [editingExperienceId, setEditingExperienceId] = useState<string | null>(null);
+  const [workExperienceItems, setWorkExperienceItems] = useState<any[]>([]);
+  const [experienceForm, setExperienceForm] = useState({
+    company_name: '',
+    job_title: '',
+    company_location: '',
+    employment_type: 'full-time',
+    is_current_job: false,
+    start_date: '',
+    end_date: '',
+    job_description: '',
+  });
+  const [isEducationModalVisible, setIsEducationModalVisible] = useState(false);
+  const [editingEducationId, setEditingEducationId] = useState<string | null>(null);
+  const [educationForm, setEducationForm] = useState({
+    institution_name: '',
+    degree: '',
+    field_of_study: '',
+    start_date: '',
+    end_date: '',
+    is_current: false,
+    grade: '',
+    description: '',
+  });
+  const [achievements, setAchievements] = useState<string[]>([]);
+  const [achievementInput, setAchievementInput] = useState('');
   const dispatch = useDispatch();
 
   const selector = useSelector((state: any) => state.profile);
-
   useEffect(() => {
-    fetchProfileData();
+    fetchProfileData('All');
   }, []);
 
-  const fetchProfileData = async () => {
+  const fetchProfileData = async (profile: string) => {
     try {
+      console.log('Fetching profile data for profile:', profile);
       // Fetch user data from async storage
-
       const userLoggedInData = await AsyncStore.getData(AsyncStore?.Keys?.USER_DATA);
       if (userLoggedInData) {
         const parsedUserData = JSON.parse(userLoggedInData);
@@ -34,8 +162,17 @@ export default function ProfileTabScreen({ navigation }: Props) {
         // const userId = parsedUserData?.id || null;
         if (userId) {
           const resultId = userId.replace(/"/g, '');
-          const response = await dispatch(getProfileData(resultId) as any);
-          dispatch(getVideoData(resultId) as any);
+          if(profile === 'All') {
+            dispatch(getAllSkills() as any);
+            const response = await dispatch(getProfileData(resultId) as any);
+            dispatch(getVideoData(resultId) as any);
+            dispatch(getUserSkills({ userId: resultId }) as any);
+            dispatch(getWorkExperience({ userId: resultId }) as any);
+            dispatch(getEducation({ userId: resultId }) as any);
+            dispatch(getResumes({ userId: resultId }) as any);
+          }else if(profile === 'onlyProfile') {
+            const response = await dispatch(getProfileData(resultId) as any);
+          }
         }
       }
 
@@ -44,10 +181,19 @@ export default function ProfileTabScreen({ navigation }: Props) {
       console.log('Error fetching profile data:', error);
     }
   };
-  const userData = selector && selector?.data && selector?.data[0];
+  const userData = selector && selector?.data?.profile;
   const isLoading = selector?.isLoading;
+  const allSkillsList = selector?.allSkills?.skills || [];
+  const userSkillsList = selector?.userSkills?.userSkills || [];
   const videoData = selector?.videoData && (Array.isArray(selector.videoData) ? selector.videoData[0] : selector.videoData);
+  const workExperienceList = selector?.workExperience?.workExperience || [];
   const hasVideo = !!videoData;
+  const educationList = selector?.educationData?.education || [];
+  const resumesList = selector?.resumes?.resumes || [];
+
+  // useEffect(() => {
+  //   setWorkExperienceItems(workExperienceList);
+  // }, [workExperienceList]);
 
   const handleVideoTitleChange = (title: string) => {
     setVideoTitle(title);
@@ -60,6 +206,311 @@ export default function ProfileTabScreen({ navigation }: Props) {
     if (userId) {
       const resultId = userId.replace(/"/g, '');
       dispatch(getVideoData(resultId) as any);
+    }
+  };
+  const handleEditPersonalDetails = () => {
+    setPersonalForm({
+      name: userData?.name || '',
+      email: userData?.email || '',
+      phone: userData?.phone || '',
+      location: userData?.location || '',
+      current_role: userData?.current_role || '',
+    });
+    setIsEditingPersonal(true);
+  };
+
+  const handleCancelPersonalDetails = () => {
+    setIsEditingPersonal(false);
+  };
+
+  const handlePersonalFieldChange = (field: keyof typeof personalForm, value: string) => {
+    setPersonalForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handlePersonalDetailsUpdate = async () => {
+    try {
+      const payload = { ...personalForm };
+      const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
+      if (userId) {
+        const resultId = userId.replace(/"/g, '');
+        await dispatch(getPersonalData({ userId: resultId, payload }) as any);
+        await fetchProfileData('onlyProfile');
+      }
+      setIsEditingPersonal(false);
+    }
+    catch (error) {
+      console.log('Error updating personal details:', error);
+    }
+  }
+
+  const handleEditBio = () => {
+    setBio(userData?.bio || '');
+    setIsEditingBio(true);
+  };
+
+  const handleCancelBio = () => {
+    setIsEditingBio(false);
+  };
+
+  const handleSaveBio = async () => {
+    try {
+      const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
+      if (userId) {
+        const resultId = userId.replace(/"/g, '');
+        const response = dispatch(updateBio({ userId: resultId, payload: { bio: bio } }) as any);
+        // console.log('Update bio response:', JSON.parse(response));
+        fetchProfileData('onlyProfile');
+      }
+    } catch (error) {
+      console.log('Error updating bio:', error);
+    }
+    setIsEditingBio(false);
+  };
+
+  const handleEditSocialLinks = () => {
+    setLinkedinDraft(linkedinUrl);
+    setWebsiteDraft(websiteUrl);
+    setIsEditingSocialLinks(true);
+  };
+
+  const handleCancelSocialLinks = () => {
+    setIsEditingSocialLinks(false);
+  };
+
+  const handleSaveSocialLinks = () => {
+    setLinkedinUrl(linkedinDraft);
+    setWebsiteUrl(websiteDraft);
+    setIsEditingSocialLinks(false);
+  };
+
+  const handleOpenAddSkillModal = () => {
+    setEditingSkillId(null);
+    setAddSkillTab('list');
+    setSelectedSkillId('');
+    setSelectedSkillName('');
+    setCustomSkillName('');
+    setProficiencyLevel('Intermediate');
+    setYearsOfExperience('1');
+    setIsAddSkillModalVisible(true);
+  };
+
+  const handleOpenEditSkillModal = (item: any) => {
+    const skillId = item?.skills?.id || item?.skill_id || item?.skillId || '';
+    const rawLevel = item?.proficiency_level ?? item?.proficiencyLevel;
+    const numericLevel = Number(rawLevel);
+    const levelLabel = !Number.isNaN(numericLevel) && rawLevel !== null && rawLevel !== ''
+      ? (PROFICIENCY_LABEL_BY_LEVEL[numericLevel] || 'Intermediate')
+      : (typeof rawLevel === 'string' && PROFICIENCY_OPTIONS.includes(rawLevel) ? rawLevel : 'Intermediate');
+    const years = item?.years_of_experience ?? item?.yearsOfExperience ?? item?.years;
+
+    setEditingSkillId(skillId);
+    setAddSkillTab('list');
+    setSelectedSkillId(skillId);
+    setSelectedSkillName(item?.skills?.name || '');
+    setCustomSkillName('');
+    setProficiencyLevel(levelLabel);
+    setYearsOfExperience(years != null ? String(years) : '1');
+    setIsAddSkillModalVisible(true);
+  };
+  const handleDeleteSkill = (skillId: string) => {
+    Alert.alert(
+      'Delete Skill',
+      'Are you sure you want to delete this skill?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
+              if (userId) {
+                const resultId = userId.replace(/"/g, '');
+                await dispatch(deleteSkill({ userId: resultId, skillId }) as any);
+                dispatch(getUserSkills({ userId: resultId }) as any);
+              }
+            } catch (error) {
+              console.log('Error deleting skill:', error);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleCloseAddSkillModal = () => {
+    setEditingSkillId(null);
+    setIsAddSkillModalVisible(false);
+  };
+
+  const handleAddSkill = async () => {
+    const name = addSkillTab === 'list' ? selectedSkillName : customSkillName.trim();
+    if (addSkillTab === 'list' ? !selectedSkillId : !name) {
+      return;
+    }
+    try {
+      const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
+      if (userId) {
+        const resultId = userId.replace(/"/g, '');
+        const payload = {
+          skillId: selectedSkillId,
+          proficiencyLevel: PROFICIENCY_LEVEL_MAP[proficiencyLevel] || 1,
+          yearsOfExperience: Number(yearsOfExperience) || 0,
+        };
+        await dispatch(addSkill({ userId: resultId, payload }) as any);
+        dispatch(getUserSkills({ userId: resultId }) as any);
+      }
+      setEditingSkillId(null);
+      setIsAddSkillModalVisible(false);
+    } catch (error) {
+      console.log('Error adding skill:', error);
+    }
+  };
+
+  const handleOpenAddExperienceModal = () => {
+    setEditingExperienceId(null);
+    setExperienceForm({
+      company_name: '',
+      job_title: '',
+      company_location: '',
+      employment_type: 'full-time',
+      is_current_job: false,
+      start_date: '',
+      end_date: '',
+      job_description: '',
+    });
+    setIsExperienceModalVisible(true);
+  };
+
+  const handleOpenEditExperienceModal = (item: any) => {
+    setEditingExperienceId(item?.id || null);
+    setExperienceForm({
+      company_name: item?.company_name || '',
+      job_title: item?.job_title || '',
+      company_location: item?.company_location || '',
+      employment_type: item?.employment_type || 'full-time',
+      is_current_job: !!item?.is_current_job,
+      start_date: item?.start_date || '',
+      end_date: item?.end_date || '',
+      job_description: item?.job_description || '',
+    });
+    setIsExperienceModalVisible(true);
+  };
+
+  const handleCloseExperienceModal = () => {
+    setEditingExperienceId(null);
+    setIsExperienceModalVisible(false);
+  };
+
+  const handleExperienceFieldChange = (field: keyof typeof experienceForm, value: string | boolean) => {
+    setExperienceForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveExperience = () => {
+    if (!experienceForm.company_name.trim() || !experienceForm.job_title.trim()) {
+      return;
+    }
+    if (editingExperienceId) {
+      setWorkExperienceItems(prev => prev.map(item => (
+        item.id === editingExperienceId ? { ...item, ...experienceForm } : item
+      )));
+    } else {
+      setWorkExperienceItems(prev => [
+        { id: `${Date.now()}`, ...experienceForm },
+        ...prev,
+      ]);
+    }
+    setEditingExperienceId(null);
+    setIsExperienceModalVisible(false);
+  };
+
+  const handleDeleteExperience = (experienceId: string) => {
+    Alert.alert(
+      'Delete Experience',
+      'Are you sure you want to delete this work experience?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            setWorkExperienceItems(prev => prev.filter(item => item.id !== experienceId));
+          },
+        },
+      ]
+    );
+  };
+
+  const handleOpenAddEducationModal = () => {
+    setEditingEducationId(null);
+    setEducationForm({
+      institution_name: '',
+      degree: '',
+      field_of_study: '',
+      start_date: '',
+      end_date: '',
+      is_current: false,
+      grade: '',
+      description: '',
+    });
+    setAchievements([]);
+    setAchievementInput('');
+    setIsEducationModalVisible(true);
+  };
+
+  const handleOpenEditEducationModal = (item: any) => {
+    setEditingEducationId(item?.id || null);
+    setEducationForm({
+      institution_name: item?.institution_name || '',
+      degree: item?.degree || '',
+      field_of_study: item?.field_of_study || '',
+      start_date: item?.start_date || '',
+      end_date: item?.end_date || '',
+      is_current: !!item?.is_current,
+      grade: item?.grade || '',
+      description: item?.description || '',
+    });
+    setAchievements(Array.isArray(item?.achievements) ? item.achievements : []);
+    setAchievementInput('');
+    setIsEducationModalVisible(true);
+  };
+
+  const handleCloseEducationModal = () => {
+    setEditingEducationId(null);
+    setIsEducationModalVisible(false);
+  };
+
+  const handleEducationFieldChange = (field: keyof typeof educationForm, value: string | boolean) => {
+    setEducationForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleAddAchievement = () => {
+    const trimmed = achievementInput.trim();
+    if (!trimmed) { return; }
+    setAchievements(prev => [...prev, trimmed]);
+    setAchievementInput('');
+  };
+
+  const handleRemoveAchievement = (index: number) => {
+    setAchievements(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSaveEducation = async () => {
+    if (!educationForm.institution_name.trim() || !educationForm.degree.trim() || !educationForm.field_of_study.trim() || !educationForm.start_date.trim()) {
+      return;
+    }
+    try {
+      const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
+      if (userId) {
+        const resultId = userId.replace(/"/g, '');
+        const payload = { ...educationForm, achievements };
+        await dispatch(addEducation({ userId: resultId, payload }) as any);
+        dispatch(getEducation({ userId: resultId }) as any);
+      }
+      setEditingEducationId(null);
+      setIsEducationModalVisible(false);
+    } catch (error) {
+      console.log('Error adding education:', error);
     }
   };
   return (
@@ -218,30 +669,95 @@ export default function ProfileTabScreen({ navigation }: Props) {
               <Text style={styles.personalInfoTitle}>Personal Information</Text>
             </View>
 
-            <TouchableOpacity style={styles.editButton}>
-              <SquarePen color={'#165DFC'} size={20} />
-              <Text style={styles.editButtonText}>Edit</Text>
-            </TouchableOpacity>
+            {!isEditingPersonal && (
+              <TouchableOpacity style={styles.editButton} onPress={handleEditPersonalDetails}>
+                <SquarePen color={'#165DFC'} size={20} />
+                <Text style={styles.editButtonText}>Edit</Text>
+              </TouchableOpacity>
+            )}
 
             <View style={styles.infoField}>
               <Text style={styles.fieldLabel}>Full Name</Text>
-              <Text style={styles.fieldValue}>{userData?.name || 'Not provided'}</Text>
+              {isEditingPersonal ? (
+                <TextInput
+                  style={styles.fieldInput}
+                  value={personalForm.name}
+                  onChangeText={(text) => handlePersonalFieldChange('name', text)}
+                  placeholder="Full Name"
+                />
+              ) : (
+                <Text style={styles.fieldValue}>{userData?.name || 'Not provided'}</Text>
+              )}
             </View>
 
             <View style={styles.infoField}>
               <Text style={styles.fieldLabel}>Email</Text>
-              <Text style={styles.fieldValue}>{userData?.email || 'Not provided'}</Text>
+              {isEditingPersonal ? (
+                <TextInput
+                  style={styles.fieldInput}
+                  value={personalForm.email}
+                  onChangeText={(text) => handlePersonalFieldChange('email', text)}
+                  placeholder="Email"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              ) : (
+                <Text style={styles.fieldValue}>{userData?.email || 'Not provided'}</Text>
+              )}
             </View>
 
             <View style={styles.infoField}>
               <Text style={styles.fieldLabel}>Phone Number</Text>
-              <Text style={styles.fieldValue}>{userData?.phone || 'Not provided'}</Text>
+              {isEditingPersonal ? (
+                <TextInput
+                  style={styles.fieldInput}
+                  value={personalForm.phone}
+                  onChangeText={(text) => handlePersonalFieldChange('phone', text)}
+                  placeholder="Phone Number"
+                  keyboardType="phone-pad"
+                />
+              ) : (
+                <Text style={styles.fieldValue}>{userData?.phone || 'Not provided'}</Text>
+              )}
             </View>
 
             <View style={styles.infoField}>
               <Text style={styles.fieldLabel}>Location</Text>
-              <Text style={styles.fieldValue}>{userData?.location || 'Not provided'}</Text>
+              {isEditingPersonal ? (
+                <TextInput
+                  style={styles.fieldInput}
+                  value={personalForm.location}
+                  onChangeText={(text) => handlePersonalFieldChange('location', text)}
+                  placeholder="Location"
+                />
+              ) : (
+                <Text style={styles.fieldValue}>{userData?.location || 'Not provided'}</Text>
+              )}
             </View>
+            <View style={styles.infoField}>
+              <Text style={styles.fieldLabel}>Role</Text>
+              {isEditingPersonal ? (
+                <TextInput
+                  style={styles.fieldInput}
+                  value={personalForm.current_role}
+                  onChangeText={(text) => handlePersonalFieldChange('current_role', text)}
+                  placeholder="Role"
+                />
+              ) : (
+                <Text style={styles.fieldValue}>{userData?.current_role || 'Not provided'}</Text>
+              )}
+            </View>
+
+            {isEditingPersonal && (
+              <View style={styles.personalEditActions}>
+                <TouchableOpacity style={styles.cancelButton} onPress={handleCancelPersonalDetails}>
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.submitButton} onPress={handlePersonalDetailsUpdate}>
+                  <Text style={styles.submitButtonText}>Submit</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
 
           {/* About Me Section */}
@@ -253,18 +769,51 @@ export default function ProfileTabScreen({ navigation }: Props) {
               <Text style={styles.aboutMeTitle}>About Me</Text>
             </View>
 
-            <TouchableOpacity style={styles.aboutEditButton}>
-              <SquarePen color={'#9810FA'} size={20} />
-              <Text style={styles.editButtonText}>Edit</Text>
-            </TouchableOpacity>
+            {!isEditingBio && (
+              <TouchableOpacity style={styles.aboutEditButton} onPress={handleEditBio}>
+                <SquarePen color={'#9810FA'} size={20} />
+                <Text style={styles.editButtonText}>Edit</Text>
+              </TouchableOpacity>
+            )}
 
-            <View style={styles.bioBox}>
-              <UserRoundPen fill={'#D1D5DC'} color={'white'} size={45} />
-              <Text style={styles.noBioText}>No bio added yet</Text>
-              <Text style={styles.bioDescription}>
-                Add a professional bio to help employers understand your background and expertise
-              </Text>
-            </View>
+            {isEditingBio ? (
+              <>
+                <TextInput
+                  style={styles.bioTextArea}
+                  value={bio}
+                  onChangeText={(text) => setBio(text.slice(0, BIO_MAX_LENGTH))}
+                  placeholder="Write 2-3 sentences highlighting your professional background and key strengths"
+                  placeholderTextColor="#9CA3AF"
+                  multiline
+                  maxLength={BIO_MAX_LENGTH}
+                />
+                <View style={styles.bioModalFooterRow}>
+                  <Text style={styles.bioHintText}>
+                    Write 2-3 sentences highlighting your{'\n'}professional background and key strengths
+                  </Text>
+                  <Text style={styles.bioCounterText}>{bio.length}/{BIO_MAX_LENGTH}</Text>
+                </View>
+                <View style={styles.modalActionsRow}>
+                  <TouchableOpacity style={styles.modalCancelButton} onPress={handleCancelBio}>
+                    <Text style={styles.modalCancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.bioSaveButton} onPress={handleSaveBio}>
+                    <Save color={'#FFFFFF'} size={16} />
+                    <Text style={styles.modalSaveButtonText}>Save Bio</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            ) : userData?.bio ? (
+              <Text style={styles.fieldValue}>{userData?.bio}</Text>
+            ) : (
+              <View style={styles.bioBox}>
+                <UserRoundPen fill={'#D1D5DC'} color={'white'} size={45} />
+                <Text style={styles.noBioText}>No bio added yet</Text>
+                <Text style={styles.bioDescription}>
+                  Add a professional bio to help employers understand your background and expertise
+                </Text>
+              </View>
+            )}
 
             <View style={styles.proTipBox}>
               <Lightbulb fill={'#FBBF24'} color={'white'} size={20} />
@@ -283,30 +832,74 @@ export default function ProfileTabScreen({ navigation }: Props) {
               <Text style={styles.socialLinksTitle}>Social Links</Text>
             </View>
 
-            <TouchableOpacity style={styles.aboutEditButton}>
-              <SquarePen color={'#00A63E'} size={20} />
-              <Text style={styles.editButtonText}>Edit</Text>
-            </TouchableOpacity>
+            {!isEditingSocialLinks && (
+              <TouchableOpacity style={styles.aboutEditButton} onPress={handleEditSocialLinks}>
+                <SquarePen color={'#00A63E'} size={20} />
+                <Text style={styles.editButtonText}>Edit</Text>
+              </TouchableOpacity>
+            )}
 
-            <View style={styles.socialLinkItem}>
-              <View style={styles.linkedinIconBox}>
-                <Text style={styles.linkedinIcon}>in</Text>
-              </View>
-              <View style={styles.socialLinkContent}>
-                <Text style={styles.socialLinkLabel}>LinkedIn Profile</Text>
-                <Text style={styles.socialLinkValue}>Not provided</Text>
-              </View>
-            </View>
+            {isEditingSocialLinks ? (
+              <>
+                <Text style={styles.fieldLabel}>LinkedIn Profile</Text>
+                <TextInput
+                  style={styles.socialInput}
+                  value={linkedinDraft}
+                  onChangeText={setLinkedinDraft}
+                  placeholder="https://..."
+                  placeholderTextColor="#9CA3AF"
+                  autoCapitalize="none"
+                />
+                <Text style={styles.socialInputHint}>
+                  Your LinkedIn profile helps employers learn more about your professional background
+                </Text>
 
-            <View style={styles.socialLinkItem}>
-              <View style={styles.websiteIconBox}>
-                <Globe fill={"#fff"} color={'#00A63E'} />
-              </View>
-              <View style={styles.socialLinkContent}>
-                <Text style={styles.socialLinkLabel}>Personal Website</Text>
-                <Text style={styles.socialLinkValue}>Not provided</Text>
-              </View>
-            </View>
+                <Text style={[styles.fieldLabel, styles.socialSecondFieldLabel]}>Personal Website/Portfolio</Text>
+                <TextInput
+                  style={styles.socialInput}
+                  value={websiteDraft}
+                  onChangeText={setWebsiteDraft}
+                  placeholder="https://..."
+                  placeholderTextColor="#9CA3AF"
+                  autoCapitalize="none"
+                />
+                <Text style={styles.socialInputHint}>
+                  Share your portfolio, blog, or personal website to showcase your work
+                </Text>
+
+                <View style={styles.modalActionsRow}>
+                  <TouchableOpacity style={styles.modalCancelButton} onPress={handleCancelSocialLinks}>
+                    <Text style={styles.modalCancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.socialSaveButton} onPress={handleSaveSocialLinks}>
+                    <Save color={'#FFFFFF'} size={16} />
+                    <Text style={styles.modalSaveButtonText}>Save Links</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            ) : (
+              <>
+                <View style={styles.socialLinkItem}>
+                  <View style={styles.linkedinIconBox}>
+                    <Text style={styles.linkedinIcon}>in</Text>
+                  </View>
+                  <View style={styles.socialLinkContent}>
+                    <Text style={styles.socialLinkLabel}>LinkedIn Profile</Text>
+                    <Text style={styles.socialLinkValue}>{linkedinUrl || 'Not provided'}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.socialLinkItem}>
+                  <View style={styles.websiteIconBox}>
+                    <Globe fill={"#fff"} color={'#00A63E'} />
+                  </View>
+                  <View style={styles.socialLinkContent}>
+                    <Text style={styles.socialLinkLabel}>Personal Website</Text>
+                    <Text style={styles.socialLinkValue}>{websiteUrl || 'Not provided'}</Text>
+                  </View>
+                </View>
+              </>
+            )}
 
             <View style={styles.socialProTipBox}>
               <Text style={styles.socialProTipLabel}><Lightbulb fill={'#FBBF24'} color={'white'} size={20} /> Pro Tip:</Text>
@@ -323,19 +916,166 @@ export default function ProfileTabScreen({ navigation }: Props) {
           <View style={styles.skillsSection}>
             <View style={styles.skillsHeader}>
               <Text style={styles.skillsTitle}>Skills</Text>
-              <TouchableOpacity style={styles.addSkillButton}>
+              <TouchableOpacity style={styles.addSkillButton} onPress={handleOpenAddSkillModal}>
                 <Text style={styles.addSkillIcon}>+</Text>
                 <Text style={styles.addSkillText}>Add Skill</Text>
               </TouchableOpacity>
             </View>
 
-            <View style={styles.emptySkillsBox}>
-              <CodeXml color={'#D1D5DC'} size={40} />
-              <Text style={styles.emptySkillsText}>
-                No skills added yet. Add your technical skills to showcase your expertise.
-              </Text>
-            </View>
+            {userSkillsList?.length > 0 ? (
+              <View style={styles.userSkillsList}>
+                {userSkillsList?.map((item: any, index: number) => {
+                  const skillName = item?.skills?.name || 'Skill';
+                  const rawLevel = item?.proficiency_level ?? item?.proficiencyLevel;
+                  const numericLevel = Number(rawLevel);
+                  const proficiencyLabel = !Number.isNaN(numericLevel) && rawLevel !== null && rawLevel !== ''
+                    ? (PROFICIENCY_LABEL_BY_LEVEL[numericLevel] || '')
+                    : (typeof rawLevel === 'string' ? rawLevel : '');
+                  const years = item?.years_of_experience ?? item?.yearsOfExperience ?? item?.years;
+                  const yearsLabel = years != null && years !== '' ? `${years} ${Number(years) === 1 ? 'year' : 'years'}` : '';
+                  return (
+                    <View key={item?.id || `${skillName}-${index}`} style={styles.userSkillCard}>
+                      <View style={styles.userSkillCardTop}>
+                        <Text style={styles.userSkillName}>{skillName}</Text>
+                        <View style={styles.userSkillActions}>
+                          <TouchableOpacity style={styles.userSkillActionButton} onPress={() => handleOpenEditSkillModal(item)}>
+                            <SquarePen color={'#9810FA'} size={18} />
+                          </TouchableOpacity>
+                          <TouchableOpacity style={styles.userSkillActionButton} onPress={() => handleDeleteSkill(item?.id)}>
+                            <Trash2 color={'#EF4444'} size={18} />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                      <View style={styles.userSkillMetaRow}>
+                        {!!proficiencyLabel && (
+                          <View style={styles.userSkillMetaItem}>
+                            <Star fill={'#9810FA'} color={'#9810FA'} size={14} />
+                            <Text style={styles.userSkillMetaText}>{proficiencyLabel}</Text>
+                          </View>
+                        )}
+                        {!!yearsLabel && (
+                          <View style={styles.userSkillMetaItem}>
+                            <Clock color={'#9810FA'} size={14} />
+                            <Text style={styles.userSkillMetaText}>{yearsLabel}</Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            ) : (
+              <View style={styles.emptySkillsBox}>
+                <CodeXml color={'#D1D5DC'} size={40} />
+                <Text style={styles.emptySkillsText}>
+                  No skills added yet. Add your technical skills to showcase your expertise.
+                </Text>
+              </View>
+            )}
           </View>
+
+          {/* Add Skill Modal */}
+          <Modal
+            visible={isAddSkillModalVisible}
+            transparent
+            animationType="fade"
+            onRequestClose={handleCloseAddSkillModal}
+          >
+            <View style={styles.modalOverlay}>
+              <TouchableOpacity style={styles.modalOverlayTouchable} activeOpacity={1} onPress={handleCloseAddSkillModal} />
+              <View style={styles.skillModalCard}>
+                <View style={styles.skillModalHeader}>
+                  <Text style={styles.skillModalTitle}>{editingSkillId ? 'Edit Skill' : 'Add New Skill'}</Text>
+                  <TouchableOpacity onPress={handleCloseAddSkillModal}>
+                    <X color={'#797979'} size={22} />
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.skillTabsRow}>
+                  <TouchableOpacity
+                    style={[styles.skillTabButton, addSkillTab === 'list' && styles.skillTabButtonActive]}
+                    onPress={() => setAddSkillTab('list')}
+                  >
+                    <Text style={[styles.skillTabButtonText, addSkillTab === 'list' && styles.skillTabButtonTextActive]}>
+                      Select from list
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.skillTabButton, addSkillTab === 'custom' && styles.skillTabButtonActive]}
+                    onPress={() => setAddSkillTab('custom')}
+                  >
+                    <Text style={[styles.skillTabButtonText, addSkillTab === 'custom' && styles.skillTabButtonTextActive]}>
+                      Add custom skill
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {addSkillTab === 'list' ? (
+                  <>
+                    <Text style={styles.skillFieldLabel}>Skill <Text style={styles.requiredAsterisk}>*</Text></Text>
+                    <View style={styles.skillPickerWrapper}>
+                      <Picker
+                        selectedValue={selectedSkillId}
+                        onValueChange={(value) => {
+                          setSelectedSkillId(value);
+                          const skill = allSkillsList.find((s: any) => s.id === value);
+                          setSelectedSkillName(skill?.name || '');
+                        }}
+                        style={styles.skillPicker}
+                      >
+                        <Picker.Item label="Select a skill" value="" />
+                        {allSkillsList.map((skill: any) => (
+                          <Picker.Item key={skill.id} label={skill.name} value={skill.id} />
+                        ))}
+                      </Picker>
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    <Text style={styles.skillFieldLabel}>Skill Name <Text style={styles.requiredAsterisk}>*</Text></Text>
+                    <TextInput
+                      style={styles.socialInput}
+                      value={customSkillName}
+                      onChangeText={setCustomSkillName}
+                      placeholder="Enter skill name"
+                      placeholderTextColor="#9CA3AF"
+                    />
+                  </>
+                )}
+
+                <Text style={styles.skillFieldLabel}>Proficiency Level <Text style={styles.requiredAsterisk}>*</Text></Text>
+                <View style={styles.skillPickerWrapper}>
+                  <Picker
+                    selectedValue={proficiencyLevel}
+                    onValueChange={(value) => setProficiencyLevel(value)}
+                    style={styles.skillPicker}
+                  >
+                    {PROFICIENCY_OPTIONS.map((level) => (
+                      <Picker.Item key={level} label={level} value={level} />
+                    ))}
+                  </Picker>
+                </View>
+
+                <Text style={styles.skillFieldLabel}>Years of Experience <Text style={styles.requiredAsterisk}>*</Text></Text>
+                <TextInput
+                  style={styles.socialInput}
+                  value={yearsOfExperience}
+                  onChangeText={setYearsOfExperience}
+                  placeholder="1"
+                  keyboardType="numeric"
+                />
+
+                <View style={styles.modalActionsRow}>
+                  <TouchableOpacity style={styles.modalCancelButton} onPress={handleCloseAddSkillModal}>
+                    <Text style={styles.modalCancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.skillAddButton} onPress={handleAddSkill}>
+                    <Text style={styles.modalSaveButtonText}>{editingSkillId ? 'Save Changes' : 'Add Skill'}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Modal>
 
           {/* Work Experience Section */}
           <View style={styles.workExperienceSection}>
@@ -346,18 +1086,186 @@ export default function ProfileTabScreen({ navigation }: Props) {
               <Text style={styles.experienceTitle}>Work Experience</Text>
             </View>
 
-            <TouchableOpacity style={styles.addExperienceButton}>
+            <TouchableOpacity style={styles.addExperienceButton} onPress={handleOpenAddExperienceModal}>
               <Text style={styles.addExperienceIcon}>+</Text>
               <Text style={styles.addExperienceText}>Add Experience</Text>
             </TouchableOpacity>
 
-            <View style={styles.emptyExperienceBox}>
-              <BriefcaseBusiness color={'#D1D5DC'} size={40} />
-              <Text style={styles.emptyExperienceText}>
-                No work experience added yet. Add your professional experience to showcase your career journey.
-              </Text>
-            </View>
+            {workExperienceList?.length > 0 ? (
+              <View style={styles.experienceTimelineList}>
+                {workExperienceList.map((item: any, index: number) => {
+                  const dateRangeLabel = `${formatMonthYear(item?.start_date)} - ${item?.is_current_job ? 'Present' : (formatMonthYear(item?.end_date) || 'Present')}`;
+                  const durationLabel = getExperienceDuration(item?.start_date, item?.end_date, item?.is_current_job);
+                  return (
+                    <View key={item?.id || index} style={styles.experienceItemRow}>
+                      <View style={styles.experienceTimelineColumn}>
+                        <View style={styles.experienceTimelineIconCircle}>
+                          <Building2 color={'#F97316'} size={20} />
+                        </View>
+                        {index !== workExperienceList.length - 1 && <View style={styles.experienceTimelineLine} />}
+                      </View>
+                      <View style={styles.experienceCard}>
+                        <View style={styles.experienceCardHeader}>
+                          <View style={styles.experienceCardTitleBox}>
+                            <Text style={styles.experienceCardTitle}>{item?.job_title}</Text>
+                            <Text style={styles.experienceCardCompany}>{item?.company_name}</Text>
+                          </View>
+                          <View style={styles.experienceCardActions}>
+                            <TouchableOpacity style={styles.userSkillActionButton} onPress={() => handleOpenEditExperienceModal(item)}>
+                              <SquarePen color={'#F97316'} size={18} />
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.userSkillActionButton} onPress={() => handleDeleteExperience(item?.id)}>
+                              <Trash2 color={'#EF4444'} size={18} />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                        <View style={styles.experienceCardMetaRow}>
+                          <Clock color={'#F97316'} size={14} />
+                          <Text style={styles.experienceCardMetaText}>{dateRangeLabel}</Text>
+                        </View>
+                        <View style={styles.experienceCardMetaRow}>
+                          <User color={'#F97316'} size={14} />
+                          <Text style={styles.experienceCardMetaText}>{formatEmploymentType(item?.employment_type)}</Text>
+                        </View>
+                        {!!item?.company_location && (
+                          <View style={styles.experienceCardMetaRow}>
+                            <MapPin color={'#F97316'} size={14} />
+                            <Text style={styles.experienceCardMetaText}>{item.company_location}</Text>
+                          </View>
+                        )}
+                        {!!durationLabel && (
+                          <View style={styles.experienceCardMetaRow}>
+                            <Hourglass color={'#F97316'} size={14} />
+                            <Text style={styles.experienceCardMetaText}>{durationLabel}</Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            ) 
+            : 
+            (
+              <View style={styles.emptyExperienceBox}>
+                <BriefcaseBusiness color={'#D1D5DC'} size={40} />
+                <Text style={styles.emptyExperienceText}>
+                  No work experience added yet. Add your professional experience to showcase your career journey.
+                </Text>
+              </View>
+            )}
           </View>
+
+          {/* Add/Edit Experience Modal */}
+          <Modal
+            visible={isExperienceModalVisible}
+            transparent
+            animationType="fade"
+            onRequestClose={handleCloseExperienceModal}
+          >
+            <View style={styles.modalOverlay}>
+              <TouchableOpacity style={styles.modalOverlayTouchable} activeOpacity={1} onPress={handleCloseExperienceModal} />
+              <ScrollView style={styles.experienceModalCard} contentContainerStyle={styles.experienceModalCardContent}>
+                <View style={styles.skillModalHeader}>
+                  <Text style={styles.skillModalTitle}>{editingExperienceId ? 'Edit Experience' : 'Add Work Experience'}</Text>
+                  <TouchableOpacity onPress={handleCloseExperienceModal}>
+                    <X color={'#797979'} size={22} />
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={styles.skillFieldLabel}>Company Name <Text style={styles.requiredAsterisk}>*</Text></Text>
+                <TextInput
+                  style={styles.socialInput}
+                  value={experienceForm.company_name}
+                  onChangeText={(text) => handleExperienceFieldChange('company_name', text)}
+                  placeholder="Enter company name"
+                  placeholderTextColor="#9CA3AF"
+                />
+
+                <Text style={styles.skillFieldLabel}>Job Title <Text style={styles.requiredAsterisk}>*</Text></Text>
+                <TextInput
+                  style={styles.socialInput}
+                  value={experienceForm.job_title}
+                  onChangeText={(text) => handleExperienceFieldChange('job_title', text)}
+                  placeholder="Enter job title"
+                  placeholderTextColor="#9CA3AF"
+                />
+
+                <Text style={styles.skillFieldLabel}>Location</Text>
+                <TextInput
+                  style={styles.socialInput}
+                  value={experienceForm.company_location}
+                  onChangeText={(text) => handleExperienceFieldChange('company_location', text)}
+                  placeholder="City, Country"
+                  placeholderTextColor="#9CA3AF"
+                />
+
+                <Text style={styles.skillFieldLabel}>Employment Type</Text>
+                <View style={styles.skillPickerWrapper}>
+                  <Picker
+                    selectedValue={experienceForm.employment_type}
+                    onValueChange={(value) => handleExperienceFieldChange('employment_type', value)}
+                    style={styles.skillPicker}
+                  >
+                    {EMPLOYMENT_TYPE_OPTIONS.map((type) => (
+                      <Picker.Item key={type} label={formatEmploymentType(type)} value={type} />
+                    ))}
+                  </Picker>
+                </View>
+
+                <TouchableOpacity
+                  style={styles.currentJobToggleRow}
+                  onPress={() => handleExperienceFieldChange('is_current_job', !experienceForm.is_current_job)}
+                >
+                  <View style={experienceForm.is_current_job ? styles.checkedBox : styles.uncheckedBox}>
+                    {experienceForm.is_current_job && <Text style={styles.checkmark}>✓</Text>}
+                  </View>
+                  <Text style={styles.skillFieldLabel}>I currently work here</Text>
+                </TouchableOpacity>
+
+                <Text style={styles.skillFieldLabel}>Start Date <Text style={styles.requiredAsterisk}>*</Text></Text>
+                <TextInput
+                  style={styles.socialInput}
+                  value={experienceForm.start_date}
+                  onChangeText={(text) => handleExperienceFieldChange('start_date', text)}
+                  placeholder="YYYY-MM-DD"
+                  placeholderTextColor="#9CA3AF"
+                />
+
+                {!experienceForm.is_current_job && (
+                  <>
+                    <Text style={styles.skillFieldLabel}>End Date</Text>
+                    <TextInput
+                      style={styles.socialInput}
+                      value={experienceForm.end_date}
+                      onChangeText={(text) => handleExperienceFieldChange('end_date', text)}
+                      placeholder="YYYY-MM-DD"
+                      placeholderTextColor="#9CA3AF"
+                    />
+                  </>
+                )}
+
+                <Text style={styles.skillFieldLabel}>Job Description</Text>
+                <TextInput
+                  style={styles.bioTextArea}
+                  value={experienceForm.job_description}
+                  onChangeText={(text) => handleExperienceFieldChange('job_description', text)}
+                  placeholder="Describe your responsibilities and achievements"
+                  placeholderTextColor="#9CA3AF"
+                  multiline
+                />
+
+                <View style={styles.modalActionsRow}>
+                  <TouchableOpacity style={styles.modalCancelButton} onPress={handleCloseExperienceModal}>
+                    <Text style={styles.modalCancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.experienceSaveButton} onPress={handleSaveExperience}>
+                    <Text style={styles.modalSaveButtonText}>{editingExperienceId ? 'Save Changes' : 'Add Experience'}</Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            </View>
+          </Modal>
 
           {/* Education Section */}
           <View style={styles.educationSection}>
@@ -366,21 +1274,211 @@ export default function ProfileTabScreen({ navigation }: Props) {
                 <GraduationCap color={'#165DFC'} size={20} />
               </View>
               <Text style={styles.educationTitle}>Education</Text>
-              <TouchableOpacity style={styles.addEducationButton}>
+              <TouchableOpacity style={styles.addEducationButton} onPress={handleOpenAddEducationModal}>
                 <Text style={styles.addEducationIcon}>+</Text>
                 <Text style={styles.addEducationText}>Add</Text>
               </TouchableOpacity>
             </View>
 
-            <View style={styles.emptyEducationBox}>
-              <GraduationCap color={'#D1D5DC'} size={40} />
-              <Text style={styles.noEducationText}>No education added yet</Text>
-              <TouchableOpacity style={styles.addFirstEducationButton}>
-                <Text style={styles.addFirstEducationIcon}>+</Text>
-                <Text style={styles.addFirstEducationText}>Add Your First Education</Text>
-              </TouchableOpacity>
-            </View>
+            {educationList?.length > 0 ? (
+              <View style={styles.educationTimelineList}>
+                {educationList.map((item: any, index: number) => {
+                  const titleLabel = item?.field_of_study
+                    ? `${item?.degree || ''} in ${item?.field_of_study}`
+                    : (item?.degree || '');
+                  const dateRangeLabel = `${formatMonthYear(item?.start_date)} - ${item?.is_current ? 'Present' : (formatMonthYear(item?.end_date) || 'Present')}`;
+                  const durationLabel = getExperienceDuration(item?.start_date, item?.end_date, item?.is_current);
+                  return (
+                    <View key={item?.id || index} style={styles.educationItemRow}>
+                      <View style={styles.educationTimelineColumn}>
+                        <View style={styles.educationTimelineDot} />
+                        {index !== educationList.length - 1 && <View style={styles.educationTimelineLine} />}
+                      </View>
+                      <View style={styles.educationCard}>
+                        <View style={styles.educationCardHeader}>
+                          <View style={styles.educationCardTitleBox}>
+                            <Text style={styles.educationCardTitle}>{titleLabel}</Text>
+                            <Text style={styles.educationCardSubtitle}>{item?.institution_name}</Text>
+                          </View>
+                          <View style={styles.educationCardActions}>
+                            <TouchableOpacity style={styles.userSkillActionButton} onPress={() => handleOpenEditEducationModal(item)}>
+                              <SquarePen color={'#165DFC'} size={18} />
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.userSkillActionButton}>
+                              <Trash2 color={'#EF4444'} size={18} />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                        <View style={styles.educationCardMetaRow}>
+                          <Clock color={'#797979'} size={14} />
+                          <Text style={styles.educationCardMetaText}>{dateRangeLabel}</Text>
+                          {!!durationLabel && (
+                            <>
+                              <Text style={styles.educationCardMetaDot}>·</Text>
+                              <Text style={styles.educationCardMetaText}>{durationLabel}</Text>
+                            </>
+                          )}
+                        </View>
+                        {!!item?.grade && (
+                          <View style={styles.educationCardMetaRow}>
+                            <Award color={'#797979'} size={14} />
+                            <Text style={styles.educationCardMetaText}>{item.grade}</Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            ) : (
+              <View style={styles.emptyEducationBox}>
+                <GraduationCap color={'#D1D5DC'} size={40} />
+                <Text style={styles.noEducationText}>No education added yet</Text>
+                <TouchableOpacity style={styles.addFirstEducationButton} onPress={handleOpenAddEducationModal}>
+                  <Text style={styles.addFirstEducationIcon}>+</Text>
+                  <Text style={styles.addFirstEducationText}>Add Your First Education</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
+
+          {/* Add/Edit Education Modal */}
+          <Modal
+            visible={isEducationModalVisible}
+            transparent
+            animationType="fade"
+            onRequestClose={handleCloseEducationModal}
+          >
+            <View style={styles.modalOverlay}>
+              <TouchableOpacity style={styles.modalOverlayTouchable} activeOpacity={1} onPress={handleCloseEducationModal} />
+              <ScrollView style={styles.experienceModalCard} contentContainerStyle={styles.experienceModalCardContent}>
+                <View style={styles.skillModalHeader}>
+                  <Text style={styles.skillModalTitle}>{editingEducationId ? 'Edit Education' : 'Add Education'}</Text>
+                  <TouchableOpacity onPress={handleCloseEducationModal}>
+                    <X color={'#797979'} size={22} />
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={styles.skillFieldLabel}>Institution Name <Text style={styles.requiredAsterisk}>*</Text></Text>
+                <TextInput
+                  style={styles.socialInput}
+                  value={educationForm.institution_name}
+                  onChangeText={(text) => handleEducationFieldChange('institution_name', text)}
+                  placeholder="e.g., Stanford University"
+                  placeholderTextColor="#9CA3AF"
+                />
+
+                <Text style={styles.skillFieldLabel}>Degree <Text style={styles.requiredAsterisk}>*</Text></Text>
+                <View style={styles.skillPickerWrapper}>
+                  <Picker
+                    selectedValue={educationForm.degree}
+                    onValueChange={(value) => handleEducationFieldChange('degree', value)}
+                    style={styles.skillPicker}
+                  >
+                    <Picker.Item label="Select a degree" value="" />
+                    {DEGREE_OPTIONS.map((degree) => (
+                      <Picker.Item key={degree} label={degree} value={degree} />
+                    ))}
+                  </Picker>
+                </View>
+
+                <Text style={styles.skillFieldLabel}>Field of Study <Text style={styles.requiredAsterisk}>*</Text></Text>
+                <TextInput
+                  style={styles.socialInput}
+                  value={educationForm.field_of_study}
+                  onChangeText={(text) => handleEducationFieldChange('field_of_study', text)}
+                  placeholder="e.g., Computer Science"
+                  placeholderTextColor="#9CA3AF"
+                />
+
+                <Text style={styles.skillFieldLabel}>Start Date <Text style={styles.requiredAsterisk}>*</Text></Text>
+                <TextInput
+                  style={styles.socialInput}
+                  value={educationForm.start_date}
+                  onChangeText={(text) => handleEducationFieldChange('start_date', text)}
+                  placeholder="YYYY-MM-DD"
+                  placeholderTextColor="#9CA3AF"
+                />
+
+                {!educationForm.is_current && (
+                  <>
+                    <Text style={styles.skillFieldLabel}>End Date</Text>
+                    <TextInput
+                      style={styles.socialInput}
+                      value={educationForm.end_date}
+                      onChangeText={(text) => handleEducationFieldChange('end_date', text)}
+                      placeholder="YYYY-MM-DD"
+                      placeholderTextColor="#9CA3AF"
+                    />
+                  </>
+                )}
+
+                <TouchableOpacity
+                  style={styles.currentJobToggleRow}
+                  onPress={() => handleEducationFieldChange('is_current', !educationForm.is_current)}
+                >
+                  <View style={educationForm.is_current ? styles.checkedBox : styles.uncheckedBox}>
+                    {educationForm.is_current && <Text style={styles.checkmark}>✓</Text>}
+                  </View>
+                  <Text style={styles.skillFieldLabel}>I am currently studying here</Text>
+                </TouchableOpacity>
+
+                <Text style={styles.skillFieldLabel}>Grade / GPA (Optional)</Text>
+                <TextInput
+                  style={styles.socialInput}
+                  value={educationForm.grade}
+                  onChangeText={(text) => handleEducationFieldChange('grade', text)}
+                  placeholder="e.g., 3.8 GPA or First Class"
+                  placeholderTextColor="#9CA3AF"
+                />
+
+                <Text style={styles.skillFieldLabel}>Description (Optional)</Text>
+                <TextInput
+                  style={styles.bioTextArea}
+                  value={educationForm.description}
+                  onChangeText={(text) => handleEducationFieldChange('description', text)}
+                  placeholder="Relevant coursework, thesis topic, or other details..."
+                  placeholderTextColor="#9CA3AF"
+                  multiline
+                />
+
+                <Text style={styles.skillFieldLabel}>Achievements & Honors (Optional)</Text>
+                <View style={styles.achievementInputRow}>
+                  <TextInput
+                    style={styles.achievementInput}
+                    value={achievementInput}
+                    onChangeText={setAchievementInput}
+                    placeholder="e.g., Dean's List, Cum Laude"
+                    placeholderTextColor="#9CA3AF"
+                  />
+                  <TouchableOpacity style={styles.achievementAddButton} onPress={handleAddAchievement}>
+                    <Text style={styles.achievementAddButtonText}>Add</Text>
+                  </TouchableOpacity>
+                </View>
+                {achievements.length > 0 && (
+                  <View style={styles.achievementChipsWrap}>
+                    {achievements.map((achievement, index) => (
+                      <View key={`${achievement}-${index}`} style={styles.achievementChip}>
+                        <Text style={styles.achievementChipText}>{achievement}</Text>
+                        <TouchableOpacity onPress={() => handleRemoveAchievement(index)}>
+                          <X color={'#797979'} size={14} />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                <View style={styles.modalActionsRow}>
+                  <TouchableOpacity style={styles.modalCancelButton} onPress={handleCloseEducationModal}>
+                    <Text style={styles.modalCancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.educationSaveButton} onPress={handleSaveEducation}>
+                    <Text style={styles.modalSaveButtonText}>{editingEducationId ? 'Save Changes' : 'Add Education'}</Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            </View>
+          </Modal>
 
           {/* Resumes Section */}
           <View style={styles.resumesSection}>
@@ -389,20 +1487,54 @@ export default function ProfileTabScreen({ navigation }: Props) {
                 <FileText color={'#165DFC'} size={20} />
               </View>
               <Text style={styles.resumesTitle}>Resumes</Text>
+              {resumesList?.length > 0 && (
+                <View style={styles.resumesCountBadge}>
+                  <Text style={styles.resumesCountBadgeText}>{resumesList.length}</Text>
+                </View>
+              )}
               <TouchableOpacity style={styles.addResumeButton}>
                 <Text style={styles.addResumeIcon}>+</Text>
                 <Text style={styles.addResumeText}>Add</Text>
               </TouchableOpacity>
             </View>
 
-            <View style={styles.emptyResumeBox}>
-              <FileText color={'#D1D5DC'} size={40} />
-              <Text style={styles.noResumeText}>No resumes uploaded yet</Text>
-              <Text style={styles.resumeDescription}>
-                Upload your resume so employers can review your profile
-              </Text>
-              <UploadVideo buttonLabel="Upload Resume" modalTitle="Upload Resume" />
-            </View>
+            {resumesList?.length > 0 ? (
+              <View style={styles.resumeCardList}>
+                {resumesList.map((item: any, index: number) => (
+                  <View key={item?.id || index} style={styles.resumeCard}>
+                    <View style={styles.resumeCardIconBox}>
+                      <FileText color={'#165DFC'} size={20} />
+                    </View>
+                    <View style={styles.resumeCardContent}>
+                      <Text style={styles.resumeCardFileName} numberOfLines={1}>{item?.file_name}</Text>
+                      <Text style={styles.resumeCardMetaText}>
+                        {formatFileSize(item?.file_size)} · Uploaded {formatRelativeTime(item?.upload_date || item?.created_at)}
+                      </Text>
+                    </View>
+                    <View style={styles.resumeCardActions}>
+                      <TouchableOpacity style={styles.userSkillActionButton}>
+                        {item?.is_primary ? <Star fill={'#F59E0B'} color={'#F59E0B'} size={18} /> : <StarOff color={'#9CA3AF'} size={18} />}
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.userSkillActionButton}>
+                        <Download color={'#165DFC'} size={18} />
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.userSkillActionButton}>
+                        <Trash2 color={'#EF4444'} size={18} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.emptyResumeBox}>
+                <FileText color={'#D1D5DC'} size={40} />
+                <Text style={styles.noResumeText}>No resumes uploaded yet</Text>
+                <Text style={styles.resumeDescription}>
+                  Upload your resume so employers can review your profile
+                </Text>
+                <UploadVideo buttonLabel="Upload Resume" modalTitle="Upload Resume" />
+              </View>
+            )}
           </View>
 
           {/* Course Progress Section */}
@@ -955,6 +2087,48 @@ const styles = StyleSheet.create({
     fontFamily: 'Geist-VariableFont_wght',
     fontWeight: '500',
   },
+  fieldInput: {
+    fontSize: 14,
+    color: '#363535',
+    fontFamily: 'Geist-VariableFont_wght',
+    fontWeight: '500',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    backgroundColor: '#F9FAFB',
+  },
+  personalEditActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+    marginTop: 8,
+  },
+  cancelButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: '#F3F4F6',
+  },
+  cancelButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#363535',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  submitButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: '#165DFC',
+  },
+  submitButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
   aboutMeSection: {
     width: '100%',
     backgroundColor: '#FFFFFF',
@@ -1242,6 +2416,230 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 18,
   },
+  userSkillsList: {
+    gap: 12,
+    marginHorizontal: 16,
+  },
+  userSkillCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#EAEBEE',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  userSkillCardTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  userSkillName: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#363535',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  userSkillActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  userSkillActionButton: {
+    padding: 2,
+  },
+  userSkillMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    marginTop: 8,
+  },
+  userSkillMetaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  userSkillMetaText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#9810FA',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  // Shared modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  modalOverlayTouchable: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  modalActionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+    marginTop: 20,
+  },
+  modalCancelButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    backgroundColor: '#FFFFFF',
+  },
+  modalCancelButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#363535',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  modalSaveButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  bioTextArea: {
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 10,
+    padding: 12,
+    minHeight: 130,
+    fontSize: 14,
+    color: '#363535',
+    fontFamily: 'Geist-VariableFont_wght',
+    textAlignVertical: 'top',
+  },
+  bioModalFooterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginTop: 8,
+  },
+  bioHintText: {
+    flex: 1,
+    fontSize: 11,
+    color: '#797979',
+    fontFamily: 'Geist-VariableFont_wght',
+    lineHeight: 15,
+  },
+  bioCounterText: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  bioSaveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#9810FA',
+  },
+  socialInput: {
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#363535',
+    fontFamily: 'Geist-VariableFont_wght',
+    marginTop: 6,
+  },
+  socialInputHint: {
+    fontSize: 11,
+    color: '#797979',
+    fontFamily: 'Geist-VariableFont_wght',
+    marginTop: 6,
+    lineHeight: 15,
+  },
+  socialSecondFieldLabel: {
+    marginTop: 16,
+  },
+  socialSaveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#00A63E',
+  },
+  // Add Skill modal
+  skillModalCard: {
+    width: '100%',
+    maxWidth: 400,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+  },
+  skillModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  skillModalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#363535',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  skillTabsRow: {
+    flexDirection: 'row',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    padding: 4,
+    marginBottom: 16,
+  },
+  skillTabButton: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  skillTabButtonActive: {
+    backgroundColor: '#9810FA',
+  },
+  skillTabButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#363535',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  skillTabButtonTextActive: {
+    color: '#FFFFFF',
+  },
+  skillFieldLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#363535',
+    fontFamily: 'Geist-VariableFont_wght',
+    marginBottom: 6,
+    marginTop: 12,
+  },
+  requiredAsterisk: {
+    color: '#EF4444',
+  },
+  skillPickerWrapper: {
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    justifyContent: 'center',
+  },
+  skillPicker: {
+    width: '100%',
+  },
+  skillAddButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#9810FA',
+  },
   workExperienceSection: {
     width: '100%',
     backgroundColor: '#FFFFFF',
@@ -1322,6 +2720,155 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 18,
   },
+  experienceTimelineList: {
+    gap: 0,
+  },
+  experienceItemRow: {
+    flexDirection: 'row',
+  },
+  experienceTimelineColumn: {
+    alignItems: 'center',
+    width: 40,
+    marginRight: 8,
+  },
+  experienceTimelineIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFECD4',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  experienceTimelineLine: {
+    flex: 1,
+    width: 2,
+    backgroundColor: '#FFECD4',
+    marginVertical: 4,
+  },
+  experienceCard: {
+    flex: 1,
+    backgroundColor: '#FFF7ED',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  experienceCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  experienceCardTitleBox: {
+    flex: 1,
+  },
+  experienceCardTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#363535',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  experienceCardCompany: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#F97316',
+    fontFamily: 'Geist-VariableFont_wght',
+    marginTop: 2,
+  },
+  experienceCardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  experienceCardMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 6,
+  },
+  experienceCardMetaText: {
+    fontSize: 12,
+    color: '#797979',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  experienceModalCard: {
+    width: '100%',
+    maxWidth: 400,
+    maxHeight: '85%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+  },
+  experienceModalCardContent: {
+    padding: 20,
+  },
+  currentJobToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 12,
+  },
+  experienceSaveButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#F97316',
+  },
+  educationSaveButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#165DFC',
+  },
+  achievementInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 6,
+  },
+  achievementInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#363535',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  achievementAddButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#165DFC',
+    backgroundColor: '#EFF6FF',
+  },
+  achievementAddButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#165DFC',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  achievementChipsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 10,
+  },
+  achievementChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#F3F4F6',
+  },
+  achievementChipText: {
+    fontSize: 12,
+    color: '#363535',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
   educationSection: {
     width: '100%',
     backgroundColor: '#FFFFFF',
@@ -1382,6 +2929,81 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#EAEBEE',
+  },
+  educationTimelineList: {
+    gap: 0,
+  },
+  educationItemRow: {
+    flexDirection: 'row',
+  },
+  educationTimelineColumn: {
+    alignItems: 'center',
+    width: 16,
+    marginRight: 12,
+    marginTop: 20,
+  },
+  educationTimelineDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#165DFC',
+  },
+  educationTimelineLine: {
+    flex: 1,
+    width: 2,
+    backgroundColor: '#DBE9FF',
+    marginVertical: 4,
+  },
+  educationCard: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  educationCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 6,
+  },
+  educationCardTitleBox: {
+    flex: 1,
+  },
+  educationCardTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#363535',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  educationCardSubtitle: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#363535',
+    fontFamily: 'Geist-VariableFont_wght',
+    marginTop: 2,
+  },
+  educationCardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  educationCardMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 6,
+  },
+  educationCardMetaText: {
+    fontSize: 12,
+    color: '#797979',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  educationCardMetaDot: {
+    fontSize: 12,
+    color: '#797979',
+    fontFamily: 'Geist-VariableFont_wght',
+    marginHorizontal: 2,
   },
   emptyEducationIcon: {
     fontSize: 32,
@@ -1450,6 +3072,64 @@ const styles = StyleSheet.create({
     color: '#363535',
     fontFamily: 'Geist-VariableFont_wght',
     flex: 1,
+  },
+  resumesCountBadge: {
+    minWidth: 22,
+    height: 22,
+    paddingHorizontal: 6,
+    borderRadius: 11,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  resumesCountBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#363535',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  resumeCardList: {
+    gap: 12,
+  },
+  resumeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#EAEBEE',
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    gap: 12,
+  },
+  resumeCardIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: '#DBE9FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  resumeCardContent: {
+    flex: 1,
+  },
+  resumeCardFileName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#363535',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  resumeCardMetaText: {
+    fontSize: 12,
+    color: '#797979',
+    fontFamily: 'Geist-VariableFont_wght',
+    marginTop: 2,
+  },
+  resumeCardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   addResumeButton: {
     flexDirection: 'row',

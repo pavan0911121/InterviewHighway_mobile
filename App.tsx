@@ -66,6 +66,7 @@ function App() {
     if (selector?.errorCode) {
       if (selector.errorCode == 401) {
         handleRefreshToken();
+        console.log('Unauthorized error, attempting to refresh token');
       }
     }
      

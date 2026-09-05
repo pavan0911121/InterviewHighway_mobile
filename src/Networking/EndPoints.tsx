@@ -48,16 +48,15 @@ export const PROFILE_ENDPOINTS = {
     `${API_BASE_URL}/rest/v1/profiles?select=*&user_id=eq.${userId}`,
 
   profileData: (userId: string) =>
-    `${API_BASE_URL}/rest/v1/profiles?select=*&user_id=eq.${userId}`,
-
-  personalDataUpdate: (userId: string) =>
-    `${RAILWAY_API_BASE_URL}/api/profiles/user/${userId}/personal`,
+    `${RAILWAY_API_BASE_URL}/api/profiles/user/${userId}`,
 
   bioUpdate: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/profiles/user/${userId}/bio`,
 
   socialLinksUpdate: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/profiles/user/${userId}/links`,
+  personalData: (userId: string) =>
+    `${RAILWAY_API_BASE_URL}/api/profiles/user/${userId}/personal`,
 };
 
 // =====================
@@ -89,8 +88,10 @@ export const COURSE_ENDPOINTS = {
 export const SKILLS_ENDPOINTS = {
   getAllSkills: `${RAILWAY_API_BASE_URL}/api/skills`,
 
-  addSkill: (userId: string) =>
+  addOrGetSkills: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/skills/user/${userId}`,
+  deleteSkill: (userId: string, skillId: string) =>
+    `${RAILWAY_API_BASE_URL}/api/skills/user/${userId}/${skillId}`,
 };
 
 // ===================
@@ -120,7 +121,7 @@ export const VIDEO_ENDPOINTS = {
 // =======================
 
 export const EXPERIENCE_ENDPOINTS = {
-  addExperience: (userId: string) =>
+  getWorkExperience: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/work-experience/user/${userId}`,
 };
 
