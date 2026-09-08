@@ -121,8 +121,10 @@ export const VIDEO_ENDPOINTS = {
 // =======================
 
 export const EXPERIENCE_ENDPOINTS = {
-  getWorkExperience: (userId: string) =>
+  getOrAddWorkExperience: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/work-experience/user/${userId}`,
+  deleteWorkExperience: (userId: string, experienceId: string) =>
+    `${RAILWAY_API_BASE_URL}/api/work-experience/user/${userId}/${experienceId}`,
 };
 
 // ======================
@@ -132,6 +134,8 @@ export const EXPERIENCE_ENDPOINTS = {
 export const EDUCATION_ENDPOINTS = {
   addEducation: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/education/user/${userId}`,
+  deleteEducation: (userId: string, educationId: string) =>
+    `${RAILWAY_API_BASE_URL}/api/education/user/${userId}/${educationId}`,
 };
 
 // ===================
@@ -143,6 +147,8 @@ export const RESUME_ENDPOINTS = {
 
   getUserResumes: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/resumes/user/${userId}`,
+  deleteResume: ( resumeId: string) =>
+    `${RAILWAY_API_BASE_URL}/api/resumes/${resumeId}`,
 };
 
 // ===================

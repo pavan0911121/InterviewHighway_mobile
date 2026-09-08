@@ -193,12 +193,44 @@ export const getWorkExperience = createAsyncThunk(
     "profile/getWorkExperience",
     async ({ userId }: { userId: string }, { rejectWithValue }) => {
         try {
-            const response = await client.get(EXPERIENCE_ENDPOINTS.getWorkExperience(userId));
+            const response = await client.get(EXPERIENCE_ENDPOINTS.getOrAddWorkExperience(userId));
             return response.data || response;
         } catch (error: any) {
             console.log('Error fetching work experience:', error);
             return rejectWithValue({
                 message: error?.message || 'Failed to fetch work experience',
+                code: error?.code || 'ERROR',
+            });
+        }
+    }
+);
+//add work experience API call
+export const addWorkExperience = createAsyncThunk(
+    "profile/addWorkExperience",
+    async ({ userId, payload }: { userId: string; payload: any }, { rejectWithValue }) => {
+        try {
+            const response = await client.post(EXPERIENCE_ENDPOINTS.getOrAddWorkExperience(userId), payload);
+            return response.data || response;
+        } catch (error: any) {
+            console.log('Error adding work experience:', error);
+            return rejectWithValue({
+                message: error?.message || 'Failed to add work experience',
+                code: error?.code || 'ERROR',
+            });
+        }
+    }
+);
+//delete work experience API call
+export const deleteWorkExperience = createAsyncThunk(
+    "profile/deleteWorkExperience",
+    async ({ userId, experienceId }: { userId: string; experienceId: string }, { rejectWithValue }) => {
+        try {
+            const response = await client.delete(EXPERIENCE_ENDPOINTS.deleteWorkExperience(userId, experienceId));
+            return response.data || response;
+        } catch (error: any) {
+            console.log('Error deleting work experience:', error);
+            return rejectWithValue({
+                message: error?.message || 'Failed to delete work experience',
                 code: error?.code || 'ERROR',
             });
         }
@@ -236,6 +268,22 @@ export const addEducation = createAsyncThunk(
         }
     }
 );
+//delete education API call
+export const deleteEducation = createAsyncThunk(
+    "profile/deleteEducation",
+    async ({ userId, educationId }: { userId: string; educationId: string }, { rejectWithValue }) => {
+        try {
+            const response = await client.delete(EDUCATION_ENDPOINTS.deleteEducation(userId, educationId));
+            return response.data || response;
+        } catch (error: any) {
+            console.log('Error deleting education:', error);
+            return rejectWithValue({
+                message: error?.message || 'Failed to delete education',
+                code: error?.code || 'ERROR',
+            });
+        }
+    }
+);
 //get Resume API call
 export const getResumes = createAsyncThunk(
     "profile/getResumes",
@@ -247,6 +295,38 @@ export const getResumes = createAsyncThunk(
             console.log('Error fetching resume:', error);
             return rejectWithValue({
                 message: error?.message || 'Failed to fetch resume',
+                code: error?.code || 'ERROR',
+            });
+        }
+    }
+);
+//upload Resume API call
+export const uploadResume = createAsyncThunk(
+    "profile/uploadResume",
+    async ({ payload }: { payload: any }, { rejectWithValue }) => {
+        try {
+            const response = await client.post(RESUME_ENDPOINTS.uploadResume, payload);
+            return response.data || response;
+        } catch (error: any) {
+            console.log('Error uploading resume:', error);
+            return rejectWithValue({
+                message: error?.message || 'Failed to upload resume',
+                code: error?.code || 'ERROR',
+            });
+        }
+    }
+);
+//delete Resume API call
+export const deleteResume = createAsyncThunk(
+    "profile/deleteResume",
+    async ({ resumeId, payload }: { resumeId: string, payload?: any }, { rejectWithValue }) => {
+        try {
+            const response = await client.delete(RESUME_ENDPOINTS.deleteResume(resumeId), payload);
+            return response.data || response;
+        } catch (error: any) {
+            console.log('Error deleting resume:', error);
+            return rejectWithValue({
+                message: error?.message || 'Failed to delete resume',
                 code: error?.code || 'ERROR',
             });
         }
@@ -438,6 +518,48 @@ const profileSlice = createSlice({
                 state.isLoading = false;
                 state.error = action.payload as string;
             });
+            //deleteWorkExperience async thunk handlers
+            builder
+            .addCase(deleteWorkExperience.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(deleteWorkExperience.fulfilled, (state, action) => {
+                state.isLoading = false;
+                state.error = null;
+            })
+            .addCase(deleteWorkExperience.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.payload as string;
+            });
+            //deleteEducation async thunk handlers
+            builder
+            .addCase(deleteEducation.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(deleteEducation.fulfilled, (state, action) => {
+                state.isLoading = false;
+                state.error = null;
+            })
+            .addCase(deleteEducation.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.payload as string;
+            });
+            //deleteResume async thunk handlers
+            // builder
+            // .addCase(deleteResume.pending, (state) => {
+            //     state.isLoading = true;
+            //     state.error = null;
+            // })
+            // .addCase(deleteResume.fulfilled, (state, action) => {
+            //     state.isLoading = false;
+            //     state.error = null;
+            // })
+            // .addCase(deleteResume.rejected, (state, action) => {
+            //     state.isLoading = false;
+            //     state.error = action.payload as string;
+            // });
     }
 });
 

@@ -5,11 +5,12 @@ import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { JobSeekerBottomTabParamList } from '../../../types/navigation';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Picker } from '@react-native-picker/picker';
-import { Award, BookText, BriefcaseBusiness, Building2, Calendar, Camera, Clock, CodeXml, Download, Eye, FileText, Globe, GraduationCap, HardDriveUpload, Hourglass, Info, Lightbulb, Link, MapPin, Save, Shield, SquarePen, Star, StarOff, Trash2, Upload, User, UserRound, UserRoundPen, Video as VideoIcon, VideoOff, X } from 'lucide-react-native';
+import { Award, BookText, BriefcaseBusiness, Building2, Calendar, Camera, CircleCheck, Clock, CodeXml, Download, Eye, FileText, Globe, GraduationCap, HardDriveUpload, Hourglass, Info, Lightbulb, Link, MapPin, Save, Shield, SquarePen, Star, StarOff, Trash2, Upload, User, UserRound, UserRoundPen, Video as VideoIcon, VideoOff, X } from 'lucide-react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import UploadVideo from '../../components/UploadVideo';
+import DocumentPicker, { types } from 'react-native-document-picker';
 import * as AsyncStore from "../../../AsyncStore";
-import { addEducation, addSkill, deleteSkill, getAllSkills, getEducation, getPersonalData, getProfileData, getResumes, getUserSkills, getVideoData, getWorkExperience, updateBio } from '../../../Redux/slices/profileSlice';
+import { addEducation, addSkill, deleteEducation, deleteSkill, deleteWorkExperience, getAllSkills, getEducation, getPersonalData, getProfileData, getResumes, getUserSkills, getVideoData, getWorkExperience, updateBio, uploadResume, addWorkExperience, deleteResume } from '../../../Redux/slices/profileSlice';
 import Video from 'react-native-video';
 
 type Props = BottomTabScreenProps<JobSeekerBottomTabParamList, 'ProfileTab'>;
@@ -144,6 +145,10 @@ export default function ProfileTabScreen({ navigation }: Props) {
   });
   const [achievements, setAchievements] = useState<string[]>([]);
   const [achievementInput, setAchievementInput] = useState('');
+  const [isResumeUploadVisible, setIsResumeUploadVisible] = useState(false);
+  const [selectedResume, setSelectedResume] = useState<any>(null);
+  const [isResumeUploading, setIsResumeUploading] = useState(false);
+  const [resumeUploadSuccessMsg, setResumeUploadSuccessMsg] = useState('');
   const dispatch = useDispatch();
 
   const selector = useSelector((state: any) => state.profile);
@@ -162,7 +167,7 @@ export default function ProfileTabScreen({ navigation }: Props) {
         // const userId = parsedUserData?.id || null;
         if (userId) {
           const resultId = userId.replace(/"/g, '');
-          if(profile === 'All') {
+          if (profile === 'All') {
             dispatch(getAllSkills() as any);
             const response = await dispatch(getProfileData(resultId) as any);
             dispatch(getVideoData(resultId) as any);
@@ -170,7 +175,7 @@ export default function ProfileTabScreen({ navigation }: Props) {
             dispatch(getWorkExperience({ userId: resultId }) as any);
             dispatch(getEducation({ userId: resultId }) as any);
             dispatch(getResumes({ userId: resultId }) as any);
-          }else if(profile === 'onlyProfile') {
+          } else if (profile === 'onlyProfile') {
             const response = await dispatch(getProfileData(resultId) as any);
           }
         }
@@ -257,9 +262,11 @@ export default function ProfileTabScreen({ navigation }: Props) {
       const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
       if (userId) {
         const resultId = userId.replace(/"/g, '');
-        const response = dispatch(updateBio({ userId: resultId, payload: { bio: bio } }) as any);
-        // console.log('Update bio response:', JSON.parse(response));
-        fetchProfileData('onlyProfile');
+        const response = await dispatch(updateBio({ userId: resultId, payload: { bio: bio } }) as any).unwrap();
+        console.log('Update bio response:', response);
+        if (response?.message === "Bio updated successfully") {
+          fetchProfileData('onlyProfile');
+        }
       }
     } catch (error) {
       console.log('Error updating bio:', error);
@@ -410,18 +417,20 @@ export default function ProfileTabScreen({ navigation }: Props) {
     if (!experienceForm.company_name.trim() || !experienceForm.job_title.trim()) {
       return;
     }
-    if (editingExperienceId) {
-      setWorkExperienceItems(prev => prev.map(item => (
-        item.id === editingExperienceId ? { ...item, ...experienceForm } : item
-      )));
-    } else {
-      setWorkExperienceItems(prev => [
-        { id: `${Date.now()}`, ...experienceForm },
-        ...prev,
-      ]);
-    }
-    setEditingExperienceId(null);
-    setIsExperienceModalVisible(false);
+    (async () => {
+      try {
+        const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
+        if (userId) {
+          const resultId = userId.replace(/"/g, '');
+          await dispatch(addWorkExperience({ userId: resultId, payload: experienceForm }) as any);
+          dispatch(getWorkExperience({ userId: resultId }) as any);
+        }
+        setIsExperienceModalVisible(false);
+      } catch (error) {
+        console.log('Error saving work experience:', error);
+      }
+    })();
+
   };
 
   const handleDeleteExperience = (experienceId: string) => {
@@ -433,8 +442,17 @@ export default function ProfileTabScreen({ navigation }: Props) {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => {
-            setWorkExperienceItems(prev => prev.filter(item => item.id !== experienceId));
+          onPress: async () => {
+            try {
+              const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
+              if (userId) {
+                const resultId = userId.replace(/"/g, '');
+                await dispatch(deleteWorkExperience({ userId: resultId, experienceId }) as any);
+                dispatch(getWorkExperience({ userId: resultId }) as any);
+              }
+            } catch (error) {
+              console.log('Error deleting work experience:', error);
+            }
           },
         },
       ]
@@ -456,6 +474,45 @@ export default function ProfileTabScreen({ navigation }: Props) {
     setAchievements([]);
     setAchievementInput('');
     setIsEducationModalVisible(true);
+  };
+
+  const handleResumeUpload = async () => {
+    if (!selectedResume || isResumeUploading) {
+      return;
+    }
+    try {
+      setIsResumeUploading(true);
+      const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
+      const resultUserId = userId ? userId.replace(/"/g, '') : '';
+
+      const formData = new FormData();
+      formData.append('resume', {
+        uri: selectedResume.uri,
+        type: selectedResume.type || 'application/pdf',
+        name: selectedResume.name || 'resume.pdf',
+      } as any);
+      if (resultUserId) {
+        formData.append('userId', resultUserId);
+      }
+
+      const response = await dispatch(uploadResume({ payload: formData }) as any);
+      if (uploadResume.fulfilled.match(response)) {
+        setSelectedResume(null);
+        setIsResumeUploadVisible(false);
+        setResumeUploadSuccessMsg(`"${selectedResume.name || 'Resume'}" uploaded successfully`);
+        if (resultUserId) {
+          dispatch(getResumes({ userId: resultUserId }) as any);
+        }
+        setTimeout(() => setResumeUploadSuccessMsg(''), 4000);
+      } else {
+        const message = (response.payload as any)?.message || 'Failed to upload resume.';
+        Alert.alert('Upload Failed', message);
+      }
+    } catch (error: any) {
+      Alert.alert('Upload Failed', error?.message || 'Unable to upload resume.');
+    } finally {
+      setIsResumeUploading(false);
+    }
   };
 
   const handleOpenEditEducationModal = (item: any) => {
@@ -512,6 +569,84 @@ export default function ProfileTabScreen({ navigation }: Props) {
     } catch (error) {
       console.log('Error adding education:', error);
     }
+  };
+  const handleDeleteEducation = async (id: string) => {
+    Alert.alert(
+      'Delete Education',
+      'Are you sure you want to delete this education?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
+              if (userId) {
+                const resultId = userId.replace(/"/g, '');
+                await dispatch(deleteEducation({ userId: resultId, educationId: id }) as any);
+                dispatch(getEducation({ userId: resultId }) as any);
+              }
+            } catch (error) {
+              console.log('Error deleting education:', error);
+            }
+          },
+        },
+      ]
+    );
+  };
+  const handlePickResumeFile = async () => {
+    try {
+      const result = await DocumentPicker.pickSingle({
+        type: [types.pdf, types.doc, types.docx],
+      });
+      if (result.size && result.size > 5 * 1024 * 1024) {
+        Alert.alert('File too large', 'Please select a file smaller than 5MB.');
+        return;
+      }
+      setSelectedResume(result);
+    } catch (err: any) {
+      if (DocumentPicker.isCancel(err)) { return; }
+      Alert.alert('Error', err?.message || 'Unable to select file.');
+    }
+  };
+  const handleDeleteResume = async (id: string) => {
+    console.log('Deleting resume with id:', id);
+    Alert.alert(
+      'Delete Resume',
+      'Are you sure you want to delete this resume?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
+              if (userId) {
+                const resultId = userId.replace(/"/g, '');
+                const payload = { userId: resultId };
+                console.log('Deleting resume with payload:', payload);
+                await dispatch(deleteResume({ resumeId: id, payload }) as any);
+                dispatch(getResumes({ userId: resultId }) as any);
+              }
+            } catch (error) {
+              console.log('Error deleting resume:', error);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleOpenResumeUpload = () => {
+    setSelectedResume(null);
+    setIsResumeUploadVisible(true);
+  };
+
+  const handleCancelResumeUpload = () => {
+    setSelectedResume(null);
+    setIsResumeUploadVisible(false);
   };
   return (
     <SafeAreaView style={styles.container}>
@@ -1144,16 +1279,16 @@ export default function ProfileTabScreen({ navigation }: Props) {
                   );
                 })}
               </View>
-            ) 
-            : 
-            (
-              <View style={styles.emptyExperienceBox}>
-                <BriefcaseBusiness color={'#D1D5DC'} size={40} />
-                <Text style={styles.emptyExperienceText}>
-                  No work experience added yet. Add your professional experience to showcase your career journey.
-                </Text>
-              </View>
-            )}
+            )
+              :
+              (
+                <View style={styles.emptyExperienceBox}>
+                  <BriefcaseBusiness color={'#D1D5DC'} size={40} />
+                  <Text style={styles.emptyExperienceText}>
+                    No work experience added yet. Add your professional experience to showcase your career journey.
+                  </Text>
+                </View>
+              )}
           </View>
 
           {/* Add/Edit Experience Modal */}
@@ -1304,7 +1439,7 @@ export default function ProfileTabScreen({ navigation }: Props) {
                             <TouchableOpacity style={styles.userSkillActionButton} onPress={() => handleOpenEditEducationModal(item)}>
                               <SquarePen color={'#165DFC'} size={18} />
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.userSkillActionButton}>
+                            <TouchableOpacity style={styles.userSkillActionButton} onPress={() => handleDeleteEducation(item?.id)}>
                               <Trash2 color={'#EF4444'} size={18} />
                             </TouchableOpacity>
                           </View>
@@ -1492,7 +1627,7 @@ export default function ProfileTabScreen({ navigation }: Props) {
                   <Text style={styles.resumesCountBadgeText}>{resumesList.length}</Text>
                 </View>
               )}
-              <TouchableOpacity style={styles.addResumeButton}>
+              <TouchableOpacity style={styles.addResumeButton} onPress={handleOpenResumeUpload}>
                 <Text style={styles.addResumeIcon}>+</Text>
                 <Text style={styles.addResumeText}>Add</Text>
               </TouchableOpacity>
@@ -1518,7 +1653,7 @@ export default function ProfileTabScreen({ navigation }: Props) {
                       <TouchableOpacity style={styles.userSkillActionButton}>
                         <Download color={'#165DFC'} size={18} />
                       </TouchableOpacity>
-                      <TouchableOpacity style={styles.userSkillActionButton}>
+                      <TouchableOpacity style={styles.userSkillActionButton} onPress={() => handleDeleteResume(item?.id)}>
                         <Trash2 color={'#EF4444'} size={18} />
                       </TouchableOpacity>
                     </View>
@@ -1532,7 +1667,62 @@ export default function ProfileTabScreen({ navigation }: Props) {
                 <Text style={styles.resumeDescription}>
                   Upload your resume so employers can review your profile
                 </Text>
-                <UploadVideo buttonLabel="Upload Resume" modalTitle="Upload Resume" />
+                <TouchableOpacity style={styles.uploadResumeButton} onPress={handleOpenResumeUpload}>
+                  <Upload color={'#165DFC'} size={14} />
+                  <Text style={styles.uploadResumeText}>Upload Resume</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {isResumeUploadVisible && (
+              <View style={[styles.uploadResumeCard, !!selectedResume && styles.uploadResumeCardDashed]}>
+                <Text style={styles.uploadResumeCardTitle}>Upload a new resume</Text>
+                {selectedResume ? (
+                  <View style={styles.selectedResumeRow}>
+                    <View style={styles.selectedResumeIconBox}>
+                      <FileText color={'#165DFC'} size={20} />
+                    </View>
+                    <View style={styles.selectedResumeInfo}>
+                      <Text style={styles.selectedResumeName} numberOfLines={1}>{selectedResume.name || 'Selected file'}</Text>
+                      <Text style={styles.selectedResumeSize}>{formatFileSize(selectedResume.size)}</Text>
+                    </View>
+                    <TouchableOpacity onPress={handlePickResumeFile}>
+                      <Text style={styles.selectedResumeChangeText}>Change</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <TouchableOpacity style={styles.uploadResumeDropZone} activeOpacity={0.7} onPress={handlePickResumeFile}>
+                    <Upload color={'#9CA3AF'} size={28} />
+                    <Text style={styles.uploadResumeDropZoneText}>Click to select a file</Text>
+                    <Text style={styles.uploadResumeDropZoneHint}>PDF, DOC or DOCX · Max 5MB</Text>
+                  </TouchableOpacity>
+                )}
+                <View style={styles.uploadResumeActionsRow}>
+                  <TouchableOpacity style={styles.uploadResumeCancelButton} onPress={handleCancelResumeUpload}>
+                    <Text style={styles.uploadResumeCancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.uploadResumeUploadButton, (!!selectedResume && !isResumeUploading) && styles.uploadResumeUploadButtonActive]}
+                    onPress={handleResumeUpload}
+                    disabled={!selectedResume || isResumeUploading}
+                  >
+                    {isResumeUploading ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <>
+                        <Upload color={'#FFFFFF'} size={16} />
+                        <Text style={styles.uploadResumeUploadButtonText}>Upload</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
+            {!!resumeUploadSuccessMsg && (
+              <View style={styles.resumeSuccessBanner}>
+                <CircleCheck color={'#16A34A'} size={18} />
+                <Text style={styles.resumeSuccessBannerText}>{resumeUploadSuccessMsg}</Text>
               </View>
             )}
           </View>
@@ -3193,6 +3383,144 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#165DFC',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  uploadResumeCard: {
+    marginTop: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#EAEBEE',
+    padding: 16,
+  },
+  uploadResumeCardTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#363535',
+    fontFamily: 'Geist-VariableFont_wght',
+    marginBottom: 12,
+  },
+  uploadResumeDropZone: {
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 10,
+    backgroundColor: '#F4F6FB',
+    alignItems: 'center',
+    paddingVertical: 28,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  uploadResumeDropZoneText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#363535',
+    fontFamily: 'Geist-VariableFont_wght',
+    marginTop: 10,
+  },
+  uploadResumeDropZoneHint: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    fontFamily: 'Geist-VariableFont_wght',
+    marginTop: 4,
+  },
+  uploadResumeActionsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  uploadResumeCancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  uploadResumeCancelButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#363535',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  uploadResumeUploadButton: {
+    flex: 1,
+    flexDirection: 'row',
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#93A5F8',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  uploadResumeUploadButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  uploadResumeUploadButtonActive: {
+    backgroundColor: '#165DFC',
+  },
+  uploadResumeCardDashed: {
+    borderStyle: 'dashed',
+    borderColor: '#C7D2FE',
+  },
+  selectedResumeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    marginBottom: 16,
+    gap: 12,
+  },
+  selectedResumeIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: '#DBE9FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  selectedResumeInfo: {
+    flex: 1,
+  },
+  selectedResumeName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#363535',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  selectedResumeSize: {
+    fontSize: 12,
+    color: '#797979',
+    fontFamily: 'Geist-VariableFont_wght',
+    marginTop: 2,
+  },
+  selectedResumeChangeText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#165DFC',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  resumeSuccessBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#DCFCE7',
+    borderWidth: 1,
+    borderColor: '#86EFAC',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginTop: 12,
+  },
+  resumeSuccessBannerText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#16A34A',
     fontFamily: 'Geist-VariableFont_wght',
   },
   courseProgressSection: {

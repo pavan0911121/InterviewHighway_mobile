@@ -102,7 +102,7 @@ export const client = async (
     headers,
   };
 
-  if (body && (methodType === 'POST' || methodType === 'PUT')) {
+  if (body && (methodType === 'POST' || methodType === 'PUT' || methodType === 'DELETE')) {
     config.body = isFormData ? body : JSON.stringify(body);
   }
 
