@@ -57,6 +57,10 @@ export const PROFILE_ENDPOINTS = {
     `${RAILWAY_API_BASE_URL}/api/profiles/user/${userId}/links`,
   personalData: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/profiles/user/${userId}/personal`,
+  profilePhoto: (userId: string) =>
+    `${RAILWAY_API_BASE_URL}/api/profiles/user/${userId}/photo`,
+  ProfilePhotoVerification: (userId: string) =>
+    `${API_BASE_URL}/rest/v1/users?select=verification_status%2Cverification_notes%2Cverification_requested_at%2Cverification_completed_at%2Cverification_completed_by%2Cprofile_last_modified&id=eq.${userId}`
 };
 
 // =====================

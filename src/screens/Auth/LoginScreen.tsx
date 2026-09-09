@@ -394,14 +394,14 @@ const LoginScreen: React.FC = () => {
           <View style={styles.footerContainer}>
             {/* Agreement Text */}
             <Text style={styles.agreementText}>
-              By signing in, you agree to our{' '}
-              <TouchableOpacity onPress={() =>  Linking.openURL('https://interviewhighway.com/terms')}>
+              By signing in, you agree to our terms of service and privacy policy
+              {/* <TouchableOpacity onPress={() =>  Linking.openURL('https://interviewhighway.com/terms')}>
                 <Text style={styles.footerLink}>Terms of Service</Text>
               </TouchableOpacity>
               {' '}and{' '}
               <TouchableOpacity onPress={() =>  Linking.openURL('https://interviewhighway.com/privacy')}>
                 <Text style={styles.footerLink}>Privacy Policy</Text>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </Text>
 
             {/* Footer Links Grid */}
@@ -647,8 +647,9 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   footerLink: {
+    fontSize: 12,
     color: '#1853E9',
-    fontWeight: '600',
+    fontFamily: 'Geist-VariableFont_wght',
   },
   footerLinksGrid: {
     flexDirection: 'row',
@@ -665,7 +666,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: 'Geist-VariableFont_wght',
     fontWeight: '400',
-    color: '#999',
+   color: '#1853E9',
     textDecorationLine: 'none',
   },
   copyrightText: {

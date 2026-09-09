@@ -8,6 +8,8 @@
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
 	<string>interviewHighway</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+    <string>InterviewHighway needs access to your photo library so you can select and upload images.</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>

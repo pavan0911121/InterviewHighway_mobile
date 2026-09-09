@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, TextInput, Modal, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, TextInput, Modal, Alert, Image } from 'react-native';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { JobSeekerBottomTabParamList } from '../../../types/navigation';
@@ -9,9 +9,11 @@ import { Award, BookText, BriefcaseBusiness, Building2, Calendar, Camera, Circle
 import { useDispatch, useSelector } from 'react-redux';
 import UploadVideo from '../../components/UploadVideo';
 import DocumentPicker, { types } from 'react-native-document-picker';
+import { launchImageLibrary } from 'react-native-image-picker';
 import * as AsyncStore from "../../../AsyncStore";
-import { addEducation, addSkill, deleteEducation, deleteSkill, deleteWorkExperience, getAllSkills, getEducation, getPersonalData, getProfileData, getResumes, getUserSkills, getVideoData, getWorkExperience, updateBio, uploadResume, addWorkExperience, deleteResume } from '../../../Redux/slices/profileSlice';
+import { addEducation, addSkill, deleteEducation, deleteSkill, deleteWorkExperience, getAllSkills, getEducation, getPersonalData, getProfileData, getResumes, getUserSkills, getVideoData, getWorkExperience, updateBio, uploadResume, addWorkExperience, deleteResume, addUpdateProfilePhoto, deleteProfilePhoto } from '../../../Redux/slices/profileSlice';
 import Video from 'react-native-video';
+
 
 type Props = BottomTabScreenProps<JobSeekerBottomTabParamList, 'ProfileTab'>;
 
@@ -199,6 +201,71 @@ export default function ProfileTabScreen({ navigation }: Props) {
   // useEffect(() => {
   //   setWorkExperienceItems(workExperienceList);
   // }, [workExperienceList]);
+
+  const handleProfilePhotoUpload = async (image: any) => {
+    try {
+      const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
+      if (userId) {
+        const resultId = userId.replace(/"/g, '');
+        const formData = new FormData();
+        formData.append('photo', {
+          uri: image.uri,
+          type: image.type || 'image/jpeg',
+          name: image.name || 'profile.jpg',
+        } as any);
+        await dispatch(addUpdateProfilePhoto({ userId: resultId, payload: formData }) as any);
+        fetchProfileData('onlyProfile');
+      }
+    } catch (error) {
+      console.log('Error updating profile photo:', error);
+    }
+  };
+
+  const handlePickProfilePhoto = async () => {
+    try {
+      const response = await launchImageLibrary({ mediaType: 'photo', selectionLimit: 1 });
+      if (response.didCancel) { return; }
+      if (response.errorCode) {
+        Alert.alert('Error', response.errorMessage || 'Unable to select image.');
+        return;
+      }
+      const asset = response.assets?.[0];
+      if (!asset?.uri) { return; }
+      await handleProfilePhotoUpload({
+        uri: asset.uri,
+        type: asset.type,
+        name: asset.fileName,
+      });
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'Unable to select image.');
+    }
+  };
+
+  const handleDeleteProfilePhoto = () => {
+    Alert.alert(
+      'Remove Photo',
+      'Are you sure you want to remove your profile photo?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
+              if (userId) {
+                const resultId = userId.replace(/"/g, '');
+                await dispatch(deleteProfilePhoto({ userId: resultId }) as any);
+                fetchProfileData('onlyProfile');
+              }
+            } catch (error) {
+              console.log('Error deleting profile photo:', error);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const handleVideoTitleChange = (title: string) => {
     setVideoTitle(title);
@@ -605,6 +672,8 @@ export default function ProfileTabScreen({ navigation }: Props) {
         return;
       }
       setSelectedResume(result);
+      // Show the upload card (with selected file + actions) once a file is picked
+      setIsResumeUploadVisible(true);
     } catch (err: any) {
       if (DocumentPicker.isCancel(err)) { return; }
       Alert.alert('Error', err?.message || 'Unable to select file.');
@@ -639,15 +708,16 @@ export default function ProfileTabScreen({ navigation }: Props) {
     );
   };
 
-  const handleOpenResumeUpload = () => {
+  const handleOpenResumeUpload = async () => {
     setSelectedResume(null);
-    setIsResumeUploadVisible(true);
+    await handlePickResumeFile();
   };
 
   const handleCancelResumeUpload = () => {
     setSelectedResume(null);
     setIsResumeUploadVisible(false);
   };
+  console.log('Rendering ProfileTabScreen', selector?.data);
   return (
     <SafeAreaView style={styles.container}>
       {/* Sticky Header */}
@@ -662,17 +732,26 @@ export default function ProfileTabScreen({ navigation }: Props) {
         <TouchableOpacity style={styles.filterButton}>
         </TouchableOpacity>
       </View>
-      {isLoading ? (
+      {/* {isLoading ? (
         <View style={styles.loaderContainer}>
           <ActivityIndicator size="large" color="#165DFC" />
         </View>
-      ) : (
+      ) : ( */}
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
           {/* Profile Avatar Section */}
           <View style={styles.avatarSection}>
             <View style={styles.avatarContainer}>
-              <Text style={styles.avatarText}>P</Text>
-              <TouchableOpacity style={styles.cameraIcon}>
+              {userData?.profile_picture_url ? (
+                <>
+                  <Image source={{ uri: userData.profile_picture_url }} style={styles.avatarImage} />
+                  <TouchableOpacity style={styles.removePhotoIcon} onPress={handleDeleteProfilePhoto}>
+                    <X size={14} color="#ffff" />
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <Text style={styles.avatarText}>{userData?.name?.charAt(0)?.toUpperCase() || 'U'}</Text>
+              )}
+              <TouchableOpacity style={styles.cameraIcon} onPress={handlePickProfilePhoto}>
                 <Camera size={12} color="#ffff" />
               </TouchableOpacity>
             </View>
@@ -1512,7 +1591,7 @@ export default function ProfileTabScreen({ navigation }: Props) {
                   >
                     <Picker.Item label="Select a degree" value="" />
                     {DEGREE_OPTIONS.map((degree) => (
-                      <Picker.Item key={degree} label={degree} value={degree} />
+                      <Picker.Item key={degree} label={degree} value={degree}  style={{ color: 'blue' }}/>
                     ))}
                   </Picker>
                 </View>
@@ -1667,36 +1746,28 @@ export default function ProfileTabScreen({ navigation }: Props) {
                 <Text style={styles.resumeDescription}>
                   Upload your resume so employers can review your profile
                 </Text>
-                <TouchableOpacity style={styles.uploadResumeButton} onPress={handleOpenResumeUpload}>
+                <TouchableOpacity style={styles.uploadResumeButton} onPress={handlePickResumeFile}>
                   <Upload color={'#165DFC'} size={14} />
                   <Text style={styles.uploadResumeText}>Upload Resume</Text>
                 </TouchableOpacity>
               </View>
             )}
 
-            {isResumeUploadVisible && (
-              <View style={[styles.uploadResumeCard, !!selectedResume && styles.uploadResumeCardDashed]}>
+            {isResumeUploadVisible && selectedResume && (
+              <View style={[styles.uploadResumeCard, styles.uploadResumeCardDashed]}>
                 <Text style={styles.uploadResumeCardTitle}>Upload a new resume</Text>
-                {selectedResume ? (
-                  <View style={styles.selectedResumeRow}>
-                    <View style={styles.selectedResumeIconBox}>
-                      <FileText color={'#165DFC'} size={20} />
-                    </View>
-                    <View style={styles.selectedResumeInfo}>
-                      <Text style={styles.selectedResumeName} numberOfLines={1}>{selectedResume.name || 'Selected file'}</Text>
-                      <Text style={styles.selectedResumeSize}>{formatFileSize(selectedResume.size)}</Text>
-                    </View>
-                    <TouchableOpacity onPress={handlePickResumeFile}>
-                      <Text style={styles.selectedResumeChangeText}>Change</Text>
-                    </TouchableOpacity>
+                <View style={styles.selectedResumeRow}>
+                  <View style={styles.selectedResumeIconBox}>
+                    <FileText color={'#165DFC'} size={20} />
                   </View>
-                ) : (
-                  <TouchableOpacity style={styles.uploadResumeDropZone} activeOpacity={0.7} onPress={handlePickResumeFile}>
-                    <Upload color={'#9CA3AF'} size={28} />
-                    <Text style={styles.uploadResumeDropZoneText}>Click to select a file</Text>
-                    <Text style={styles.uploadResumeDropZoneHint}>PDF, DOC or DOCX · Max 5MB</Text>
+                  <View style={styles.selectedResumeInfo}>
+                    <Text style={styles.selectedResumeName} numberOfLines={1}>{selectedResume.name || 'Selected file'}</Text>
+                    <Text style={styles.selectedResumeSize}>{formatFileSize(selectedResume.size)}</Text>
+                  </View>
+                  <TouchableOpacity onPress={handlePickResumeFile}>
+                    <Text style={styles.selectedResumeChangeText}>Change</Text>
                   </TouchableOpacity>
-                )}
+                </View>
                 <View style={styles.uploadResumeActionsRow}>
                   <TouchableOpacity style={styles.uploadResumeCancelButton} onPress={handleCancelResumeUpload}>
                     <Text style={styles.uploadResumeCancelButtonText}>Cancel</Text>
@@ -1845,7 +1916,8 @@ export default function ProfileTabScreen({ navigation }: Props) {
             </View>
           </View>
 
-        </ScrollView>)}
+        </ScrollView>
+      {/* // )} */}
     </SafeAreaView>
   );
 }
@@ -1923,6 +1995,24 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFFFFF',
     fontFamily: 'Geist-VariableFont_wght',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 28,
+  },
+  removePhotoIcon: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#EF4444',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   cameraIcon: {
     position: 'absolute',
@@ -2820,6 +2910,8 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
     borderRadius: 8,
     justifyContent: 'center',
+    // backgroundColor: 'red', // Ensure the picker wrapper has a background color to appear above other elements
+
   },
   skillPicker: {
     width: '100%',

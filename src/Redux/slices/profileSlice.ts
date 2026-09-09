@@ -19,6 +19,7 @@ interface profileState {
     workExperience: any[];
     resumes: any[];
     educationData: any[];
+    profileUploadData: object | null;
 }
 
 const initialState: profileState = {
@@ -37,6 +38,7 @@ const initialState: profileState = {
     workExperience: [],
     resumes: [],
     educationData: [],
+    profileUploadData: null,
 };
 type Config = {
   headers?: string;
@@ -52,6 +54,22 @@ export const getProfileData = createAsyncThunk(
             console.log('Error fetching profile data:', error);
             return rejectWithValue({
                 message: error?.message || 'Failed to fetch profile data',
+                code: error?.code || 'ERROR',
+            });
+        }
+    }
+);
+//Profile Photo API call
+export const addUpdateProfilePhoto = createAsyncThunk(
+    "profile/updateProfilePhoto",
+    async ({ userId, payload }: { userId: string; payload: any }, { rejectWithValue }) => {
+        try {
+            const response = await client.post(PROFILE_ENDPOINTS.profilePhoto(userId), payload);
+            return response.data || response;
+        } catch (error: any) {
+            console.log('Error updating profile photo:', error);
+            return rejectWithValue({
+                message: error?.message || 'Failed to update profile photo',
                 code: error?.code || 'ERROR',
             });
         }
@@ -316,6 +334,22 @@ export const uploadResume = createAsyncThunk(
         }
     }
 );
+//delete Profile Photo API call
+export const deleteProfilePhoto = createAsyncThunk(
+    "profile/deleteProfilePhoto",
+    async ({ userId }: { userId: string }, { rejectWithValue }) => {
+        try {
+            const response = await client.delete(PROFILE_ENDPOINTS.profilePhoto(userId));
+            return response.data || response;
+        } catch (error: any) {
+            console.log('Error deleting profile photo:', error);
+            return rejectWithValue({
+                message: error?.message || 'Failed to delete profile photo',
+                code: error?.code || 'ERROR',
+            });
+        }
+    }
+);
 //delete Resume API call
 export const deleteResume = createAsyncThunk(
     "profile/deleteResume",
@@ -365,6 +399,34 @@ const profileSlice = createSlice({
                 state.error = null;
             })
             .addCase(getProfileData.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.payload as string;
+            })
+            //Add or Update Profile Photo async thunk handlers
+            .addCase(addUpdateProfilePhoto.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(addUpdateProfilePhoto.fulfilled, (state, action) => {
+                state.isLoading = false;
+                state.profileUploadData = action.payload; // Assuming the API returns the updated profile photo data
+                state.error = null;
+            })
+            .addCase(addUpdateProfilePhoto.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.payload as string;
+            })
+            //Delete Profile Photo async thunk handlers
+            .addCase(deleteProfilePhoto.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(deleteProfilePhoto.fulfilled, (state, action) => {
+                state.isLoading = false;
+                state.profileUploadData = null;
+                state.error = null;
+            })
+            .addCase(deleteProfilePhoto.rejected, (state, action) => {
                 state.isLoading = false;
                 state.error = action.payload as string;
             })
