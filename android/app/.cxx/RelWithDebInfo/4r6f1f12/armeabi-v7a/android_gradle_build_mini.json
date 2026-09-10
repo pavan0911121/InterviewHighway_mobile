@@ -7,6 +7,7 @@
     "/Users/pavankarthik/InterviewHighway_mobile/node_modules/@react-native-picker/picker/android/src/main/jni/CMakeLists.txt",
     "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-document-picker/android/build/generated/source/codegen/jni/CMakeLists.txt",
     "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-gesture-handler/android/build/generated/source/codegen/jni/CMakeLists.txt",
+    "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-image-picker/android/build/generated/source/codegen/jni/CMakeLists.txt",
     "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-razorpay/android/build/generated/source/codegen/jni/CMakeLists.txt",
     "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni/CMakeLists.txt",
     "/Users/pavankarthik/InterviewHighway_mobile/node_modules/react-native-safe-area-context/android/src/main/jni/CMakeLists.txt",
@@ -118,6 +119,11 @@
     },
     "react_codegen_rnreanimated::@8afabad14bfffa3f8b9a": {
       "artifactName": "react_codegen_rnreanimated",
+      "abi": "armeabi-v7a",
+      "runtimeFiles": []
+    },
+    "react_codegen_RNImagePickerSpec::@f66ee9a2efecfb28bee4": {
+      "artifactName": "react_codegen_RNImagePickerSpec",
       "abi": "armeabi-v7a",
       "runtimeFiles": []
     },
