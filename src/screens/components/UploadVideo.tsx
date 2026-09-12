@@ -44,6 +44,22 @@ export default function UploadVideo({
   const dispatch = useDispatch();
 
 
+  const clearVideoForm = () => {
+    setVideoTitle('');
+    setSelectedFileName('');
+    setSelectedFile(null);
+  };
+
+  const handleOpenModal = () => {
+    clearVideoForm();
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    clearVideoForm();
+    setShowModal(false);
+  };
+
   const handlePickerResponse = (response: any) => {
     if (response.didCancel) {
       return;
@@ -110,6 +126,7 @@ export default function UploadVideo({
       const response = await dispatch(uploadVideo(formData) as any);
       if (uploadVideo.fulfilled.match(response)) {
         Alert.alert('Success', 'Video uploaded successfully.');
+        clearVideoForm();
         setShowModal(false);
         onUploadSuccess(response.payload);
       } else {
@@ -144,7 +161,7 @@ export default function UploadVideo({
   };
   return (
     <>
-      <TouchableOpacity style={styles.uploadVideoButton} onPress={() => setShowModal(true)}>
+      <TouchableOpacity style={styles.uploadVideoButton} onPress={handleOpenModal}>
         {hasVideo ? (<RotateCw size={18}  color={'#165DFC'} />) : (<HardDriveUpload size={24} fill={'#165DFC'} color={'#165DFC'} />)}
         <Text style={styles.uploadVideoText}>{buttonLabel}</Text>
       </TouchableOpacity>
@@ -153,18 +170,18 @@ export default function UploadVideo({
         visible={showModal}
         transparent
         animationType="fade"
-        onRequestClose={() => setShowModal(false)}
+        onRequestClose={handleCloseModal}
       >
         <View style={styles.introVideoOverlay}>
           <TouchableOpacity
             style={styles.introVideoBackdrop}
             activeOpacity={1}
-            onPress={() => setShowModal(false)}
+            onPress={handleCloseModal}
           />
           <View style={styles.introVideoContainer}>
             <View style={styles.introVideoHeader}>
               <Text style={styles.introVideoTitle}>{modalTitle}</Text>
-              <TouchableOpacity onPress={() => setShowModal(false)}>
+              <TouchableOpacity onPress={handleCloseModal}>
                 <Text style={styles.introVideoClose}>✕</Text>
               </TouchableOpacity>
             </View>
@@ -192,8 +209,9 @@ export default function UploadVideo({
               }}
               placeholder="Enter a title for your video"
               placeholderTextColor="#9CA3AF"
+              maxLength={100}
             />
-            <Text style={styles.introVideoValidation}>0/100 characters</Text>
+            <Text style={styles.introVideoValidation}>{videoTitle.length}/100 characters</Text>
             <View style={styles.introVideoGuidelines}>
               <Text style={styles.introVideoGuidelinesTitle}><Lightbulb size={16} fill="#10388B" />Video Guidelines</Text>
               <Text style={styles.introVideoGuidelineText}>• Keep it professional and concise</Text>

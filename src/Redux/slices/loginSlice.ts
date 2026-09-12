@@ -109,7 +109,7 @@ export const getUserRole = createAsyncThunk(
     try {
       const response = await client.get(USER_ENDPOINTS.role(userId));
       return response.data || response;
-      
+
     } catch (error: any) {
       console.log('User role response:', error);
       console.error('Error fetching user role data:', error);
@@ -258,6 +258,12 @@ const loginSlice = createSlice({
           AsyncStore.storeData(AsyncStore.Keys.USER_TOKEN, token);
           AsyncStore.storeData(AsyncStore.Keys.IS_LOGIN, "true");
         }
+        const refreshToken = dataObj?.refresh_token;
+        if (refreshToken) {
+          state.refreshToken = refreshToken;
+          console.log('dataObj?.refresh_token:', refreshToken);
+          AsyncStore.storeData(AsyncStore.Keys.REFRESH_TOKEN, refreshToken);
+        }
 
         // Extract user data - check multiple possible field names
         const user = dataObj?.user || dataObj?.data?.user;
@@ -341,7 +347,7 @@ const loginSlice = createSlice({
       })
       .addCase(getUserRole.rejected, (state, action) => {
         state.isLoading = false;
-        state.errorUserData = (action.payload as any)?.message 
+        state.errorUserData = (action.payload as any)?.message
         state.error = (action.payload as any)?.message || 'Failed to fetch user role data';
         state.errorCode = (action.payload as any)?.message?.status
       });
@@ -388,6 +394,7 @@ const loginSlice = createSlice({
         if (newToken) {
           state.token = newToken;
           AsyncStore.storeData(AsyncStore.Keys.USER_TOKEN, newToken);
+          console.log('Refresh token value from loginSlice:', action?.payload?.refresh_token);
           AsyncStore.storeData(AsyncStore.Keys.REFRESH_TOKEN, action?.payload?.refresh_token);
         }
       })

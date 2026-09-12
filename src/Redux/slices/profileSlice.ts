@@ -110,6 +110,23 @@ export const getVideoData = createAsyncThunk(
     }
 );
 
+//delete video API call
+export const deleteVideo = createAsyncThunk(
+    "profile/deleteVideo",
+    async (userId: string, { rejectWithValue }) => {
+        try {
+            const response = await client.delete(VIDEO_ENDPOINTS.deleteVideo(userId));
+            return response.data || response;
+        } catch (error: any) {
+            console.log('Error deleting video:', error);
+            return rejectWithValue({
+                message: error?.message || 'Failed to delete video',
+                code: error?.code || 'ERROR',
+            });
+        }
+    }
+);
+
 //personal data API call
 export const getPersonalData = createAsyncThunk(
     "profile/getPersonalData",
@@ -142,6 +159,23 @@ export const updateBio = createAsyncThunk(
         }
     }
 );
+//update social links API call
+export const updateSocialLinks = createAsyncThunk(
+    "profile/updateSocialLinks",
+    async ({ userId, payload }: { userId: string; payload: any }, { rejectWithValue }) => {
+        try {
+            const response = await client.put(PROFILE_ENDPOINTS.socialLinks(userId), payload);
+            return response.data || response;
+        } catch (error: any) {
+            console.log('Error updating social links:', error);
+            return rejectWithValue({
+                message: error?.message || 'Failed to update social links',
+                code: error?.code || 'ERROR',
+            });
+        }
+    }
+);
+
 //get All Skills API call
 export const getAllSkills = createAsyncThunk(
     "profile/getAllSkills",
@@ -459,6 +493,10 @@ const profileSlice = createSlice({
                 state.isLoading = false;
                 state.error = action.payload as string;
                 state.videoData = null;
+            })
+            // deleteVideo async thunk handlers
+            .addCase(deleteVideo.fulfilled, (state) => {
+                state.videoData = null;
             });
             // getPersonalData async thunk handlers
             builder
@@ -487,6 +525,21 @@ const profileSlice = createSlice({
                 state.error = null;
             })
             .addCase(updateBio.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.payload as string;
+            });
+            //update socialLinks async thunk handlers         
+            builder
+            .addCase(updateSocialLinks.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(updateSocialLinks.fulfilled, (state, action) => {
+                state.isLoading = false;
+                // state.socialLinks = action.payload; // Assuming the API returns updated social links data
+                state.error = null;
+            })
+            .addCase(updateSocialLinks.rejected, (state, action) => {
                 state.isLoading = false;
                 state.error = action.payload as string;
             });
@@ -608,20 +661,20 @@ const profileSlice = createSlice({
                 state.isLoading = false;
                 state.error = action.payload as string;
             });
-            //deleteResume async thunk handlers
-            // builder
-            // .addCase(deleteResume.pending, (state) => {
-            //     state.isLoading = true;
-            //     state.error = null;
-            // })
-            // .addCase(deleteResume.fulfilled, (state, action) => {
-            //     state.isLoading = false;
-            //     state.error = null;
-            // })
-            // .addCase(deleteResume.rejected, (state, action) => {
-            //     state.isLoading = false;
-            //     state.error = action.payload as string;
-            // });
+            // deleteResume async thunk handlers
+            builder
+            .addCase(deleteResume.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(deleteResume.fulfilled, (state, action) => {
+                state.isLoading = false;
+                state.error = null;
+            })
+            .addCase(deleteResume.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.payload as string;
+            });
     }
 });
 

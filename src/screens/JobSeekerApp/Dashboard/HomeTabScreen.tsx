@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { getRecommendedJobs } from '../../../Redux/slices/homeSlice';
 import { Funnel, Search } from 'lucide-react-native/icons';
-import FilterModal from './FilterModal';
+import FilterModal, { Filters, INITIAL_FILTERS } from './FilterModal';
 import * as AsyncStore from "../../../AsyncStore";
 
 
@@ -16,6 +16,8 @@ type Props = BottomTabScreenProps<JobSeekerBottomTabParamList, 'HomeTab'>;
 export default function HomeTabScreen({ navigation }: Props) {
   const [activeTab, setActiveTab] = useState('recommended');
   const [showFilterModal, setShowFilterModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [appliedFilters, setAppliedFilters] = useState<Filters>(INITIAL_FILTERS);
   const selector = useSelector((state: any) => state.home);
   const dispatch = useDispatch();
 
@@ -35,13 +37,77 @@ export default function HomeTabScreen({ navigation }: Props) {
     }
   };
 
-  const jobs = selector?.recommendedJobs?.jobs
+  const jobs = selector?.recommendedJobs?.jobs;
+
+  const filteredJobs = useMemo(() => {
+    if (!Array.isArray(jobs)) return [];
+
+    const activeLocations = Object.keys(appliedFilters.location || {}).filter(
+      (loc) => appliedFilters.location[loc]
+    );
+    const activeExperiences = Object.keys(appliedFilters.experience || {}).filter(
+      (exp) => appliedFilters.experience[exp]
+    );
+    const activeJobTypes = Object.keys(appliedFilters.jobType || {}).filter(
+      (type) => appliedFilters.jobType[type]
+    );
+    const minSalary = appliedFilters.salary || 0;
+
+    const query = searchQuery.trim().toLowerCase();
+
+    return jobs.filter((job: any) => {
+      // 0. Search query filter (title, company name, location)
+      if (query.length > 0) {
+        const titleMatch = job?.title?.toLowerCase().includes(query);
+        const companyMatch = job?.companies?.name?.toLowerCase().includes(query) || job?.company?.toLowerCase().includes(query);
+        const locationMatch = job?.location?.toLowerCase().includes(query);
+        if (!titleMatch && !companyMatch && !locationMatch) {
+          return false;
+        }
+      }
+
+      // 1. Location filter
+      if (activeLocations.length > 0) {
+        const jobLoc = job?.location?.trim();
+        if (!jobLoc || !appliedFilters.location[jobLoc]) {
+          return false;
+        }
+      }
+
+      // 2. Experience level filter (experience_level)
+      if (activeExperiences.length > 0) {
+        const jobExp = job?.experience_level?.trim();
+        if (!jobExp || !appliedFilters.experience[jobExp]) {
+          return false;
+        }
+      }
+
+      // 3. Job Type filter (employment_type)
+      if (activeJobTypes.length > 0) {
+        const jobType = job?.employment_type?.trim();
+        if (!jobType || !appliedFilters.jobType[jobType]) {
+          return false;
+        }
+      }
+
+      // 4. Minimum salary filter (salary_min)
+      if (minSalary > 0) {
+        const jobSalary = job?.salary_min ?? job?.salary_max;
+        if (jobSalary == null || jobSalary < minSalary) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [jobs, appliedFilters, searchQuery]);
+
   function underscoreToSpace(str: any) {
-    return str.replace(/_/g, " ");
+    return str ? str.replace(/_/g, " ") : "";
   }
 
-  const handleApplyFilters = (filters: any) => {
-    // You can dispatch an action here to filter jobs based on the selected filters
+  const handleApplyFilters = (filters: Filters) => {
+    setAppliedFilters(filters);
   };
   return (
     <SafeAreaView style={styles.container}>
@@ -59,6 +125,8 @@ export default function HomeTabScreen({ navigation }: Props) {
             style={styles.searchInput}
             placeholder="Search for 'job title'"
             placeholderTextColor="#797979"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
           />
         </View>
         <TouchableOpacity
@@ -85,7 +153,7 @@ export default function HomeTabScreen({ navigation }: Props) {
               Recommended
             </Text>
             <View style={styles.badge}>
-              <Text style={styles.badgeText}>{recommendedCount}</Text>
+              <Text style={styles.badgeText}>{filteredJobs?.length}</Text>
             </View>
           </View>
           {activeTab === 'recommended' && <View style={styles.tabIndicator} />}
@@ -135,20 +203,26 @@ export default function HomeTabScreen({ navigation }: Props) {
       {/* Job Listings */}
       {activeTab === 'recommended' ? (
         <ScrollView style={styles.jobsContainer} showsVerticalScrollIndicator={false}>
-          {jobs?.map((job: any) => (
-            <TouchableOpacity key={job?.id} style={styles.jobCard}>
-              <View style={styles.jobCompanyLogo}>
-                <Text style={styles.companyInitials}>{job?.company}</Text>
-              </View>
-              <View style={styles.jobDetails}>
-                <Text style={styles.jobTitle}>{job?.title}</Text>
-                <Text style={styles.jobCompany}>{job?.companies?.name}</Text>
-                <Text style={styles.jobMeta}>
-                  {job?.location} • {underscoreToSpace(job?.employment_type)}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          ))}
+          {filteredJobs?.length > 0 ? (
+            filteredJobs?.map((job: any, index: number) => (
+              <TouchableOpacity key={`${job?.id}-${index}`} style={styles.jobCard}>
+                <View style={styles.jobCompanyLogo}>
+                  <Text style={styles.companyInitials}>{job?.company}</Text>
+                </View>
+                <View style={styles.jobDetails}>
+                  <Text style={styles.jobTitle}>{job?.title}</Text>
+                  <Text style={styles.jobCompany}>{job?.companies?.name}</Text>
+                  <Text style={styles.jobMeta}>
+                    {job?.location} • {underscoreToSpace(job?.employment_type)}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))
+          ) : (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>No jobs found for selected filters</Text>
+            </View>
+          )}
         </ScrollView>
       ) : activeTab === 'applied' ? (
         <ScrollView style={styles.jobsContainer} showsVerticalScrollIndicator={false}>
@@ -169,6 +243,7 @@ export default function HomeTabScreen({ navigation }: Props) {
         visible={showFilterModal}
         onClose={() => setShowFilterModal(false)}
         onApply={handleApplyFilters}
+        appliedFilters={appliedFilters}
       />
     </SafeAreaView>
   );

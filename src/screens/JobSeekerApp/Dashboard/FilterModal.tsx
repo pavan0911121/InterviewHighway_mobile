@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,65 +10,112 @@ import {
 } from 'react-native';
 import { X, Check } from 'lucide-react-native';
 import Slider from '@react-native-community/slider';
+import { useSelector } from 'react-redux';
 
-interface Filters {
-  location: {
-    remote: boolean;
-    thirupati: boolean;
-  };
-  experience: {
-    entryLevel: boolean;
-    midLevel: boolean;
-  };
+export interface Filters {
+  location: Record<string, boolean>;
+  experience: Record<string, boolean>;
   salary: number;
-  jobType: {
-    fullTime: boolean;
-    partTime: boolean;
-  };
+  jobType: Record<string, boolean>;
 }
 
 interface FilterModalProps {
   visible: boolean;
   onClose: () => void;
   onApply: (filters: Filters) => void;
+  selectedLocations?: Record<string, boolean>;
+  appliedFilters?: Filters;
 }
 
-const INITIAL_FILTERS: Filters = {
-  location: {
-    remote: false,
-    thirupati: false,
-  },
-  experience: {
-    entryLevel: false,
-    midLevel: false,
-  },
-  salary: 100000,
-  jobType: {
-    fullTime: false,
-    partTime: false,
-  },
+export const INITIAL_FILTERS: Filters = {
+  location: {},
+  experience: {},
+  salary: 0,
+  jobType: {},
 };
 
-export default function FilterModal({ visible, onClose, onApply }: FilterModalProps) {
+function formatLabel(str: string) {
+  if (!str) return '';
+  return str
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
+export default function FilterModal({ visible, onClose, onApply, selectedLocations, appliedFilters }: FilterModalProps) {
   const [filters, setFilters] = useState<Filters>(INITIAL_FILTERS);
   const [expandedSection, setExpandedSection] = useState<string>('location');
 
-  const handleCheckboxChange = (category: string, option: string) => {
-    setFilters((prev) => {
-      const updated = { ...prev };
-      if (category === 'location') {
-        updated.location[option as keyof typeof updated.location] =
-          !updated.location[option as keyof typeof updated.location];
-      } else if (category === 'experience') {
-        updated.experience[option as keyof typeof updated.experience] =
-          !updated.experience[option as keyof typeof updated.experience];
-      } else if (category === 'jobType') {
-        updated.jobType[option as keyof typeof updated.jobType] =
-          !updated.jobType[option as keyof typeof updated.jobType];
+  useEffect(() => {
+    if (visible) {
+      if (appliedFilters) {
+        setFilters({ ...appliedFilters });
+      } else if (selectedLocations) {
+        setFilters((prev) => ({
+          ...prev,
+          location: { ...selectedLocations },
+        }));
       }
-      return updated;
-    });
+    }
+  }, [visible, appliedFilters, selectedLocations]);
+
+  const handleCheckboxChange = (category: 'location' | 'experience' | 'jobType', option: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      [category]: {
+        ...prev[category],
+        [option]: !prev[category]?.[option],
+      },
+    }));
   };
+
+  const selector = useSelector((state: any) => state.home);
+  const jobsData = selector?.recommendedJobs?.jobs;
+
+  const locationCounts = useMemo(() => {
+    if (!Array.isArray(jobsData)) return {};
+    const counts: Record<string, number> = {};
+    jobsData.forEach((job: any) => {
+      const loc = job?.location;
+      if (loc && typeof loc === 'string') {
+        const trimmed = loc.trim();
+        if (trimmed) {
+          counts[trimmed] = (counts[trimmed] || 0) + 1;
+        }
+      }
+    });
+    return counts;
+  }, [jobsData]);
+
+  const experienceCounts = useMemo(() => {
+    if (!Array.isArray(jobsData)) return {};
+    const counts: Record<string, number> = {};
+    jobsData.forEach((job: any) => {
+      const exp = job?.experience_level;
+      if (exp && typeof exp === 'string') {
+        const trimmed = exp.trim();
+        if (trimmed) {
+          counts[trimmed] = (counts[trimmed] || 0) + 1;
+        }
+      }
+    });
+    return counts;
+  }, [jobsData]);
+
+  const jobTypeCounts = useMemo(() => {
+    if (!Array.isArray(jobsData)) return {};
+    const counts: Record<string, number> = {};
+    jobsData.forEach((job: any) => {
+      const type = job?.employment_type;
+      if (type && typeof type === 'string') {
+        const trimmed = type.trim();
+        if (trimmed) {
+          counts[trimmed] = (counts[trimmed] || 0) + 1;
+        }
+      }
+    });
+    return counts;
+  }, [jobsData]);
 
   const handleSalaryChange = (value: number) => {
     setFilters((prev) => ({
@@ -85,7 +132,7 @@ export default function FilterModal({ visible, onClose, onApply }: FilterModalPr
     onApply(filters);
     onClose();
   };
-
+  
   return (
     <Modal
       visible={visible}
@@ -112,8 +159,8 @@ export default function FilterModal({ visible, onClose, onApply }: FilterModalPr
           </View>
 
           {/* Filter Content */}
-          <ScrollView 
-            style={styles.content} 
+          <ScrollView
+            style={styles.content}
             contentContainerStyle={styles.scrollViewContent}
             showsVerticalScrollIndicator={false}
           >
@@ -134,28 +181,21 @@ export default function FilterModal({ visible, onClose, onApply }: FilterModalPr
               </TouchableOpacity>
               {expandedSection === 'location' && (
                 <View style={styles.optionsContainer}>
-                  <TouchableOpacity
-                    style={styles.checkboxRow}
-                    onPress={() =>
-                      handleCheckboxChange('location', 'remote')
-                    }
-                  >
-                    <View style={[styles.checkbox, filters.location.remote && styles.checkboxChecked]}>
-                      {filters.location.remote && <Check size={16} color="#165DFC" />}
-                    </View>
-                    <Text style={styles.optionText}>Remote</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.checkboxRow}
-                    onPress={() =>
-                      handleCheckboxChange('location', 'thirupati')
-                    }
-                  >
-                    <View style={[styles.checkbox, filters.location.thirupati && styles.checkboxChecked]}>
-                      {filters.location.thirupati && <Check size={16} color="#165DFC" />}
-                    </View>
-                    <Text style={styles.optionText}>Thirupati</Text>
-                  </TouchableOpacity>
+                  {Object.entries(locationCounts).map(([loc, count]) => {
+                    const isChecked = !!filters.location[loc];
+                    return (
+                      <TouchableOpacity
+                        key={loc}
+                        style={styles.checkboxRow}
+                        onPress={() => handleCheckboxChange('location', loc)}
+                      >
+                        <View style={[styles.checkbox, isChecked && styles.checkboxChecked]}>
+                          {isChecked && <Check size={16} color="#165DFC" />}
+                        </View>
+                        <Text style={styles.optionText}>{`${loc} (${count})`}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
               )}
             </View>
@@ -177,28 +217,21 @@ export default function FilterModal({ visible, onClose, onApply }: FilterModalPr
               </TouchableOpacity>
               {expandedSection === 'experience' && (
                 <View style={styles.optionsContainer}>
-                  <TouchableOpacity
-                    style={styles.checkboxRow}
-                    onPress={() =>
-                      handleCheckboxChange('experience', 'entryLevel')
-                    }
-                  >
-                    <View style={[styles.checkbox, filters.experience.entryLevel && styles.checkboxChecked]}>
-                      {filters.experience.entryLevel && <Check size={16} color="#165DFC" />}
-                    </View>
-                    <Text style={styles.optionText}>Entry Level</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.checkboxRow}
-                    onPress={() =>
-                      handleCheckboxChange('experience', 'midLevel')
-                    }
-                  >
-                    <View style={[styles.checkbox, filters.experience.midLevel && styles.checkboxChecked]}>
-                      {filters.experience.midLevel && <Check size={16} color="#165DFC" />}
-                    </View>
-                    <Text style={styles.optionText}>Mid Level</Text>
-                  </TouchableOpacity>
+                  {Object.entries(experienceCounts).map(([exp, count]) => {
+                    const isChecked = !!filters.experience[exp];
+                    return (
+                      <TouchableOpacity
+                        key={exp}
+                        style={styles.checkboxRow}
+                        onPress={() => handleCheckboxChange('experience', exp)}
+                      >
+                        <View style={[styles.checkbox, isChecked && styles.checkboxChecked]}>
+                          {isChecked && <Check size={16} color="#165DFC" />}
+                        </View>
+                        <Text style={styles.optionText}>{`${formatLabel(exp)} (${count})`}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
               )}
             </View>
@@ -225,7 +258,7 @@ export default function FilterModal({ visible, onClose, onApply }: FilterModalPr
                   </Text>
                   <Slider
                     style={styles.slider}
-                    minimumValue={50000}
+                    minimumValue={0}
                     maximumValue={1000000}
                     step={10000}
                     value={filters.salary}
@@ -234,7 +267,7 @@ export default function FilterModal({ visible, onClose, onApply }: FilterModalPr
                     maximumTrackTintColor="#EAEBEE"
                   />
                   <View style={styles.salaryRange}>
-                    <Text style={styles.rangeText}>₹50,000</Text>
+                    <Text style={styles.rangeText}>₹0</Text>
                     <Text style={styles.rangeText}>₹10,00,000</Text>
                   </View>
                 </View>
@@ -292,28 +325,21 @@ export default function FilterModal({ visible, onClose, onApply }: FilterModalPr
               </TouchableOpacity>
               {expandedSection === 'jobType' && (
                 <View style={styles.optionsContainer}>
-                  <TouchableOpacity
-                    style={styles.checkboxRow}
-                    onPress={() =>
-                      handleCheckboxChange('jobType', 'fullTime')
-                    }
-                  >
-                    <View style={[styles.checkbox, filters.jobType.fullTime && styles.checkboxChecked]}>
-                      {filters.jobType.fullTime && <Check size={16} color="#165DFC" />}
-                    </View>
-                    <Text style={styles.optionText}>Full Time</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.checkboxRow}
-                    onPress={() =>
-                      handleCheckboxChange('jobType', 'partTime')
-                    }
-                  >
-                    <View style={[styles.checkbox, filters.jobType.partTime && styles.checkboxChecked]}>
-                      {filters.jobType.partTime && <Check size={16} color="#165DFC" />}
-                    </View>
-                    <Text style={styles.optionText}>Part Time</Text>
-                  </TouchableOpacity>
+                  {Object.entries(jobTypeCounts).map(([type, count]) => {
+                    const isChecked = !!filters.jobType[type];
+                    return (
+                      <TouchableOpacity
+                        key={type}
+                        style={styles.checkboxRow}
+                        onPress={() => handleCheckboxChange('jobType', type)}
+                      >
+                        <View style={[styles.checkbox, isChecked && styles.checkboxChecked]}>
+                          {isChecked && <Check size={16} color="#165DFC" />}
+                        </View>
+                        <Text style={styles.optionText}>{`${formatLabel(type)} (${count})`}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
               )}
             </View>
@@ -411,7 +437,6 @@ const styles = StyleSheet.create({
   optionsContainer: {
     paddingLeft: 8,
     paddingVertical: 12,
-    backgroundColor: '#F8F9FA',
     borderRadius: 8,
     marginTop: 8,
   },

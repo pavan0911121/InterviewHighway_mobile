@@ -53,7 +53,7 @@ export const PROFILE_ENDPOINTS = {
   bioUpdate: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/profiles/user/${userId}/bio`,
 
-  socialLinksUpdate: (userId: string) =>
+  socialLinks: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/profiles/user/${userId}/links`,
   personalData: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/profiles/user/${userId}/personal`,
