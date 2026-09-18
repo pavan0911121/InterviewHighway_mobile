@@ -26,6 +26,7 @@ import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-si
 import supabase from '../../../supabase';
 import { useEffect } from 'react';
 import * as AsyncStore from '../../AsyncStore';
+import { Eye, EyeOff } from 'lucide-react-native';
 // import { signInWithEmail, prepareGoogleAuthData } from '../../utils/supabaseAuth';
 interface MenuItem {
   id: string
@@ -140,7 +141,7 @@ const LoginScreen: React.FC = () => {
   };
 
   const handleForgotPassword = () => {
-    // TODO: Implement forgot password navigation
+    navigation.navigate('ForgotPassword');
   };
 
   const handleSignUp = () => {
@@ -306,6 +307,14 @@ const LoginScreen: React.FC = () => {
                   secureTextEntry={!showPassword}
                   editable={!isLoading}
                 />
+                <TouchableOpacity
+                  onPress={() => setShowPassword((isVisible) => !isVisible)}
+                  disabled={isLoading}
+                  accessibilityRole="button"
+                  accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff /> : <Eye />}
+                </TouchableOpacity>
               </View>
               {errors.password && (
                 <Text style={styles.errorText}>{errors.password}</Text>

@@ -1,5 +1,6 @@
 export type AuthStackParamList = {
   Login: undefined;
+  ForgotPassword: undefined;
   JobSeekerSignup: undefined;
   EmployerSignup: undefined;
   AccountTypeSelection: undefined;
@@ -34,6 +35,7 @@ export type StackIdentifiersParamList = {
   Lesson: undefined;
   LessonDetails: undefined;
   CandidateProfile:undefined;
+  ReviewJobApplication: undefined;
 };
 
 export type RootStackParamList = AuthStackParamList & AppStackParamList;

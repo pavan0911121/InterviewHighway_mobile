@@ -24,6 +24,7 @@ import {
   CompanyProfileScreen
 } from '../screens';
 import Login from '../screens/Auth/LoginScreen';
+import ForgotPassword from '../screens/Auth/ForgotPassword';
 import PaymentsTabScreen from '../screens/JobSeekerApp/Payments/PaymentsTabScreen';
 import AccountSelectionPage from '../screens/Auth/AccountSelectionPage';
 import SideMenu from '../components/SideMenu';
@@ -249,7 +250,10 @@ function AuthNavigator() {
       <AuthStack.Screen
         name="Login"
         component={LoginScreen}
-        
+      />
+      <AuthStack.Screen
+        name="ForgotPassword"
+        component={ForgotPassword}
       />
       <AuthStack.Screen
         name="AccountTypeSelection"

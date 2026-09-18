@@ -97,7 +97,12 @@ function App() {
     }
   }, [selector?.isAuthenticated, selector?.user, selector?.role, dispatch]);
 
-  const handleUserRole = (userId: string | null) => {
+  const handleUserRole = async (userId: string | null) => {
+    const refreshTokenValue = await AsyncStore.getData(AsyncStore?.Keys?.REFRESH_TOKEN);
+    const payload = {
+      'refresh_token': refreshTokenValue
+    }
+    dispatch(refreshToken(payload) as any);
     const response = dispatch(getUserRole(userId) as any);
   }
 

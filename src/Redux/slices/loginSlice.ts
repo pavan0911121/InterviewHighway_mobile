@@ -283,11 +283,11 @@ const loginSlice = createSlice({
         state.error = (action.payload as any)?.message || 'Failed to post user data';
 
         // If no token error, logout the user
-        if ((action.payload as any)?.code === 'NO_TOKEN') {
-          state.isAuthenticated = false;
-          state.token = null;
-          state.user = null;
-        }
+        // if ((action.payload as any)?.code === 'NO_TOKEN') {
+        //   state.isAuthenticated = false;
+        //   state.token = null;
+        //   state.user = null;
+        // }
       })
       // getRole async thunk handlers
       .addCase(getRole.pending, (state) => {

@@ -5,10 +5,12 @@ import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { JobSeekerBottomTabParamList } from '../../../types/navigation';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
-import { getRecommendedJobs } from '../../../Redux/slices/homeSlice';
+import { getJobDetails, getRecommendedJobs, getUserMetaData } from '../../../Redux/slices/homeSlice';
 import { Funnel, Search } from 'lucide-react-native/icons';
 import FilterModal, { Filters, INITIAL_FILTERS } from './FilterModal';
+import JobDetailsModal from './JobDetailsModal';
 import * as AsyncStore from "../../../AsyncStore";
+import { getProfileById } from '../../../Redux/slices/homeSlice';
 
 
 type Props = BottomTabScreenProps<JobSeekerBottomTabParamList, 'HomeTab'>;
@@ -16,10 +18,13 @@ type Props = BottomTabScreenProps<JobSeekerBottomTabParamList, 'HomeTab'>;
 export default function HomeTabScreen({ navigation }: Props) {
   const [activeTab, setActiveTab] = useState('recommended');
   const [showFilterModal, setShowFilterModal] = useState(false);
+  const [showJobDetailsModal, setShowJobDetailsModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [appliedFilters, setAppliedFilters] = useState<Filters>(INITIAL_FILTERS);
   const selector = useSelector((state: any) => state.home);
   const dispatch = useDispatch();
+
+  const selectedJob = selector?.jobDetails;
 
   const recommendedCount = selector?.recommendedJobs?.total || 0;
   const appliedCount = selector?.appliedJobs?.total || 0;
@@ -32,6 +37,12 @@ export default function HomeTabScreen({ navigation }: Props) {
     try {
       // Make API call to fetch recommended jobs
       await dispatch(getRecommendedJobs() as any);
+      await dispatch(getUserMetaData() as any);
+      const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
+      if (userId) {
+        const resultId = userId.replace(/"/g, '');
+        await dispatch(getProfileById(resultId) as any);
+      }
     } catch (error) {
       console.log('Error fetching recommended jobs:', error);
     }
@@ -108,6 +119,14 @@ export default function HomeTabScreen({ navigation }: Props) {
 
   const handleApplyFilters = (filters: Filters) => {
     setAppliedFilters(filters);
+  };
+  const handleGetJobDetails = async (jobId: string) => {
+    try {
+      await dispatch(getJobDetails(jobId) as any);
+      setShowJobDetailsModal(true);
+    } catch (error) {
+      console.error("Failed to get job details:", error);
+    }
   };
   return (
     <SafeAreaView style={styles.container}>
@@ -205,7 +224,7 @@ export default function HomeTabScreen({ navigation }: Props) {
         <ScrollView style={styles.jobsContainer} showsVerticalScrollIndicator={false}>
           {filteredJobs?.length > 0 ? (
             filteredJobs?.map((job: any, index: number) => (
-              <TouchableOpacity key={`${job?.id}-${index}`} style={styles.jobCard}>
+              <TouchableOpacity key={`${job?.id}-${index}`} style={styles.jobCard} onPress={() => handleGetJobDetails(job?.id)}>
                 <View style={styles.jobCompanyLogo}>
                   <Text style={styles.companyInitials}>{job?.company}</Text>
                 </View>
@@ -244,6 +263,13 @@ export default function HomeTabScreen({ navigation }: Props) {
         onClose={() => setShowFilterModal(false)}
         onApply={handleApplyFilters}
         appliedFilters={appliedFilters}
+      />
+
+      {/* Job Details Modal */}
+      <JobDetailsModal
+        visible={showJobDetailsModal}
+        onClose={() => setShowJobDetailsModal(false)}
+        job={selectedJob}
       />
     </SafeAreaView>
   );

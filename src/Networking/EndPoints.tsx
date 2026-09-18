@@ -49,6 +49,8 @@ export const PROFILE_ENDPOINTS = {
 
   profileData: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/profiles/user/${userId}`,
+  profileById: (userId: string) =>
+    `${API_BASE_URL}/rest/v1/profiles?select=*&user_id=eq.${userId}`,
 
   bioUpdate: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/profiles/user/${userId}/bio`,
@@ -104,6 +106,14 @@ export const SKILLS_ENDPOINTS = {
 
 export const JOBS_ENDPOINTS = {
   recommendedJobs: `${RAILWAY_API_BASE_URL}/api/jobs`,
+  savedJobs: `${RAILWAY_API_BASE_URL}/api/saved-jobs`,
+  saveJob: (userId: string) =>
+    `${RAILWAY_API_BASE_URL}/api/saved-jobs/user/${userId}`,
+  jobDetails: (jobId: string) =>
+    `${RAILWAY_API_BASE_URL}/api/jobs/${jobId}`,
+  applyJob:() =>
+    `${RAILWAY_API_BASE_URL}/api/applications`,
+
 };
 
 // =================
