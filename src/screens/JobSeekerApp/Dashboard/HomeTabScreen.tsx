@@ -1,16 +1,21 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo,useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { JobSeekerBottomTabParamList } from '../../../types/navigation';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
-import { getJobDetails, getRecommendedJobs, getUserMetaData } from '../../../Redux/slices/homeSlice';
+import { getJobDetails, getRecommendedJobs, getUserMetaData, getAppliedJobs, getSavedJobsList, handleReloadJobs} from '../../../Redux/slices/homeSlice';
 import { Funnel, Search } from 'lucide-react-native/icons';
 import FilterModal, { Filters, INITIAL_FILTERS } from './FilterModal';
 import JobDetailsModal from './JobDetailsModal';
+import WithdrawApplicationModal from './WithdrawApplicationModal';
 import * as AsyncStore from "../../../AsyncStore";
 import { getProfileById } from '../../../Redux/slices/homeSlice';
+import { useIsFocused } from '@react-navigation/native';
+
+
 
 
 type Props = BottomTabScreenProps<JobSeekerBottomTabParamList, 'HomeTab'>;
@@ -19,30 +24,53 @@ export default function HomeTabScreen({ navigation }: Props) {
   const [activeTab, setActiveTab] = useState('recommended');
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showJobDetailsModal, setShowJobDetailsModal] = useState(false);
+  const [showWithdrawApplicationModal, setShowWithdrawApplicationModal] = useState(false);
+  const [selectedApplication, setSelectedApplication] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [appliedFilters, setAppliedFilters] = useState<Filters>(INITIAL_FILTERS);
   const selector = useSelector((state: any) => state.home);
   const dispatch = useDispatch();
+  const isFocused = useIsFocused();
 
   const selectedJob = selector?.jobDetails;
 
-  const recommendedCount = selector?.recommendedJobs?.total || 0;
-  const appliedCount = selector?.appliedJobs?.total || 0;
-  const savedCount = selector?.savedJobs?.total || 0;
+
+  const savedJobs = selector?.savedJobs?.savedJobs;
+  const appliedJobs = selector?.appliedJobs?.applications;
 
   useEffect(() => {
-    getRecommendedJobsData();
-  }, []);
-  const getRecommendedJobsData = async () => {
+    if (isFocused) {
+      getJobsData();
+      getSavedJobsData();
+    }
+    if(selector?.reloadJobs) {
+      getJobsData();
+    }
+  }, [isFocused, selector?.reloadJobs]);
+  
+  const getSavedJobsData = async () => {
     try {
-      // Make API call to fetch recommended jobs
-      await dispatch(getRecommendedJobs() as any);
-      await dispatch(getUserMetaData() as any);
+       const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
+      if (userId) {
+        const resultId = userId.replace(/"/g, '');
+        await dispatch(getSavedJobsList({ userId: resultId }) as any);
+      }
+    } catch (error) {
+      console.log('Error fetching saved jobs:', error);
+    }
+  };
+  const getJobsData = async () => {
+    try {
       const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
       if (userId) {
         const resultId = userId.replace(/"/g, '');
         await dispatch(getProfileById(resultId) as any);
+        await dispatch(getAppliedJobs(resultId) as any);
       }
+      // Make API call to fetch recommended jobs
+      await dispatch(getRecommendedJobs() as any);
+      await dispatch(getUserMetaData() as any);
+      await dispatch(handleReloadJobs(false))
     } catch (error) {
       console.log('Error fetching recommended jobs:', error);
     }
@@ -53,6 +81,11 @@ export default function HomeTabScreen({ navigation }: Props) {
   const filteredJobs = useMemo(() => {
     if (!Array.isArray(jobs)) return [];
 
+    const appliedJobIds = new Set(
+      Array.isArray(appliedJobs)
+        ? appliedJobs.map((application: any) => application?.job?.id).filter(Boolean)
+        : []
+    );
     const activeLocations = Object.keys(appliedFilters.location || {}).filter(
       (loc) => appliedFilters.location[loc]
     );
@@ -67,6 +100,11 @@ export default function HomeTabScreen({ navigation }: Props) {
     const query = searchQuery.trim().toLowerCase();
 
     return jobs.filter((job: any) => {
+      // Do not show jobs the user has already applied for.
+      if (appliedJobIds.has(job?.id)) {
+        return false;
+      }
+
       // 0. Search query filter (title, company name, location)
       if (query.length > 0) {
         const titleMatch = job?.title?.toLowerCase().includes(query);
@@ -111,7 +149,7 @@ export default function HomeTabScreen({ navigation }: Props) {
 
       return true;
     });
-  }, [jobs, appliedFilters, searchQuery]);
+  }, [jobs, appliedJobs, appliedFilters, searchQuery]);
 
   function underscoreToSpace(str: any) {
     return str ? str.replace(/_/g, " ") : "";
@@ -121,12 +159,17 @@ export default function HomeTabScreen({ navigation }: Props) {
     setAppliedFilters(filters);
   };
   const handleGetJobDetails = async (jobId: string) => {
+
     try {
       await dispatch(getJobDetails(jobId) as any);
       setShowJobDetailsModal(true);
     } catch (error) {
       console.error("Failed to get job details:", error);
     }
+  };
+  const handleOpenWithdrawApplicationModal = (application: any) => {
+    setSelectedApplication(application);
+    setShowWithdrawApplicationModal(true);
   };
   return (
     <SafeAreaView style={styles.container}>
@@ -192,7 +235,7 @@ export default function HomeTabScreen({ navigation }: Props) {
               Applied Jobs
             </Text>
             <View style={styles.badge}>
-              <Text style={styles.badgeText}>{appliedCount}</Text>
+              <Text style={styles.badgeText}>{appliedJobs?.length}</Text>
             </View>
           </View>
           {activeTab === 'applied' && <View style={styles.tabIndicator} />}
@@ -212,7 +255,7 @@ export default function HomeTabScreen({ navigation }: Props) {
               Saved Jobs
             </Text>
             <View style={styles.badge}>
-              <Text style={styles.badgeText}>{savedCount}</Text>
+              <Text style={styles.badgeText}>{savedJobs?.length||0}</Text>
             </View>
           </View>
           {activeTab === 'saved' && <View style={styles.tabIndicator} />}
@@ -244,16 +287,50 @@ export default function HomeTabScreen({ navigation }: Props) {
           )}
         </ScrollView>
       ) : activeTab === 'applied' ? (
-        <ScrollView style={styles.jobsContainer} showsVerticalScrollIndicator={false}>
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>No applied jobs yet</Text>
-          </View>
+       <ScrollView style={styles.jobsContainer} showsVerticalScrollIndicator={false}>
+          {appliedJobs?.length > 0 ? (
+            appliedJobs?.map((job: any, index: number) => (
+              <TouchableOpacity key={`${job?.id}-${index}`} style={styles.jobCard} onPress={() => handleOpenWithdrawApplicationModal(job)}>
+                <View style={styles.jobCompanyLogo}>
+                  <Text style={styles.companyInitials}>{job?.company}</Text>
+                </View>
+                <View style={styles.jobDetails}>
+                  <Text style={styles.jobTitle}>{job?.job?.title}</Text>
+                  <Text style={styles.jobCompany}>{job?.job?.company?.name}</Text>
+                  <Text style={styles.jobMeta}>
+                    {job?.job?.location} • {underscoreToSpace(job?.job?.employment_type)}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))
+          ) : (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>No jobs found for selected filters</Text>
+            </View>
+          )}
         </ScrollView>
       ) : (
         <ScrollView style={styles.jobsContainer} showsVerticalScrollIndicator={false}>
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>No saved jobs yet</Text>
-          </View>
+         {savedJobs?.length > 0 ? (
+            savedJobs?.map((job: any, index: number) => (
+              <TouchableOpacity key={`${job?.id}-${index}`} style={styles.jobCard} onPress={() => handleGetJobDetails(job?.id)}>
+                <View style={styles.jobCompanyLogo}>
+                  <Text style={styles.companyInitials}>{job?.company}</Text>
+                </View>
+                <View style={styles.jobDetails}>
+                  <Text style={styles.jobTitle}>{job?.job?.title}</Text>
+                  <Text style={styles.jobCompany}>{job?.job?.company?.name}</Text>
+                  <Text style={styles.jobMeta}>
+                    {job?.job?.location} • {underscoreToSpace(job?.job?.employmentType)}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))
+          ) : (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>No jobs found for selected filters</Text>
+            </View>
+          )}
         </ScrollView>
       )}
 
@@ -270,6 +347,12 @@ export default function HomeTabScreen({ navigation }: Props) {
         visible={showJobDetailsModal}
         onClose={() => setShowJobDetailsModal(false)}
         job={selectedJob}
+      />
+
+      <WithdrawApplicationModal
+        visible={showWithdrawApplicationModal}
+        application={selectedApplication}
+        onClose={() => setShowWithdrawApplicationModal(false)}
       />
     </SafeAreaView>
   );

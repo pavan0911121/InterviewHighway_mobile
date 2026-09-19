@@ -11,7 +11,7 @@ import { ArrowLeft, BriefcaseBusiness, Check, FileText, Pencil, User } from 'luc
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as AsyncStore from "../../../AsyncStore";
 import { useDispatch } from 'react-redux';
-import { applyJob } from '../../../Redux/slices/homeSlice';
+import { applyJob, handleReloadJobs } from '../../../Redux/slices/homeSlice';
 import ApplicationSuccessScreen from './ApplicationSuccessScreen';
 
 const formatAppliedOn = (dateStr?: string | null) => {
@@ -51,6 +51,7 @@ const ReviewJobApplication = ({ onBack, onSubmit, onBrowseMoreJobs, applicationD
                     appliedOn: formatAppliedOn(responsePayload?.created_at || responsePayload?.applied_at),
                     status: responsePayload?.status || 'Under Review',
                 });
+                dispatch(handleReloadJobs(true));
             }
         }catch(error){
             console.log('Error submitting job application:', error);

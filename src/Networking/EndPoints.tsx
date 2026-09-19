@@ -106,14 +106,17 @@ export const SKILLS_ENDPOINTS = {
 
 export const JOBS_ENDPOINTS = {
   recommendedJobs: `${RAILWAY_API_BASE_URL}/api/jobs`,
-  savedJobs: `${RAILWAY_API_BASE_URL}/api/saved-jobs`,
-  saveJob: (userId: string) =>
+  saveJobs: `${RAILWAY_API_BASE_URL}/api/saved-jobs`,
+  savedJob: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/saved-jobs/user/${userId}`,
+  appliedJobs: (userId: string) =>
+    `${RAILWAY_API_BASE_URL}/api/applications/user/${userId}`,
   jobDetails: (jobId: string) =>
     `${RAILWAY_API_BASE_URL}/api/jobs/${jobId}`,
-  applyJob:() =>
+  applyJob: () =>
     `${RAILWAY_API_BASE_URL}/api/applications`,
-
+  withdrawApplication: (applicationId: string, userId: string) =>
+    `${RAILWAY_API_BASE_URL}/api/applications/${applicationId}?userId=${userId}`
 };
 
 // =================
@@ -161,7 +164,7 @@ export const RESUME_ENDPOINTS = {
 
   getUserResumes: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/resumes/user/${userId}`,
-  deleteResume: ( resumeId: string) =>
+  deleteResume: (resumeId: string) =>
     `${RAILWAY_API_BASE_URL}/api/resumes/${resumeId}`,
 };
 

@@ -34,13 +34,14 @@ export default function JobDetailsModal({
 
   const handleBrowseMoreJobs = () => {
     setShowApplyModal(false);
-    // onClose();
+    onClose();
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View style={styles.sheet}>
+    <>
+      <Modal visible={visible} animationType="slide" transparent>
+        <View style={styles.overlay}>
+          <View style={styles.sheet}>
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Job Details</Text>
             <TouchableOpacity style={styles.closeButton} onPress={onClose}>
@@ -80,6 +81,7 @@ export default function JobDetailsModal({
                 style={styles.applyNowButton}
                 onPress={() => {
                   onApplyNow?.(job?.id);
+                  onClose();
                   setShowApplyModal(true);
                 }}
               >
@@ -125,7 +127,8 @@ export default function JobDetailsModal({
             ) : null}
           </ScrollView>
         </View>
-      </View>
+        </View>
+      </Modal>
 
       <ApplyJobModal
         visible={showApplyModal}
@@ -134,7 +137,7 @@ export default function JobDetailsModal({
         onBrowseMoreJobs={handleBrowseMoreJobs}
         job={job}
       />
-    </Modal>
+    </>
   );
 }
 

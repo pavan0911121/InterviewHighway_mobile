@@ -94,7 +94,7 @@ export default function ApplyJobModal({ visible, onClose, job, onSubmit, onBrows
     const homeSelector = useSelector((state: any) => state.home);
 
     const resumesList = profileSelector?.resumes?.resumes || profileSelector?.resumes || [];
-    const userData = homeSelector && homeSelector?.profileByIdData[0];
+    const userData = homeSelector && homeSelector?.profileByIdData?.[0];
 
     const [fullName, setFullName] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
@@ -224,6 +224,7 @@ export default function ApplyJobModal({ visible, onClose, job, onSubmit, onBrows
     const handleBrowseMoreJobs = () => {
         resetForm();
         setShowReviewModal(false);
+        onClose();
         onBrowseMoreJobs?.();
     };
 

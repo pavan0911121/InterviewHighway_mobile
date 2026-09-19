@@ -18,6 +18,9 @@ interface homeState {
     profileByIdData: any | null;
     jobApplicationResponse: any | null;
     alreadyAppliedJobMessage: string | null;
+    appliedJobs: any[]; // Adjust the type based on your applied jobs data structure
+    reloadJobs: boolean;
+    withdrawApplicationResponse: any | null;
 }
 
 const initialState: homeState = {
@@ -32,6 +35,9 @@ const initialState: homeState = {
     profileByIdData: null,
     jobApplicationResponse: null,
     alreadyAppliedJobMessage: null,
+    appliedJobs: [],
+    reloadJobs: false,
+    withdrawApplicationResponse: null,
 };
 //Recommended jobs API call
 export const getRecommendedJobs = createAsyncThunk(
@@ -49,12 +55,28 @@ export const getRecommendedJobs = createAsyncThunk(
         }
     }
 );
-//saved jobs API call
-export const getSavedJobsList = createAsyncThunk(
-    "home/getSavedJobsList",
-    async (_, { rejectWithValue }) => {
+//getAppliedJobs API call
+export const getAppliedJobs = createAsyncThunk(
+    "home/getAppliedJobs",
+    async (userId: string, { rejectWithValue }) => {
         try {
-            const response = await client.get(JOBS_ENDPOINTS.savedJobs);
+            const response = await client.get(JOBS_ENDPOINTS.appliedJobs(userId));
+            return response.data || response;
+        } catch (error: any) {
+            console.log('Error fetching applied jobs:', error);
+            return rejectWithValue({
+                message: error?.message || 'Failed to fetch applied jobs',
+                code: error?.code || 'ERROR',
+            });
+        }
+    }
+);
+//saved jobs API call
+export const saveJobs = createAsyncThunk(
+    "home/saveJobs",
+    async (payload: any, { rejectWithValue }) => {
+        try {
+            const response = await client.post(JOBS_ENDPOINTS.saveJobs, payload);
             return response.data || response;
         } catch (error: any) {
             console.log('Error fetching saved jobs:', error);
@@ -66,11 +88,11 @@ export const getSavedJobsList = createAsyncThunk(
     }
 );
 // Save job API call
-export const saveJob = createAsyncThunk(
-    "home/saveJob",
-    async ({ userId, payload }: { userId: string, payload: any }, { rejectWithValue }) => {
+export const getSavedJobsList = createAsyncThunk(
+    "home/getSavedJobsList",
+    async ({ userId }: { userId: string}, { rejectWithValue }) => {
         try {
-            const response = await client.post(JOBS_ENDPOINTS.saveJob(userId), payload);
+            const response = await client.get(JOBS_ENDPOINTS.savedJob(userId));
             return response.data || response;
         } catch (error: any) {
             console.log('Error saving job:', error);
@@ -145,6 +167,23 @@ export const applyJob = createAsyncThunk(
         }
     }
 );
+//withdraw application API call
+export const withdrawApplication = createAsyncThunk(
+    "home/withdrawApplication",
+    async ({ applicationId, userId }: { applicationId: string, userId: string }, { rejectWithValue }) => {
+        try {
+            const response = await client.delete(JOBS_ENDPOINTS.withdrawApplication(applicationId, userId));
+            return response.data || response;
+        } catch (error: any) {
+            console.log('Error withdrawing application:', error);
+            return rejectWithValue({
+                message: error?.message || 'Failed to withdraw application',
+                code: error?.code || 'ERROR',
+            });
+        }
+    }
+);
+
 
 const homeSlice = createSlice({
     name: 'home',
@@ -163,6 +202,9 @@ const homeSlice = createSlice({
         clearError: (state) => {
             state.error = null;
         },
+        handleReloadJobs: (state, action) => {
+            state.reloadJobs = action.payload;
+        }
     },
     extraReducers: (builder) => {
         builder
@@ -182,6 +224,36 @@ const homeSlice = createSlice({
                 state.error = action.payload as string;
                 console.log('Error fetching recommended jobs:', action.payload);
             })
+            //getAppliedJobs async thunk handlers
+            .addCase(getAppliedJobs.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(getAppliedJobs.fulfilled, (state, action) => {
+                state.isLoading = false;
+                state.appliedJobs = action.payload;
+                state.error = null;
+            })
+            .addCase(getAppliedJobs.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.payload as string;
+                console.log('Error fetching applied jobs:', action.payload);
+            })
+             //saved jobs async thunk handlers
+            .addCase(getSavedJobsList.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(getSavedJobsList.fulfilled, (state, action) => {
+                state.isLoading = false;
+                state.savedJobs = action.payload; // Assuming the API returns an array of saved jobs
+                state.error = null;
+            })
+            .addCase(getSavedJobsList.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.payload as string;
+                console.log('Error fetching saved jobs:', action.payload);
+            })
             // getJobDetails async thunk handlers
             .addCase(getJobDetails.pending, (state) => {
                 state.isLoading = true;
@@ -197,31 +269,16 @@ const homeSlice = createSlice({
                 state.error = action.payload as string;
                 console.log('Error fetching job details:', action.payload);
             })
-            //saved jobs async thunk handlers
-            .addCase(getSavedJobsList.pending, (state) => {
-                state.isLoading = true;
-                state.error = null;
-            })
-            .addCase(getSavedJobsList.fulfilled, (state, action) => {
-                state.isLoading = false;
-                state.savedJobs = action.payload; // Assuming the API returns an array of saved jobs
-                state.error = null;
-            })
-            .addCase(getSavedJobsList.rejected, (state, action) => {
-                state.isLoading = false;
-                state.error = action.payload as string;
-                console.log('Error fetching saved jobs:', action.payload);
-            })
             //saveJob async thunk handlers
-            .addCase(saveJob.pending, (state) => {
+            .addCase(saveJobs.pending, (state) => {
                 state.isLoading = true;
                 state.error = null;
             })
-            .addCase(saveJob.fulfilled, (state, action) => {
+            .addCase(saveJobs.fulfilled, (state, action) => {
                 state.isLoading = false;
                 state.error = null;
             })
-            .addCase(saveJob.rejected, (state, action) => {
+            .addCase(saveJobs.rejected, (state, action) => {
                 state.isLoading = false;
                 state.error = action.payload as string;
                 console.log('Error saving job:', action.payload);
@@ -270,13 +327,30 @@ const homeSlice = createSlice({
                 state.error = action.payload as string;
                 state.alreadyAppliedJobMessage = action.payload as string;
                 console.log('Error applying for job:', action.payload);
-            });
+            })
+            //withdrawApplication async thunk handlers
+            .addCase(withdrawApplication.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(withdrawApplication.fulfilled, (state, action) => {
+                state.isLoading = false;
+                state.error = null;
+                state.withdrawApplicationResponse = action.payload;
+            })
+            .addCase(withdrawApplication.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.payload as string;
+                console.log('Error withdrawing application:', action.payload);
+            })
+            
     }
 });
 
 export const {
     clearHomeData,
     clearError,
+    handleReloadJobs,
 } = homeSlice.actions;
 
 export default homeSlice.reducer;
