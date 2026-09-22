@@ -1,24 +1,14 @@
-import React from 'react';
 import { Alert } from 'react-native';
-import NetInfo from '@react-native-community/netinfo';
 import { Keys, getData, storeData } from '../AsyncStore';
-import { API_BASE_URL, RAILWAY_API_BASE_URL } from '../Networking/EndPoints';
+import { AUTH_ENDPOINTS } from '../Networking/EndPoints';
 
-let isNetworkDialogOpen = false;
-let isTokenRefreshInProgress = false;
-let tokenRefreshPromise: Promise<boolean> | null = null;
+let tokenRefreshPromise: Promise<string | null> | null = null;
+const API_KEY = 'sb_publishable_tY1AthKjAKBTZP0TxJ1KfQ_PCL8VdIk';
 
 // Type definitions
 interface HeadersConfig {
   [key: string]: string;
 }
-
-// interface TokenResponse {
-//   access_token: string;
-//   refresh_token: string;
-//   expires_in: number;
-//   token_type: string;
-// }
 
 interface RequestConfig {
   method: string;
@@ -32,12 +22,39 @@ interface APIResponse {
   status?: number;
 }
 
-interface APIError {
-  type: string;
-  status: number;
-  message: string;
-  body?: any;
-}
+export const refreshAccessToken = (): Promise<string | null> => {
+  if (!tokenRefreshPromise) {
+    tokenRefreshPromise = (async () => {
+      const refreshToken = await getData(Keys.REFRESH_TOKEN);
+      if (!refreshToken) {
+        return null;
+      }
+
+      const response = await fetch(AUTH_ENDPOINTS.refreshToken, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          apikey: API_KEY,
+        },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      });
+      const { data } = await parseAPIResponse(response);
+      if (typeof data?.access_token !== 'string' || !data.access_token) {
+        throw new Error('Token refresh response is missing an access token');
+      }
+
+      if (data.refresh_token) {
+        await storeData(Keys.REFRESH_TOKEN, data.refresh_token);
+      }
+      await storeData(Keys.USER_TOKEN, data.access_token);
+      return data.access_token;
+    })().finally(() => {
+      tokenRefreshPromise = null;
+    });
+  }
+  return tokenRefreshPromise;
+};
 
 /**
  * Main HTTP Client function for API calls
@@ -56,35 +73,21 @@ export const client = async (
   customConfig: HeadersConfig = {},
   isValidate: boolean = true
 ): Promise<any> => {
-  // Check network connectivity
-  // const netState = await NetInfo.fetch();
-  
-  // if (netState.isConnected !== true) {
-  //   if (!isNetworkDialogOpen) {
-  //     isNetworkDialogOpen = true;
-  //     Alert.alert('Network Error', 'Please check your internet connection', [
-  //       {
-  //         text: 'OK',
-  //         onPress: () => {
-  //           isNetworkDialogOpen = false;
-  //         },
-  //       },
-  //     ]);
-  //   }
-  //   return Promise.reject('No internet connection');
-  // }
-
-  // // Check for 2G network
-  // if (netState.type === 'cellular' && netState.details?.cellularGeneration === '2g') {
-  //   console.warn('Poor network detected - 2G connection');
-  // }
-
+  const isAuthEndpoint = url.startsWith(AUTH_ENDPOINTS.login.split('?')[0]) ||
+    url.startsWith(AUTH_ENDPOINTS.signup.split('?')[0]);
+  const canRefresh = isValidate && !isAuthEndpoint;
+  if (canRefresh) {
+    if (tokenRefreshPromise) {
+      await tokenRefreshPromise;
+    }
+    authToken = (await getData(Keys.USER_TOKEN)) || authToken;
+  }
   const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
 
   const headers: HeadersConfig = {
     Accept: 'application/json',
     'Content-Type': 'application/json',
-    'apikey': 'sb_publishable_tY1AthKjAKBTZP0TxJ1KfQ_PCL8VdIk',
+    'apikey': API_KEY,
     ...customConfig,
   };
 
@@ -102,56 +105,41 @@ export const client = async (
     headers,
   };
 
-  if (body && (methodType === 'POST' || methodType === 'PUT' || methodType === 'DELETE')) {
+  if (body != null && (methodType === 'POST' || methodType === 'PUT' || methodType === 'PATCH' || methodType === 'DELETE')) {
     config.body = isFormData ? body : JSON.stringify(body);
   }
 
   try {
     let response = await fetch(url, config);
 
-    // Handle 401 Unauthorized - Token expired
-    // if (response.status === 401 && isValidate) {
-    //   console.warn('🔄 Token expired (401 Unauthorized), attempting to refresh...');
-      
-    //   // Use existing refresh promise if already in progress
-    //   if (!tokenRefreshPromise) {
-    //     tokenRefreshPromise = refreshAccessToken();
-    //   }
-      
-    //   const refreshed = await tokenRefreshPromise;
-    //   tokenRefreshPromise = null;
+    if (response.status === 401 && canRefresh) {
+      const requestPath = url.split('?')[0];
+      console.warn(`API returned 401: ${methodType} ${requestPath}`);
+      const storedToken = await getData(Keys.USER_TOKEN);
+      const newToken = tokenRefreshPromise
+        ? await tokenRefreshPromise
+        : storedToken && storedToken !== authToken
+          ? storedToken
+          : await refreshAccessToken();
 
-    //   if (refreshed) {
-    //     // Retry the original request with new token
-    //     const newToken = await getData(Keys.USER_TOKEN);
-    //     if (newToken) {
-    //       console.log('✓ Token refreshed successfully, retrying original request...');
-    //       headers['Authorization'] = `Bearer ${newToken}`;
-    //       config.headers = headers;
-    //       response = await fetch(url, config);
-          
-    //       // Check if retry was successful
-    //       if (response.ok) {
-    //         console.log('✓ Retried request successful after token refresh');
-    //         return response;
-    //       }
-    //     }
-    //   } else {
-    //     // Force logout if token refresh failed
-    //     console.error('✗ Token refresh failed, logging out...');
-    //     await handleLogout();
-    //     return Promise.reject('Session expired. Please login again.');
-    //   }
-    // }
+      if (newToken) {
+        const retryConfig = {
+          ...config,
+          headers: { ...headers, Authorization: `Bearer ${newToken}` },
+        };
+        console.info(`Retrying API after token refresh: ${methodType} ${requestPath}`);
+        response = await fetch(url, retryConfig);
+      }
+    }
 
     // Handle 401 for login API (invalid credentials) - only show alert for login endpoints
-    if (response.status === 401 && !isValidate) {
+    if (response.status === 401 && url === AUTH_ENDPOINTS.login) {
       try {
         const errData = await response.clone().json();
         Alert.alert('Login Failed', errData.message || 'Invalid credentials', [
           { text: 'OK', onPress: () => console.log('OK Pressed') },
         ]);
-      } catch (e) {
+      } catch {
         Alert.alert('Login Failed', 'Invalid credentials', [
           { text: 'OK', onPress: () => console.log('OK Pressed') },
         ]);
@@ -160,121 +148,9 @@ export const client = async (
 
     return response;
   } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : 'Something went wrong';
-    console.error('API Error:', err, 'URL:', url);
-    return Promise.reject(errorMessage);
+    return Promise.reject(err);
   }
 };
-
-/**
- * Refresh access token using refresh token
- * Uses Supabase auth refresh endpoint to obtain a new access token
- * Endpoint: POST ${API_BASE_URL}/auth/v1/token?grant_type=refresh_token
- * Request body: { refresh_token: 'token_value' }
- */
-// const refreshAccessToken = async (): Promise<boolean> => {
-//   try {
-//     // Get the refresh token from storage
-//     const refreshToken = await getData(Keys.REFRESH_TOKEN);
-
-//     if (!refreshToken) {
-//       console.error('❌ No refresh token available for token refresh');
-//       return false;
-//     }
-
-//     const headers: HeadersConfig = {
-//       'accept': '*/*',
-//       'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8',
-//       'Content-Type': 'application/json',
-//       'apikey': 'sb_publishable_tY1AthKjAKBTZP0TxJ1KfQ_PCL8VdIk',
-//       'origin': 'https://interviewhighway.com',
-//       'x-client-info': 'supabase-ssr/0.6.1 createBrowserClient',
-//       'x-supabase-api-version': '2024-01-01',
-//     };
-
-//     const config: RequestConfig = {
-//       method: 'POST',
-//       headers,
-//       // Only send refresh_token in body, grant_type is in URL
-//       body: JSON.stringify({ 
-//         refresh_token: refreshToken 
-//       }),
-//     };
-
-//     console.log('🔄 Initiating token refresh with refresh token...');
-//     const response = await fetch(`${API_BASE_URL}/auth/v1/token?grant_type=refresh_token`, config);
-    
-//     console.log(`📡 Token refresh API response status: ${response.status}`);
-    
-//     if (!response.ok) {
-//       console.error(`❌ Token refresh failed with status ${response.status}`);
-//       const errorBody = await response.text();
-//       console.error('Token refresh error details:', errorBody);
-//       return false;
-//     }
-
-//     const responseData = await response.json();
-//     console.log('📦 Token refresh response received:', { 
-//       has_access_token: !!responseData.access_token, 
-//       has_refresh_token: !!responseData.refresh_token,
-//       expires_in: responseData.expires_in 
-//     });
-
-//     // Validate response contains required tokens
-//     if (!responseData.access_token) {
-//       console.error('❌ Token refresh response missing access_token');
-//       console.error('Response data:', responseData);
-//       return false;
-//     }
-
-//     // Store new access token immediately
-//     await storeData(Keys.USER_TOKEN, responseData.access_token);
-//     console.log('✅ Access token refreshed and stored successfully');
-    
-//     // Store new refresh token if provided
-//     if (responseData.refresh_token) {
-//       await storeData(Keys.REFRESH_TOKEN, responseData.refresh_token);
-//       console.log('✅ Refresh token updated and stored');
-//     }
-    
-//     // Log additional info if available
-//     if (responseData.expires_in) {
-//       console.log(`⏱️ Token expires in ${responseData.expires_in} seconds`);
-//     }
-    
-//     console.log('✅ Token refresh completed successfully');
-//     return true;
-//   } catch (err) {
-//     const errorMessage = err instanceof Error ? err.message : 'Token refresh failed';
-//     console.error('❌ Token Refresh Error:', errorMessage);
-//     console.error('Stack trace:', err instanceof Error ? err.stack : 'No stack trace');
-//     return false;
-//   }
-// };
-
-/**
- * Handle logout on token expiry
- * Clears all authentication data from async storage
- */
-// const handleLogout = async (): Promise<void> => {
-//   try {
-//     // Clear authentication tokens from storage
-//     await storeData(Keys.USER_TOKEN, '');
-//     await storeData(Keys.REFRESH_TOKEN, '');
-//     await storeData(Keys.IS_LOGIN, 'false');
-//     await storeData(Keys.ROLE, '');
-//     await storeData(Keys.USER_ID, '');
-    
-//     console.log('✓ User logged out - all authentication data cleared');
-    
-//     // TODO: Emit logout event or navigate to login screen
-//     // You can use Redux dispatch, context, or event emitter here
-//     // Example: dispatch(logout());
-//   } catch (err) {
-//     const errorMessage = err instanceof Error ? err.message : 'Logout error';
-//     console.error('Logout Error:', errorMessage);
-//   }
-// };
 
 /**
  * GET request
@@ -290,7 +166,6 @@ client.get = async function (endpoint: string, customConfig: HeadersConfig = {},
  */
 client.post = async function (endpoint: string, body: any, customConfig: HeadersConfig = {}, isValidate: boolean = true): Promise<APIResponse> {
   const token = await getData(Keys.USER_TOKEN);
-  // const response = await client(token, endpoint, 'POST', body, customConfig, isValidate);
   const response = await client(token, endpoint, 'POST', body, customConfig, isValidate);
 
   return parseAPIResponse(response);
@@ -364,7 +239,7 @@ export const parseAPIResponse = async (response: Response): Promise<APIResponse>
 
     return { success: false, data: parsedJSON, status: response.status };
   } catch (err) {
-    if (err instanceof Error && 'type' in err) {
+    if (err !== null && typeof err === 'object' && 'type' in err) {
       return Promise.reject(err);
     }
 

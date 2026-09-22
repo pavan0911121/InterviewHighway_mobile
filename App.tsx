@@ -5,147 +5,121 @@
  * @format
  */
 
-import React, { useEffect, useState } from 'react';
-import { StatusBar, View, ActivityIndicator, AppState, AppStateStatus } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { StatusBar, View, ActivityIndicator, AppState, Text, Button, StyleSheet } from 'react-native';
 import AppNavigator from './src/navigation/AppNavigator';
 import SplashScreen from './src/screens/SplashScreen';
 import { useSelector, useDispatch } from 'react-redux';
 import * as AsyncStore from "./src/AsyncStore";
-import { getUserRole, loginSuccess, clearUserData, refreshToken } from './src/Redux/slices/loginSlice';
+import { getUserRole, loginSuccess, clearUserData } from './src/Redux/slices/loginSlice';
+import { refreshAccessToken } from './src/Networking/Client';
 
 function App() {
   const [showSplash, setShowSplash] = useState(true);
-  const [role, setRole] = useState<string | null>(null);
-  const [userData, setUserData] = useState(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [storedRole, setStoredRole] = useState<string | null>(null);
+  const [authReady, setAuthReady] = useState(false);
+  const [startupError, setStartupError] = useState(false);
+  const [startupAttempt, setStartupAttempt] = useState(0);
   const selector = useSelector((state: any) => state.login);
   const dispatch = useDispatch();
+  const role = selector?.role || storedRole;
+  const isLoggedIn = selector?.isAuthenticated;
+
+  const loadStoredSession = useCallback(async () => {
+    const [token, userData, userRole, isLogin] = await Promise.all([
+      AsyncStore.getData(AsyncStore.Keys.USER_TOKEN),
+      AsyncStore.getData(AsyncStore.Keys.USER_DATA),
+      AsyncStore.getData(AsyncStore.Keys.ROLE),
+      AsyncStore.getData(AsyncStore.Keys.IS_LOGIN),
+    ]);
+    if (token && isLogin === 'true') {
+      const user = userData ? JSON.parse(userData) : null;
+      setStoredRole(userRole ? JSON.parse(userRole) : null);
+      dispatch(loginSuccess({ user, token, isAuthenticated: true }));
+    } else {
+      setStoredRole(null);
+      dispatch(clearUserData());
+    }
+  }, [dispatch]);
 
   useEffect(() => {
-
-    const isRunningTests = typeof process !== 'undefined' &&
-      (process.env as NodeJS.ProcessEnv)?.JEST_WORKER_ID !== undefined;
-
-    if (isRunningTests) {
-      setShowSplash(false);
-      return;
-    }
     let timeout: NodeJS.Timeout;
     let mounted = true;
+    setStartupError(false);
 
-    const loadStorage = async () => {
-      await LocalStorageaData();
+    const initializeSession = async () => {
+      try {
+        await refreshAccessToken();
+      } catch (error: any) {
+        if ([400, 401, 403].includes(error?.status)) {
+          await AsyncStore.multiRemove([
+            AsyncStore.Keys.USER_TOKEN, AsyncStore.Keys.REFRESH_TOKEN,
+            AsyncStore.Keys.USER_DATA, AsyncStore.Keys.ROLE,
+            AsyncStore.Keys.IS_LOGIN, AsyncStore.Keys.USER_ID,
+            AsyncStore.Keys.IS_VERIFIED, AsyncStore.Keys.EMP_ID, AsyncStore.Keys.ORG_ID,
+          ]);
+        } else {
+          throw error;
+        }
+      }
+      if (!mounted) {
+        return;
+      }
+      await loadStoredSession();
+      if (!mounted) {
+        return;
+      }
+      setAuthReady(true);
+      timeout = setTimeout(() => setShowSplash(false), 1400);
+    };
+
+    initializeSession().catch(() => {
       if (mounted) {
-        timeout = setTimeout(() => {
-          setShowSplash(false);
-        }, 1400);
+        setStartupError(true);
       }
-    };
-
-    loadStorage();
-
-    const handleAppState = (nextAppState: AppStateStatus) => {
-      if (nextAppState === 'active') {
-        LocalStorageaData();
-      }
-    };
-
-    const sub = AppState.addEventListener('change', handleAppState);
+    });
 
     return () => {
       mounted = false;
       if (timeout) {
         clearTimeout(timeout);
       }
-      sub.remove();
     };
-  }, []);
+  }, [dispatch, loadStoredSession, startupAttempt]);
 
   useEffect(() => {
-    if (selector?.errorCode) {
-      if (selector.errorCode == 401) {
-        handleRefreshToken();
-        console.log('Unauthorized error, attempting to refresh token');
+    if (!authReady) {
+      return;
+    }
+    const sub = AppState.addEventListener('change', nextAppState => {
+      if (nextAppState === 'active') {
+        loadStoredSession().catch(() => console.warn('Unable to restore stored session'));
       }
-    }
-     
-  }, [selector?.errorCode]);
+    });
+    return () => sub.remove();
+  }, [authReady, loadStoredSession]);
 
-  const handleRefreshToken = async () => {
-    const refreshTokenValue = await AsyncStore.getData(AsyncStore?.Keys?.REFRESH_TOKEN);
-    const payload = {
-      'refresh_token': refreshTokenValue
+  useEffect(() => {
+    if (authReady && selector?.isAuthenticated && selector?.user?.id && !role) {
+      dispatch(getUserRole(selector.user.id) as any);
+      console.log('Fetching user role for user:', selector?.user?.id);
     }
-    dispatch(refreshToken(payload) as any);
+  }, [authReady, selector?.isAuthenticated, selector?.user?.id, role, dispatch]);
 
-    handleUserRole(selector?.role);
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setStoredRole(null);
+    }
+  }, [isLoggedIn]);
+
+  if (startupError) {
+    return (
+      <View style={styles.centered}>
+        <Text>Unable to connect. Please try again.</Text>
+        <Button title="Retry" onPress={() => setStartupAttempt(attempt => attempt + 1)} />
+      </View>
+    );
   }
-
-  useEffect(() => {
-    LocalStorageaData();
-  }, [selector?.isAuthenticated, selector?.userId, selector?.role]);
-
-  useEffect(() => {
-    setUserData(selector?.user ?? null);
-    setRole(selector?.role ?? null);
-  }, [selector?.user, selector?.role]);
-
-  useEffect(() => {
-    if (selector?.isAuthenticated && selector?.user && !selector?.role) {
-      handleUserRole(selector?.user?.id);
-    }
-  }, [selector?.isAuthenticated, selector?.user, selector?.role, dispatch]);
-
-  const handleUserRole = async (userId: string | null) => {
-    const refreshTokenValue = await AsyncStore.getData(AsyncStore?.Keys?.REFRESH_TOKEN);
-    const payload = {
-      'refresh_token': refreshTokenValue
-    }
-    dispatch(refreshToken(payload) as any);
-    const response = dispatch(getUserRole(userId) as any);
-  }
-
-  const LocalStorageaData = async () => {
-    try {
-      const tokenValue = await AsyncStore.getData(AsyncStore?.Keys?.USER_TOKEN);
-      const userLoggedInData = await AsyncStore.getData(AsyncStore?.Keys?.USER_DATA);
-      const userRole = await AsyncStore.getData(AsyncStore?.Keys?.ROLE);
-      const isLogin = await AsyncStore.getData(AsyncStore?.Keys?.IS_LOGIN);
-
-      setToken(tokenValue ?? null);
-      setIsLoggedIn(isLogin === 'true');
-
-      // If token exists in storage but Redux isn't updated, dispatch loginSuccess
-      if (tokenValue && !selector?.isAuthenticated) {
-        try {
-          const parsedUser = userLoggedInData ? JSON.parse(userLoggedInData) : null;
-          dispatch((loginSuccess as any)({ user: parsedUser, token: tokenValue, isAuthenticated: true }));
-        } catch (e) {
-          dispatch((loginSuccess as any)({ user: null, token: tokenValue, isAuthenticated: true }));
-        }
-      }
-
-      // If token removed from storage but Redux still thinks authenticated, clear Redux
-      if (!tokenValue && selector?.isAuthenticated) {
-        dispatch(clearUserData() as any);
-      }
-
-      if (userRole) {
-        const parsedRole = JSON.parse(userRole);
-        setRole(parsedRole);
-      }
-      if (userLoggedInData) {
-        const parsedUserData = JSON.parse(userLoggedInData);
-        setUserData(parsedUserData);
-      }
-    } catch (error) {
-      console.warn('Error loading local storage auth data', error);
-      setToken(null);
-    }
-  };
-
-
 
   if (showSplash) {
     return (
@@ -161,7 +135,7 @@ function App() {
       {isLoggedIn && role ? (
         <AppNavigator isUserLoggedIn={isLoggedIn} userType={role as any} />
       ) : isLoggedIn && !role ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <View style={styles.centered}>
           <ActivityIndicator size="large" color="#007AFF" />
         </View>
       ) : (
@@ -171,5 +145,9 @@ function App() {
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+});
 
 export default App;
