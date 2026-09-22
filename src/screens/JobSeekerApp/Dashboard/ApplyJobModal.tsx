@@ -32,6 +32,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { StackIdentifiersParamList } from '../../../types/navigation';
 import ReviewJobApplication from './ReviewJobApplication';
+import DashboardSkeleton from './DashboardSkeleton';
 
 interface ApplyJobModalProps {
     visible: boolean;
@@ -43,12 +44,11 @@ interface ApplyJobModalProps {
 
 const EXPERIENCE_OPTIONS = [
     { label: 'Select experience', value: '' },
-    { label: 'Fresher (0 years)', value: '0' },
-    { label: '1 year', value: '1' },
-    { label: '2 years', value: '2' },
-    { label: '3 years', value: '3' },
-    { label: '4 years', value: '4' },
-    { label: '5+ years', value: '5+' },
+    { label: '0-1 years', value: '0' },
+    { label: '1-3 years', value: '1' },
+    { label: '3-5 years', value: '2' },
+    { label: '5-8 years', value: '3' },
+    { label: '8+', value: '4' },
 ];
 
 const formatFileSize = (bytes?: number | null) => {
@@ -106,6 +106,7 @@ export default function ApplyJobModal({ visible, onClose, job, onSubmit, onBrows
     const [agreedToTerms, setAgreedToTerms] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showReviewModal, setShowReviewModal] = useState(false);
+    const loader = profileSelector?.isResumesLoading;
 
     useEffect(() => {
         if (visible) {
@@ -116,7 +117,7 @@ export default function ApplyJobModal({ visible, onClose, job, onSubmit, onBrows
             loadResumes();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [visible,userData]);
+    }, [visible, userData]);
 
     useEffect(() => {
         if (Array.isArray(resumesList) && resumesList.length > 0 && !selectedResumeId) {
@@ -234,23 +235,23 @@ export default function ApplyJobModal({ visible, onClose, job, onSubmit, onBrows
     const experienceOptions = EXPERIENCE_OPTIONS.some((option) => option.value === yearsOfExperience)
         ? EXPERIENCE_OPTIONS
         : [{ label: yearsOfExperience, value: yearsOfExperience }, ...EXPERIENCE_OPTIONS];
-        const jobType = formatJobType(job?.employment_type);
-        const selectedResume = Array.isArray(resumesList)
-            ? resumesList.find((item: any, index: number) => (item?.id ?? index) === selectedResumeId)
-            : null;
-        const resumeSize = formatFileSize(selectedResume?.file_size);
-        const resumeName = selectedResume?.file_name;
-        const email = homeSelector?.userMetaData?.email;
+    const jobType = formatJobType(job?.employment_type);
+    const selectedResume = Array.isArray(resumesList)
+        ? resumesList.find((item: any, index: number) => (item?.id ?? index) === selectedResumeId)
+        : null;
+    const resumeSize = formatFileSize(selectedResume?.file_size);
+    const resumeName = selectedResume?.file_name;
+    const email = homeSelector?.userMetaData?.email;
     return (
         <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-                <KeyboardAvoidingView
-                    style={[styles.container, {paddingVertical: Platform.OS === 'ios' ? 50 : 30}]}
-                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                >
-                    {showReviewModal ? (
-                        <ReviewJobApplication
-                        applicationData = {{
-                            jobTitle:job?.title,
+            <KeyboardAvoidingView
+                style={[styles.container, { paddingVertical: Platform.OS === 'ios' ? 50 : 30 }]}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            >
+                {showReviewModal ? (
+                    <ReviewJobApplication
+                        applicationData={{
+                            jobTitle: job?.title,
                             companyName: companyName,
                             location: job?.location,
                             experienceLevel: job?.experience_level,
@@ -268,223 +269,224 @@ export default function ApplyJobModal({ visible, onClose, job, onSubmit, onBrows
                             coverLetter,
                             jobId: job?.id,
                         }}
-                            onBack={() => setShowReviewModal(false)}
-                            onSubmit={handleConfirmSubmit}
-                            onBrowseMoreJobs={handleBrowseMoreJobs}
-                        />
-                    ) : (
+                        onBack={() => setShowReviewModal(false)}
+                        onSubmit={handleConfirmSubmit}
+                        onBrowseMoreJobs={handleBrowseMoreJobs}
+                    />
+                ) : (
                     <>
-                    <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-                        <X size={18} color="#363535" />
-                    </TouchableOpacity>
+                        <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+                            <X size={18} color="#363535" />
+                        </TouchableOpacity>
 
-                    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-                        {/* Job Summary Card */}
-                        <View style={styles.jobCard}>
-                            <View style={styles.jobCardTopRow}>
-                                <Text style={styles.jobCardTitle}>{job?.title}</Text>
-                                <View style={styles.companyLogoBox}>
-                                    <Text style={styles.companyLogoText}>{companyInitials}</Text>
-                                </View>
-                            </View>
-                            <Text style={styles.jobCardCompany}>{companyName}</Text>
-
-                            <View style={styles.jobCardMetaRow}>
-                                <MapPin size={14} color="#165DFC" />
-                                <Text style={styles.jobCardMetaText}>{job?.location}</Text>
-                                <Briefcase size={14} color="#165DFC" style={styles.jobCardMetaIconSpacer} />
-                                <Text style={styles.jobCardMetaText}>{job?.experience_level}</Text>
-                            </View>
-                            <View style={styles.jobCardMetaRow}>
-                                <Camera size={14} color="#165DFC" />
-                                <Text style={styles.jobCardMetaText}>{formatSalary(job)}</Text>
-                            </View>
-                            <View style={styles.jobCardMetaRow}>
-                                <Clock size={14} color="#165DFC" />
-                                <Text style={styles.jobCardMetaText}>{jobType}</Text>
-                            </View>
-
-                            <View style={styles.tagsRow}>
-                                {isRemote && (
-                                    <View style={styles.remoteTag}>
-                                        <Text style={styles.remoteTagText}>Remote Work</Text>
+                        {loader ? <DashboardSkeleton applyJob /> :
+                            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+                                {/* Job Summary Card */}
+                                <View style={styles.jobCard}>
+                                    <View style={styles.jobCardTopRow}>
+                                        <Text style={styles.jobCardTitle}>{job?.title}</Text>
+                                        <View style={styles.companyLogoBox}>
+                                            <Text style={styles.companyLogoText}>{companyInitials}</Text>
+                                        </View>
                                     </View>
-                                )}
-                                {job?.video_intro_required && (
-                                    <View style={styles.videoTag}>
-                                        <Text style={styles.videoTagText}>Video Intro Required</Text>
+                                    <Text style={styles.jobCardCompany}>{companyName}</Text>
+
+                                    <View style={styles.jobCardMetaRow}>
+                                        <MapPin size={14} color="#165DFC" />
+                                        <Text style={styles.jobCardMetaText}>{job?.location}</Text>
+                                        <Briefcase size={14} color="#165DFC" style={styles.jobCardMetaIconSpacer} />
+                                        <Text style={styles.jobCardMetaText}>{job?.experience_level}</Text>
                                     </View>
-                                )}
-                            </View>
-                        </View>
+                                    <View style={styles.jobCardMetaRow}>
+                                        <Camera size={14} color="#165DFC" />
+                                        <Text style={styles.jobCardMetaText}>{formatSalary(job)}</Text>
+                                    </View>
+                                    <View style={styles.jobCardMetaRow}>
+                                        <Clock size={14} color="#165DFC" />
+                                        <Text style={styles.jobCardMetaText}>{jobType}</Text>
+                                    </View>
 
-                        {/* Application Form Card */}
-                        <View style={styles.formCard}>
-                            <Text style={styles.headerTitle}>Submit Your Application</Text>
-                            <Text style={styles.headerSubtitle}>Fill in the details below to apply for this position</Text>
-
-                            {/* Personal Information */}
-                            <View style={styles.sectionHeaderRow}>
-                                <View style={styles.sectionIconBox}>
-                                    <User size={16} color="#FFFFFF" />
+                                    <View style={styles.tagsRow}>
+                                        {isRemote && (
+                                            <View style={styles.remoteTag}>
+                                                <Text style={styles.remoteTagText}>Remote Work</Text>
+                                            </View>
+                                        )}
+                                        {job?.video_intro_required && (
+                                            <View style={styles.videoTag}>
+                                                <Text style={styles.videoTagText}>Video Intro Required</Text>
+                                            </View>
+                                        )}
+                                    </View>
                                 </View>
-                                <Text style={styles.sectionTitle}>Personal Information</Text>
-                            </View>
 
-                            <Text style={styles.fieldLabel}>Full Name <Text style={styles.required}>*</Text></Text>
-                            <TextInput
-                                style={styles.input}
-                                value={fullName}
-                                onChangeText={setFullName}
-                                placeholder="e.g., John Doe"
-                                placeholderTextColor="#9CA3AF"
-                            />
+                                {/* Application Form Card */}
+                                <View style={styles.formCard}>
+                                    <Text style={styles.headerTitle}>Submit Your Application</Text>
+                                    <Text style={styles.headerSubtitle}>Fill in the details below to apply for this position</Text>
 
-                            <Text style={styles.fieldLabel}>Phone Number</Text>
-                            <TextInput
-                                style={styles.input}
-                                value={phoneNumber}
-                                onChangeText={setPhoneNumber}
-                                placeholder="e.g., 9014395541"
-                                placeholderTextColor="#9CA3AF"
-                                keyboardType="phone-pad"
-                            />
+                                    {/* Personal Information */}
+                                    <View style={styles.sectionHeaderRow}>
+                                        <View style={styles.sectionIconBox}>
+                                            <User size={16} color="#FFFFFF" />
+                                        </View>
+                                        <Text style={styles.sectionTitle}>Personal Information</Text>
+                                    </View>
 
-                            {/* Professional Information */}
-                            <View style={styles.sectionHeaderRow}>
-                                <View style={styles.sectionIconBox}>
-                                    <Briefcase size={16} color="#FFFFFF" />
-                                </View>
-                                <Text style={styles.sectionTitle}>Professional Information</Text>
-                            </View>
+                                    <Text style={styles.fieldLabel}>Full Name <Text style={styles.required}>*</Text></Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        value={fullName}
+                                        onChangeText={setFullName}
+                                        placeholder="e.g., John Doe"
+                                        placeholderTextColor="#9CA3AF"
+                                    />
 
-                            <Text style={styles.fieldLabel}>Current Job Title <Text style={styles.required}>*</Text></Text>
-                            <TextInput
-                                style={styles.input}
-                                value={currentJobTitle}
-                                onChangeText={setCurrentJobTitle}
-                                placeholder="e.g., Software Engineer"
-                                placeholderTextColor="#9CA3AF"
-                            />
+                                    <Text style={styles.fieldLabel}>Phone Number</Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        value={phoneNumber}
+                                        onChangeText={setPhoneNumber}
+                                        placeholder="e.g., 9014395541"
+                                        placeholderTextColor="#9CA3AF"
+                                        keyboardType="phone-pad"
+                                    />
 
-                            <Text style={styles.fieldLabel}>Years of Experience <Text style={styles.required}>*</Text></Text>
-                            <View style={styles.pickerWrapper}>
-                                <Picker
-                                    selectedValue={yearsOfExperience}
-                                    onValueChange={(value) => setYearsOfExperience(value)}
-                                    style={styles.picker}
-                                >
-                                    {experienceOptions.map((option) => (
-                                        <Picker.Item key={option.value} label={option.label} value={option.value} />
-                                    ))}
-                                </Picker>
-                            </View>
+                                    {/* Professional Information */}
+                                    <View style={styles.sectionHeaderRow}>
+                                        <View style={styles.sectionIconBox}>
+                                            <Briefcase size={16} color="#FFFFFF" />
+                                        </View>
+                                        <Text style={styles.sectionTitle}>Professional Information</Text>
+                                    </View>
 
-                            <Text style={styles.fieldLabel}>Expected CTC <Text style={styles.required}>*</Text></Text>
-                            <TextInput
-                                style={styles.input}
-                                value={expectedCTC}
-                                onChangeText={setExpectedCTC}
-                                placeholder="e.g., 8 LPA"
-                                placeholderTextColor="#9CA3AF"
-                                keyboardType="numbers-and-punctuation"
-                            />
+                                    <Text style={styles.fieldLabel}>Current Job Title <Text style={styles.required}>*</Text></Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        value={currentJobTitle}
+                                        onChangeText={setCurrentJobTitle}
+                                        placeholder="e.g., Software Engineer"
+                                        placeholderTextColor="#9CA3AF"
+                                    />
 
-                            {/* Resume/CV */}
-                            <View style={styles.sectionHeaderRow}>
-                                <View style={styles.sectionIconBox}>
-                                    <FileText size={16} color="#FFFFFF" />
-                                </View>
-                                <Text style={styles.sectionTitle}>Resume/CV <Text style={styles.required}>*</Text></Text>
-                            </View>
-
-                            <View style={styles.resumeHeaderRow}>
-                                <Text style={styles.resumeHeaderLabel}>Your Saved Resumes</Text>
-                                <TouchableOpacity style={styles.addResumeButton} onPress={handleAddNewResume}>
-                                    <Plus size={14} color="#8B3DFF" />
-                                    <Text style={styles.addResumeText}>Add New Resume</Text>
-                                </TouchableOpacity>
-                            </View>
-
-                            {Array.isArray(resumesList) && resumesList.length > 0 ? (
-                                resumesList.map((item: any, index: number) => {
-                                    const isSelected = selectedResumeId === (item?.id ?? index);
-                                    return (
-                                        <TouchableOpacity
-                                            key={item?.id ?? index}
-                                            style={[styles.resumeCard, isSelected && styles.resumeCardSelected]}
-                                            onPress={() => setSelectedResumeId(item?.id ?? index)}
+                                    <Text style={styles.fieldLabel}>Years of Experience <Text style={styles.required}>*</Text></Text>
+                                    <View style={styles.pickerWrapper}>
+                                        <Picker
+                                            selectedValue={yearsOfExperience}
+                                            onValueChange={(value) => setYearsOfExperience(value)}
+                                            style={styles.picker}
                                         >
-                                            <View style={styles.resumeCardIconBox}>
-                                                <FileText size={18} color="#8B3DFF" />
-                                            </View>
-                                            <View style={styles.resumeCardInfo}>
-                                                <Text style={styles.resumeCardFileName} numberOfLines={1}>{item?.file_name}</Text>
-                                                <Text style={styles.resumeCardMeta}>
-                                                    {formatFileSize(item?.file_size)} · Uploaded {formatRelativeTime(item?.upload_date || item?.created_at)}
-                                                </Text>
-                                            </View>
-                                            <View style={[styles.radioOuter, isSelected && styles.radioOuterSelected]}>
-                                                {isSelected && <View style={styles.radioInner} />}
-                                            </View>
+                                            {experienceOptions.map((option) => (
+                                                <Picker.Item key={option.value} label={option.label} value={option.value} />
+                                            ))}
+                                        </Picker>
+                                    </View>
+
+                                    <Text style={styles.fieldLabel}>Expected CTC <Text style={styles.required}>*</Text></Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        value={expectedCTC}
+                                        onChangeText={setExpectedCTC}
+                                        placeholder="e.g., 8 LPA"
+                                        placeholderTextColor="#9CA3AF"
+                                        keyboardType="numbers-and-punctuation"
+                                    />
+
+                                    {/* Resume/CV */}
+                                    <View style={styles.sectionHeaderRow}>
+                                        <View style={styles.sectionIconBox}>
+                                            <FileText size={16} color="#FFFFFF" />
+                                        </View>
+                                        <Text style={styles.sectionTitle}>Resume/CV <Text style={styles.required}>*</Text></Text>
+                                    </View>
+
+                                    <View style={styles.resumeHeaderRow}>
+                                        <Text style={styles.resumeHeaderLabel}>Your Saved Resumes</Text>
+                                        <TouchableOpacity style={styles.addResumeButton} onPress={handleAddNewResume}>
+                                            <Plus size={14} color="#8B3DFF" />
+                                            <Text style={styles.addResumeText}>Add New Resume</Text>
                                         </TouchableOpacity>
-                                    );
-                                })
-                            ) : (
-                                <Text style={styles.noResumeText}>No resumes uploaded yet. Add one to continue.</Text>
-                            )}
+                                    </View>
 
-                            {/* Cover Letter */}
-                            <View style={styles.sectionHeaderRow}>
-                                <View style={styles.sectionIconBox}>
-                                    <Mail size={16} color="#FFFFFF" />
+                                    {Array.isArray(resumesList) && resumesList.length > 0 ? (
+                                        resumesList.map((item: any, index: number) => {
+                                            const isSelected = selectedResumeId === (item?.id ?? index);
+                                            return (
+                                                <TouchableOpacity
+                                                    key={item?.id ?? index}
+                                                    style={[styles.resumeCard, isSelected && styles.resumeCardSelected]}
+                                                    onPress={() => setSelectedResumeId(item?.id ?? index)}
+                                                >
+                                                    <View style={styles.resumeCardIconBox}>
+                                                        <FileText size={18} color="#8B3DFF" />
+                                                    </View>
+                                                    <View style={styles.resumeCardInfo}>
+                                                        <Text style={styles.resumeCardFileName} numberOfLines={1}>{item?.file_name}</Text>
+                                                        <Text style={styles.resumeCardMeta}>
+                                                            {formatFileSize(item?.file_size)} · Uploaded {formatRelativeTime(item?.upload_date || item?.created_at)}
+                                                        </Text>
+                                                    </View>
+                                                    <View style={[styles.radioOuter, isSelected && styles.radioOuterSelected]}>
+                                                        {isSelected && <View style={styles.radioInner} />}
+                                                    </View>
+                                                </TouchableOpacity>
+                                            );
+                                        })
+                                    ) : (
+                                        <Text style={styles.noResumeText}>No resumes uploaded yet. Add one to continue.</Text>
+                                    )}
+
+                                    {/* Cover Letter */}
+                                    <View style={styles.sectionHeaderRow}>
+                                        <View style={styles.sectionIconBox}>
+                                            <Mail size={16} color="#FFFFFF" />
+                                        </View>
+                                        <Text style={styles.sectionTitle}>Cover Letter</Text>
+                                    </View>
+
+                                    <Text style={styles.fieldLabel}>Cover Letter (Optional)</Text>
+                                    <TextInput
+                                        style={[styles.input, styles.textArea]}
+                                        value={coverLetter}
+                                        onChangeText={setCoverLetter}
+                                        placeholder="Tell us why you're interested in this position and what makes you a great fit..."
+                                        placeholderTextColor="#9CA3AF"
+                                        multiline
+                                        numberOfLines={5}
+                                        textAlignVertical="top"
+                                    />
+
+                                    {/* Confirmation */}
+                                    <View style={styles.sectionHeaderRow}>
+                                        <View style={[styles.sectionIconBox, styles.sectionIconCircle]}>
+                                            <Check size={16} color="#FFFFFF" />
+                                        </View>
+                                        <Text style={styles.sectionTitle}>Confirmation</Text>
+                                    </View>
+
+                                    <TouchableOpacity style={styles.confirmationRow} onPress={() => setAgreedToTerms(!agreedToTerms)}>
+                                        <View style={[styles.checkbox, agreedToTerms && styles.checkboxChecked]}>
+                                            {agreedToTerms && <Check size={13} color="#FFFFFF" />}
+                                        </View>
+                                        <Text style={styles.confirmationText}>
+                                            I agree to the <Text style={styles.linkText}>Terms and Conditions</Text> and{' '}
+                                            <Text style={styles.linkText}>Privacy Policy</Text>, and confirm that all information provided is accurate. <Text style={styles.required}>*</Text>
+                                        </Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        style={[styles.reviewButton, isSubmitting && styles.reviewButtonDisabled]}
+                                        onPress={handleReviewApplication}
+                                        disabled={isSubmitting}
+                                    >
+                                        <Text style={styles.reviewButtonText}>Review Application</Text>
+                                    </TouchableOpacity>
                                 </View>
-                                <Text style={styles.sectionTitle}>Cover Letter</Text>
-                            </View>
 
-                            <Text style={styles.fieldLabel}>Cover Letter (Optional)</Text>
-                            <TextInput
-                                style={[styles.input, styles.textArea]}
-                                value={coverLetter}
-                                onChangeText={setCoverLetter}
-                                placeholder="Tell us why you're interested in this position and what makes you a great fit..."
-                                placeholderTextColor="#9CA3AF"
-                                multiline
-                                numberOfLines={5}
-                                textAlignVertical="top"
-                            />
-
-                            {/* Confirmation */}
-                            <View style={styles.sectionHeaderRow}>
-                                <View style={[styles.sectionIconBox, styles.sectionIconCircle]}>
-                                    <Check size={16} color="#FFFFFF" />
-                                </View>
-                                <Text style={styles.sectionTitle}>Confirmation</Text>
-                            </View>
-
-                            <TouchableOpacity style={styles.confirmationRow} onPress={() => setAgreedToTerms(!agreedToTerms)}>
-                                <View style={[styles.checkbox, agreedToTerms && styles.checkboxChecked]}>
-                                    {agreedToTerms && <Check size={13} color="#FFFFFF" />}
-                                </View>
-                                <Text style={styles.confirmationText}>
-                                    I agree to the <Text style={styles.linkText}>Terms and Conditions</Text> and{' '}
-                                    <Text style={styles.linkText}>Privacy Policy</Text>, and confirm that all information provided is accurate. <Text style={styles.required}>*</Text>
-                                </Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                style={[styles.reviewButton, isSubmitting && styles.reviewButtonDisabled]}
-                                onPress={handleReviewApplication}
-                                disabled={isSubmitting}
-                            >
-                                <Text style={styles.reviewButtonText}>Review Application</Text>
-                            </TouchableOpacity>
-                        </View>
-
-                    </ScrollView>
+                            </ScrollView>}
                     </>
-                    )}
-                </KeyboardAvoidingView>
+                )}
+            </KeyboardAvoidingView>
         </Modal>
     );
 }
@@ -534,7 +536,7 @@ const styles = StyleSheet.create({
         marginRight: 16,
         borderWidth: 1,
         borderColor: '#EAEBEE',
-        
+
     },
     scrollContent: {
         padding: 16,

@@ -20,6 +20,7 @@ interface profileState {
     resumes: any[];
     educationData: any[];
     profileUploadData: object | null;
+    isResumesLoading: boolean;
 }
 
 const initialState: profileState = {
@@ -39,6 +40,7 @@ const initialState: profileState = {
     resumes: [],
     educationData: [],
     profileUploadData: null,
+    isResumesLoading: false,
 };
 type Config = {
   headers?: string;
@@ -621,16 +623,16 @@ const profileSlice = createSlice({
             //getResumes async thunk handlers
             builder
             .addCase(getResumes.pending, (state) => {
-                state.isLoading = true;
+                state.isResumesLoading = true;
                 state.error = null;
             })
             .addCase(getResumes.fulfilled, (state, action) => {
-                state.isLoading = false;
+                state.isResumesLoading = false;
                 state.resumes = action.payload; // Assuming the API returns resumes data
                 state.error = null;
             })
             .addCase(getResumes.rejected, (state, action) => {
-                state.isLoading = false;
+                state.isResumesLoading = false;
                 state.error = action.payload as string;
             });
             //deleteWorkExperience async thunk handlers

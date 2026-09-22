@@ -9,6 +9,7 @@ import { getCourses, getEnrollmentCourses } from '../../../Redux/slices/coursesS
 import { useDispatch, useSelector } from 'react-redux';
 import { Search, BookOpen, Play, GraduationCap } from 'lucide-react-native';
 import * as AsyncStore from "../../../AsyncStore";
+import CoursesSkeleton from './CoursesSkeleton';
 
 
 
@@ -71,6 +72,8 @@ const CoursesScreen = () => {
   };
 
   const enrolledCourses = selector?.enrolledCourse || [];
+  const loader = selector?.isCoursesLoading;
+  
   return (
     <SafeAreaView style={styles.container}>
       {/* Sticky Header */}
@@ -81,12 +84,12 @@ const CoursesScreen = () => {
         >
           <Text style={styles.menuIcon}>☰</Text>
         </TouchableOpacity>
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={styles.filterButton}
           onPress={() => setShowFilterModal(true)}
         >
           <Funnel size={15} />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
 
       {/* Stats Section */}
@@ -175,7 +178,12 @@ const CoursesScreen = () => {
           </View>
         </View>
 
-        {/* Stats Grid */}
+       {
+        loader ? (
+          <CoursesSkeleton courses={true} />
+        ) : (
+          <View>
+             {/* Stats Grid */}
         <View style={styles.statsGrid}>
           {stats.map((stat, index) => (
             <View key={index} style={styles.statCard}>
@@ -218,6 +226,9 @@ const CoursesScreen = () => {
             </View>
           ))}
         </View>
+          </View>
+        )
+       }
       </ScrollView>
       {/* Filter Modal */}
       <FilterModal

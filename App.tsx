@@ -12,7 +12,6 @@ import SplashScreen from './src/screens/SplashScreen';
 import { useSelector, useDispatch } from 'react-redux';
 import * as AsyncStore from "./src/AsyncStore";
 import { getUserRole, loginSuccess, clearUserData } from './src/Redux/slices/loginSlice';
-import { refreshAccessToken } from './src/Networking/Client';
 
 function App() {
   const [showSplash, setShowSplash] = useState(true);
@@ -48,20 +47,6 @@ function App() {
     setStartupError(false);
 
     const initializeSession = async () => {
-      try {
-        await refreshAccessToken();
-      } catch (error: any) {
-        if ([400, 401, 403].includes(error?.status)) {
-          await AsyncStore.multiRemove([
-            AsyncStore.Keys.USER_TOKEN, AsyncStore.Keys.REFRESH_TOKEN,
-            AsyncStore.Keys.USER_DATA, AsyncStore.Keys.ROLE,
-            AsyncStore.Keys.IS_LOGIN, AsyncStore.Keys.USER_ID,
-            AsyncStore.Keys.IS_VERIFIED, AsyncStore.Keys.EMP_ID, AsyncStore.Keys.ORG_ID,
-          ]);
-        } else {
-          throw error;
-        }
-      }
       if (!mounted) {
         return;
       }

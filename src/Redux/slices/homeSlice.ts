@@ -21,6 +21,16 @@ interface homeState {
     appliedJobs: any[]; // Adjust the type based on your applied jobs data structure
     reloadJobs: boolean;
     withdrawApplicationResponse: any | null;
+    isSavedJobsLoading: boolean;
+    isUserMetaDataLoading: boolean;
+    isProfileByIdLoading: boolean;
+    isAppliedJobsLoading: boolean;
+    isWithdrawApplicationLoading: boolean;
+    isUnsaveJobLoading: boolean;
+    isRecommendJobsLoading: boolean;
+    isJobDetailsLoading: boolean;
+    isSaveJobLoading: boolean;
+    isApplyJobLoading: boolean;
 }
 
 const initialState: homeState = {
@@ -38,6 +48,16 @@ const initialState: homeState = {
     appliedJobs: [],
     reloadJobs: false,
     withdrawApplicationResponse: null,
+    isSavedJobsLoading: false,
+    isUserMetaDataLoading: false,
+    isProfileByIdLoading: false,
+    isAppliedJobsLoading: false,
+    isWithdrawApplicationLoading: false,
+    isUnsaveJobLoading: false,
+    isRecommendJobsLoading: false,
+    isJobDetailsLoading: false,
+    isSaveJobLoading: false,
+    isApplyJobLoading: false,
 };
 //Recommended jobs API call
 export const getRecommendedJobs = createAsyncThunk(
@@ -92,12 +112,28 @@ export const getSavedJobsList = createAsyncThunk(
     "home/getSavedJobsList",
     async ({ userId }: { userId: string}, { rejectWithValue }) => {
         try {
-            const response = await client.get(JOBS_ENDPOINTS.savedJob(userId));
+            const response = await client.get(JOBS_ENDPOINTS.savedJobs(userId));
             return response.data || response;
         } catch (error: any) {
             console.log('Error saving job:', error);
             return rejectWithValue({
                 message: error?.message || 'Failed to save job',
+                code: error?.code || 'ERROR',
+            });
+        }
+    }
+);
+//Unsave job API call
+export const unsaveJob = createAsyncThunk(
+    "home/unsaveJob",
+    async ({ userId, jobId }: { userId: string, jobId: string }, { rejectWithValue }) => {
+        try {
+            const response = await client.delete(JOBS_ENDPOINTS.unsaveJob(jobId), { userId });
+            return response.data || response;
+        } catch (error: any) {
+            console.log('Error unsaving job:', error);
+            return rejectWithValue({
+                message: error?.message || 'Failed to unsave job',
                 code: error?.code || 'ERROR',
             });
         }
@@ -194,10 +230,12 @@ const homeSlice = createSlice({
             state.isLoading = false;
             state.error = null;
             state.recommendedJobs = [];
+            state.appliedJobs = [];
             state.total = 0;
             state.savedJobs = [];
             state.userMetaData = null;
             state.jobDetails = null;
+            state.profileByIdData = null;
         },
         clearError: (state) => {
             state.error = null;
@@ -210,136 +248,136 @@ const homeSlice = createSlice({
         builder
             // getRecommendedJobs async thunk handlers
             .addCase(getRecommendedJobs.pending, (state) => {
-                state.isLoading = true;
+                state.isRecommendJobsLoading = true;
                 state.error = null;
 
             })
             .addCase(getRecommendedJobs.fulfilled, (state, action) => {
-                state.isLoading = false;
+                state.isRecommendJobsLoading = false;
                 state.recommendedJobs = action.payload; // Assuming the API returns an array of jobs
                 state.error = null;
             })
             .addCase(getRecommendedJobs.rejected, (state, action) => {
-                state.isLoading = false;
+                state.isRecommendJobsLoading = false;
                 state.error = action.payload as string;
                 console.log('Error fetching recommended jobs:', action.payload);
             })
             //getAppliedJobs async thunk handlers
             .addCase(getAppliedJobs.pending, (state) => {
-                state.isLoading = true;
+                state.isAppliedJobsLoading = true;
                 state.error = null;
             })
             .addCase(getAppliedJobs.fulfilled, (state, action) => {
-                state.isLoading = false;
+                state.isAppliedJobsLoading = false;
                 state.appliedJobs = action.payload;
                 state.error = null;
             })
             .addCase(getAppliedJobs.rejected, (state, action) => {
-                state.isLoading = false;
+                state.isAppliedJobsLoading = false;
                 state.error = action.payload as string;
                 console.log('Error fetching applied jobs:', action.payload);
             })
              //saved jobs async thunk handlers
             .addCase(getSavedJobsList.pending, (state) => {
-                state.isLoading = true;
+                state.isSavedJobsLoading = true;
                 state.error = null;
             })
             .addCase(getSavedJobsList.fulfilled, (state, action) => {
-                state.isLoading = false;
+                state.isSavedJobsLoading = false;
                 state.savedJobs = action.payload; // Assuming the API returns an array of saved jobs
                 state.error = null;
             })
             .addCase(getSavedJobsList.rejected, (state, action) => {
-                state.isLoading = false;
+                state.isSavedJobsLoading = false;
                 state.error = action.payload as string;
                 console.log('Error fetching saved jobs:', action.payload);
             })
             // getJobDetails async thunk handlers
             .addCase(getJobDetails.pending, (state) => {
-                state.isLoading = true;
+                state.isJobDetailsLoading = true;
                 state.error = null;
             })
             .addCase(getJobDetails.fulfilled, (state, action) => {
-                state.isLoading = false;
+                state.isJobDetailsLoading = false;
                 state.jobDetails = action.payload;
                 state.error = null;
             })
             .addCase(getJobDetails.rejected, (state, action) => {
-                state.isLoading = false;
+                state.isJobDetailsLoading = false;
                 state.error = action.payload as string;
                 console.log('Error fetching job details:', action.payload);
             })
             //saveJob async thunk handlers
             .addCase(saveJobs.pending, (state) => {
-                state.isLoading = true;
+                state.isSaveJobLoading = true;
                 state.error = null;
             })
             .addCase(saveJobs.fulfilled, (state, action) => {
-                state.isLoading = false;
+                state.isSaveJobLoading = false;
                 state.error = null;
             })
             .addCase(saveJobs.rejected, (state, action) => {
-                state.isLoading = false;
+                state.isSaveJobLoading = false;
                 state.error = action.payload as string;
                 console.log('Error saving job:', action.payload);
             })
             //getUserMetaData async thunk handlers
             .addCase(getUserMetaData.pending, (state) => {
-                state.isLoading = true;
+                state.isUserMetaDataLoading = true;
                 state.error = null;
             })
             .addCase(getUserMetaData.fulfilled, (state, action) => {
-                state.isLoading = false;
+                state.isUserMetaDataLoading = false;
                 state.userMetaData = action.payload;
                 state.error = null;
             })
             .addCase(getUserMetaData.rejected, (state, action) => {
-                state.isLoading = false;
+                state.isUserMetaDataLoading = false;
                 state.error = action.payload as string;
             })
             //getProfileById async thunk handlers
             .addCase(getProfileById.pending, (state) => {
-                state.isLoading = true;
+                state.isProfileByIdLoading = true;
                 state.error = null;
             })
             .addCase(getProfileById.fulfilled, (state, action) => {
-                state.isLoading = false;
+                state.isProfileByIdLoading = false;
                 state.profileByIdData = action.payload;
                 state.error = null;
             })
             .addCase(getProfileById.rejected, (state, action) => {
-                state.isLoading = false;
+                state.isProfileByIdLoading = false;
                 state.error = action.payload as string;
                 console.log('Error fetching profile by id:', action.payload);
             })
             //applyJob async thunk handlers
             .addCase(applyJob.pending, (state) => {
-                state.isLoading = true;
+                state.isApplyJobLoading = true;
                 state.error = null;
             })
             .addCase(applyJob.fulfilled, (state, action) => {
-                state.isLoading = false;
+                state.isApplyJobLoading = false;
                 state.error = null;
                 state.jobApplicationResponse = action.payload;
             })
             .addCase(applyJob.rejected, (state, action) => {
-                state.isLoading = false;
+                state.isApplyJobLoading = false;
                 state.error = action.payload as string;
                 state.alreadyAppliedJobMessage = action.payload as string;
                 console.log('Error applying for job:', action.payload);
             })
             //withdrawApplication async thunk handlers
             .addCase(withdrawApplication.pending, (state) => {
-                state.isLoading = true;
+                state.isWithdrawApplicationLoading = true;
                 state.error = null;
             })
             .addCase(withdrawApplication.fulfilled, (state, action) => {
-                state.isLoading = false;
+                state.isWithdrawApplicationLoading = false;
                 state.error = null;
                 state.withdrawApplicationResponse = action.payload;
             })
             .addCase(withdrawApplication.rejected, (state, action) => {
-                state.isLoading = false;
+                state.isWithdrawApplicationLoading = false;
                 state.error = action.payload as string;
                 console.log('Error withdrawing application:', action.payload);
             })

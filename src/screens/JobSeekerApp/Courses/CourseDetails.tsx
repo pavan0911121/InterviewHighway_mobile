@@ -1,5 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import { useDispatch, useSelector } from 'react-redux';
 // @ts-ignore
 import RazorpayCheckout from 'react-native-razorpay';
 import { BookOpen, Clock4, CreditCard, Lock, MoveLeft, Play, Shield, TrendingUp, User } from 'lucide-react-native';
+import CoursesSkeleton from './CoursesSkeleton';
 
 const { width } = Dimensions.get('window');
 
@@ -25,6 +26,7 @@ const CourseDetails: React.FC<{ route: any }> = ({ route }) => {
   const dispatch = useDispatch();
   const { courseData, isEnrolled } = route?.params
   const selector = useSelector((state: any) => state.courses);
+  const orderRequestInProgress = useRef(false);
   const courseDetails = courseData
   useEffect(() => {
 
@@ -33,12 +35,21 @@ const CourseDetails: React.FC<{ route: any }> = ({ route }) => {
     }
   }, [])
   const handlePayment = async () => {
+    if (createOrderLoader || orderRequestInProgress.current) {
+      return;
+    }
+    orderRequestInProgress.current = true;
     const body = {
       courseId: courseDetails?.id,
       amount: courseDetails?.price,
       currency: courseDetails?.currency,
     }
-    const response = await dispatch(createOrder(body) as any);
+    let response;
+    try {
+      response = await dispatch(createOrder(body) as any);
+    } finally {
+      orderRequestInProgress.current = false;
+    }
     if (response?.payload?.order?.id) {
       var options = {
         description: courseDetails?.description,
@@ -73,168 +84,178 @@ const CourseDetails: React.FC<{ route: any }> = ({ route }) => {
     }
   };
   const chapterData = selector?.chapterData?.[0];
+  const loader = selector?.isCourseDetailsLoading;
+  const createOrderLoader = selector?.isCreateOrderLoading;
   return (
     <SafeAreaView style={styles.safeAreaContainer}>
-      {selector?.isLoading ?
-        <View style={{ flex: 1, justifyContent: 'flex-start', }}>
-          <ActivityIndicator size="large" color="#0000ff" animating={selector?.isLoading} />
-        </View> :
-        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {loader ? (<CoursesSkeleton courseDetails={true} />)
+        : (
+          <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
 
-          {/* Header */}
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <MoveLeft size={20} color={'#000'} />
-            <Text style={styles.back}> Back to Courses</Text>
-          </TouchableOpacity>
+            {/* Header */}
+            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+              <MoveLeft size={20} color={'#000'} />
+              <Text style={styles.back}> Back to Courses</Text>
+            </TouchableOpacity>
 
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>business</Text>
-          </View>
-
-          <Text style={styles.title}>{courseDetails?.title}</Text>
-
-          {/* Instructor */}
-          <View style={styles.instructorRow}>
-            <View style={styles.avatar}>
-              <User color={'#fff'} />
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>business</Text>
             </View>
-            <Text style={styles.instructorText}>Instructor: {courseDetails?.instructor_name || courseDetails?.instructorName}</Text>
-          </View>
 
-          {/* Course Image */}
-          <Image
-            source={{
-              uri: courseDetails?.thumbnail_url || courseDetails?.thumbnailUrl
-            }}
-            style={styles.image}
-            resizeMode="cover"
-          />
+            <Text style={styles.title}>{courseDetails?.title}</Text>
 
-          {/* Course Details Tags */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Course Details</Text>
-
-            <View style={styles.tagRow}>
-              <View style={styles.tagBlue}>
-                <Text style={styles.tagTextBlue}>business</Text>
-              </View>
-
-              <View style={styles.tagGreen}>
-                <Text style={styles.tagTextGreen}>beginner level</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* About */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>About this course</Text>
-            <Text style={styles.desc}>{courseDetails?.description}</Text>
-          </View>
-
-          {/* Modules */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>There are {courseDetails?.total_chapters || 1} modules in this course</Text>
-
-            <View style={styles.moduleBox}>
-              <Text style={styles.moduleTitle}>Module {courseDetails?.total_chapters || 1}: {chapterData?.title}</Text>
-              <Text style={styles.moduleSub}>{chapterData?.subtitle}</Text>
-              <Text style={styles.moduleMeta}>lessons {chapterData?.chapter_order}· <Lock size={13} color={'#999'} /> Enrollment required</Text>
-            </View>
-          </View>
-
-          {/* Instructor Card */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Instructor</Text>
-
+            {/* Instructor */}
             <View style={styles.instructorRow}>
               <View style={styles.avatar}>
                 <User color={'#fff'} />
               </View>
-              <Text style={styles.instructorText}>{courseDetails?.instructor_name || courseDetails?.instructorName}</Text>
+              <Text style={styles.instructorText}>Instructor: {courseDetails?.instructor_name || courseDetails?.instructorName}</Text>
             </View>
-          </View>
 
-          {/* Pricing */}
-          <View style={styles.card}>
-            <Text style={styles.price}>INR{courseDetails?.price}</Text>
-            <Text style={styles.subText}>One-time payment</Text>
-            {isEnrolled ? (
-              <TouchableOpacity style={[styles.button, { backgroundColor: '#4CAF50' }]} onPress={() => navigation.navigate('Lesson', { enrolledCourseId: courseDetails?.id })}>
-                <Play size={16} color={'#FFF'} />
-                <Text style={styles.buttonText}>Continue Learning</Text>
-              </TouchableOpacity>
-            ) : (
-              <View>
-                <View style={styles.securityRow}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <Shield size={16} color={'#777'} />
-                    <Text style={styles.security}>Secure Payment · ₹{courseDetails?.price}</Text>
-                  </View>
+            {/* Course Image */}
+            <Image
+              source={{
+                uri: courseDetails?.thumbnail_url || courseDetails?.thumbnailUrl
+              }}
+              style={styles.image}
+              resizeMode="cover"
+            />
 
-                  <Text style={styles.security}>SSL Protected</Text>
+            {/* Course Details Tags */}
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Course Details</Text>
+
+              <View style={styles.tagRow}>
+                <View style={styles.tagBlue}>
+                  <Text style={styles.tagTextBlue}>business</Text>
                 </View>
 
-                <TouchableOpacity style={styles.button} onPress={handlePayment}>
-                  <CreditCard size={16} color={'#FFF'} />
-                  <Text style={styles.buttonText}>Enroll Now · ₹{courseDetails?.price}</Text>
-                </TouchableOpacity>
-
-                <View style={styles.footerRow}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <Shield size={16} color={'#777'} />
-                    <Text style={styles.footerText}>256-bit SSL</Text>
-                  </View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <CreditCard size={16} color={'#777'} />
-                  </View>
-                  <Text style={styles.footerText}>Razorpay Secure</Text>
-                  <Text style={styles.footerText}>Money Back Guarantee</Text>
+                <View style={styles.tagGreen}>
+                  <Text style={styles.tagTextGreen}>beginner level</Text>
                 </View>
               </View>
-            )}
+            </View>
+
+            {/* About */}
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>About this course</Text>
+              <Text style={styles.desc}>{courseDetails?.description}</Text>
+            </View>
+
+            {/* Modules */}
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>There are {courseDetails?.total_chapters || 1} modules in this course</Text>
+
+              <View style={styles.moduleBox}>
+                <Text style={styles.moduleTitle}>Module {courseDetails?.total_chapters || 1}: {chapterData?.title}</Text>
+                <Text style={styles.moduleSub}>{chapterData?.subtitle}</Text>
+                <Text style={styles.moduleMeta}>lessons {chapterData?.chapter_order}· <Lock size={13} color={'#999'} /> Enrollment required</Text>
+              </View>
+            </View>
+
+            {/* Instructor Card */}
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Instructor</Text>
+
+              <View style={styles.instructorRow}>
+                <View style={styles.avatar}>
+                  <User color={'#fff'} />
+                </View>
+                <Text style={styles.instructorText}>{courseDetails?.instructor_name || courseDetails?.instructorName}</Text>
+              </View>
+            </View>
+
+            {/* Pricing */}
+            <View style={styles.card}>
+              <Text style={styles.price}>INR{courseDetails?.price}</Text>
+              <Text style={styles.subText}>One-time payment</Text>
+              {isEnrolled ? (
+                <TouchableOpacity style={[styles.button, { backgroundColor: '#4CAF50' }]} onPress={() => navigation.navigate('Lesson', { enrolledCourseId: courseDetails?.id })}>
+                  <Play size={16} color={'#FFF'} />
+                  <Text style={styles.buttonText}>Continue Learning</Text>
+                </TouchableOpacity>
+              ) : (
+                <View>
+                  <View style={styles.securityRow}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Shield size={16} color={'#777'} />
+                      <Text style={styles.security}>Secure Payment · ₹{courseDetails?.price}</Text>
+                    </View>
+
+                    <Text style={styles.security}>SSL Protected</Text>
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.button}
+                    onPress={createOrderLoader ? undefined : handlePayment}
+                    disabled={Boolean(createOrderLoader)}
+                    accessibilityRole="button"
+                    accessibilityState={{ busy: Boolean(createOrderLoader), disabled: Boolean(createOrderLoader) }}
+                  >
+                    {createOrderLoader ? (
+                      <ActivityIndicator size="small" color="#FFF" style={styles.enrollSpinner} />
+                    ) : (
+                      <CreditCard size={16} color={'#FFF'} />
+                    )}
+                    <Text style={styles.buttonText}>Enroll Now · ₹{courseDetails?.price}</Text>
+                  </TouchableOpacity>
+
+                  <View style={styles.footerRow}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Shield size={16} color={'#777'} />
+                      <Text style={styles.footerText}>256-bit SSL</Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <CreditCard size={16} color={'#777'} />
+                    </View>
+                    <Text style={styles.footerText}>Razorpay Secure</Text>
+                    <Text style={styles.footerText}>Money Back Guarantee</Text>
+                  </View>
+                </View>
+              )}
 
 
-          </View>
+            </View>
 
-          {/* Details */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Details to know</Text>
-            {(courseDetails?.duration_hours || courseDetails?.durationHours) && (
+            {/* Details */}
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Details to know</Text>
+              {(courseDetails?.duration_hours || courseDetails?.durationHours) && (
+                <View style={styles.detailRow}>
+                  <View>
+                    <Clock4 size={16} color={'#777'} />
+                  </View>
+
+                  <View>
+                    <Text style={styles.detailLabel}> Duration</Text>
+                    <Text style={styles.detailValue}>{courseDetails?.duration_hours || courseDetails?.durationHours} hours</Text>
+                  </View>
+
+                </View>
+              )}
+
               <View style={styles.detailRow}>
                 <View>
-                  <Clock4 size={16} color={'#777'} />
+                  <TrendingUp size={16} color={'#777'} />
                 </View>
-
                 <View>
-                  <Text style={styles.detailLabel}> Duration</Text>
-                  <Text style={styles.detailValue}>{courseDetails?.duration_hours || courseDetails?.durationHours} hours</Text>
+
+                  <Text style={styles.detailLabel}>Level</Text>
+                  <Text style={styles.detailValue}>{courseDetails?.level}</Text>
                 </View>
-
               </View>
-            )}
-
-            <View style={styles.detailRow}>
-              <View>
-                <TrendingUp size={16} color={'#777'} />
-              </View>
-              <View>
-
-                <Text style={styles.detailLabel}>Level</Text>
-                <Text style={styles.detailValue}>{courseDetails?.level}</Text>
+              <View style={styles.detailRow}>
+                <View>
+                  <BookOpen size={16} color={'#777'} />
+                </View>
+                <View>
+                  <Text style={styles.detailLabel}>Course Type</Text>
+                  <Text style={styles.detailValue}>InterviewHighway Course</Text>
+                </View>
               </View>
             </View>
-            <View style={styles.detailRow}>
-              <View>
-                <BookOpen size={16} color={'#777'} />
-              </View>
-              <View>
-                <Text style={styles.detailLabel}>Course Type</Text>
-                <Text style={styles.detailValue}>InterviewHighway Course</Text>
-              </View>
-            </View>
-          </View>
-        </ScrollView>
-      }
+          </ScrollView>)}
+
 
     </SafeAreaView>
   );
@@ -426,6 +447,11 @@ const styles = StyleSheet.create({
     fontFamily: 'Geist-VariableFont_wght',
     fontWeight: '600',
     fontSize: 16,
+  },
+
+  enrollSpinner: {
+    width: 16,
+    height: 16,
   },
 
   footerRow: {

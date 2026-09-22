@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
     ActivityIndicator,
+    Alert,
     ScrollView,
     StyleSheet,
     Text,
@@ -30,9 +31,14 @@ const formatAppliedOn = (dateStr?: string | null) => {
 const ReviewJobApplication = ({ onBack, onSubmit, onBrowseMoreJobs, applicationData }: { onBack?: () => void; onSubmit?: () => void; onBrowseMoreJobs?: () => void; applicationData?: any }) => {
   const dispatch = useDispatch();
   const [isSubmitting, setIsSubmitting] = useState(false);
+    const submissionInProgress = useRef(false);
   const [successData, setSuccessData] = useState<any>(null);
 
     const handleSubmitJobApplication = async () => {
+                if (submissionInProgress.current) {
+                        return;
+                }
+                submissionInProgress.current = true;
         setIsSubmitting(true);
         try{
             const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
@@ -52,10 +58,14 @@ const ReviewJobApplication = ({ onBack, onSubmit, onBrowseMoreJobs, applicationD
                     status: responsePayload?.status || 'Under Review',
                 });
                 dispatch(handleReloadJobs(true));
+            } else {
+                Alert.alert('Application not submitted', response.payload?.message || response.error?.message || 'Please try again.');
             }
         }catch(error){
             console.log('Error submitting job application:', error);
+            Alert.alert('Application not submitted', 'Please check your connection and try again.');
         }finally{
+            submissionInProgress.current = false;
             setIsSubmitting(false);
         }
     };  
@@ -143,7 +153,7 @@ const ReviewJobApplication = ({ onBack, onSubmit, onBrowseMoreJobs, applicationD
                 </ScrollView>
 
                 <View style={styles.footer}>
-                    <TouchableOpacity style={styles.backButton} activeOpacity={0.8} onPress={onBack}>
+                    <TouchableOpacity style={styles.backButton} activeOpacity={0.8} onPress={onBack} disabled={isSubmitting}>
                         <ArrowLeft size={21} color="#101828" />
                         <Text style={styles.backText}>Back{`\n`}to{`\n`}Edit</Text>
                     </TouchableOpacity>
@@ -152,9 +162,12 @@ const ReviewJobApplication = ({ onBack, onSubmit, onBrowseMoreJobs, applicationD
                         activeOpacity={0.85}
                         onPress={handleSubmitJobApplication}
                         disabled={isSubmitting}
+                        accessibilityRole="button"
+                        accessibilityLabel={isSubmitting ? 'Submitting application' : 'Submit application'}
+                        accessibilityState={{ busy: isSubmitting, disabled: isSubmitting }}
                     >
                         {isSubmitting ? (
-                            <ActivityIndicator size="small" color="#FFFFFF" />
+                            <ActivityIndicator animating={isSubmitting} size="small" color="#FFFFFF" />
                         ) : (
                             <>
                                 <Text style={styles.submitText}>Submit{`\n`}Application</Text>

@@ -16,6 +16,10 @@ interface coursesState {
     lessonId?: string | null;
     lessonsData?: object | null;
     chapterData?: object | null;
+    isCoursesLoading: boolean;
+    isCourseDetailsLoading: boolean;
+    isCreateOrderLoading: boolean;
+    isCourseChapterLessondetailsLoading: boolean;
 }
 
 const initialState: coursesState = {
@@ -31,6 +35,10 @@ const initialState: coursesState = {
     lessonId: null,
     lessonsData: null,
     chapterData: null,
+    isCoursesLoading: false,
+    isCourseDetailsLoading: false,
+    isCreateOrderLoading: false,
+    isCourseChapterLessondetailsLoading: false,
 };
 //Recommended jobs API call
 export const getCourses = createAsyncThunk(
@@ -164,6 +172,7 @@ const coursesSlice = createSlice({
         clearCoursesData: (state) => {
             state.courses = null;
             state.total = 0;
+            state.enrolledCourse = [];
         },
         clearError: (state) => {
             state.error = null;
@@ -176,32 +185,32 @@ const coursesSlice = createSlice({
         builder
             // getCourses async thunk handlers
             .addCase(getCourses.pending, (state) => {
-                state.isLoading = true;
+                state.isCoursesLoading = true;
                 state.error = null;
 
             })
             .addCase(getCourses.fulfilled, (state, action) => {
-                state.isLoading = false;
+                state.isCoursesLoading = false;
                 state.courses = action.payload; // Assuming the API returns an array of courses
                 state.error = null;
             })
             .addCase(getCourses.rejected, (state, action) => {
-                state.isLoading = false;
+                state.isCoursesLoading = false;
                 state.error = action.payload as string;
             })
             // createOrder async thunk handlers 
             .addCase(createOrder.pending, (state) => {
-                state.isLoading = true;
+                state.isCreateOrderLoading = true;
                 state.error = null;
 
             })
             .addCase(createOrder.fulfilled, (state, action) => {
-                state.isLoading = false;
+                state.isCreateOrderLoading = false;
                 state.error = null;
                 state.orderData = action.payload;
             })
             .addCase(createOrder.rejected, (state, action) => {
-                state.isLoading = false;
+                state.isCreateOrderLoading = false;
                 state.error = action.payload as string;
             });
         // verifyOrder async thunk handlers
@@ -241,36 +250,36 @@ const coursesSlice = createSlice({
         // getCourseChaptersById async thunk handlers
         builder
             .addCase(getCourseChaptersById.pending, (state) => {
-                state.isLoading = true;
+                state.isCourseDetailsLoading = true;
                 state.error = null;
 
             })
             .addCase(getCourseChaptersById.fulfilled, (state, action) => {
-                state.isLoading = false;
+                state.isCourseDetailsLoading = false;
                 state.error = null;// Assuming the API returns an array of course chapters
                 state.chapterId = action.payload[0]?.id; // Assuming the API returns an array of chapters and you want the first chapter's ID
                 state.chapterData = action.payload; // Store the chapter data in the state
                 // You can store the chapters in the state if needed
             })
             .addCase(getCourseChaptersById.rejected, (state, action) => {
-                state.isLoading = false;
+                state.isCourseDetailsLoading = false;
                 state.error = action.payload as string;
             });
         // getCourseChapterLessonDetailsById async thunk handlers
         builder
             .addCase(getCourseChapterLessonDetailsById.pending, (state) => {
-                state.isLoading = true;
+                state.isCourseChapterLessondetailsLoading = true;
                 state.error = null;
 
             })
             .addCase(getCourseChapterLessonDetailsById.fulfilled, (state, action) => {
-                state.isLoading = false;
+                state.isCourseChapterLessondetailsLoading = false;
                 state.error = null;// Assuming the API returns an array of lessons
                 state.lessonId = action.payload[0]?.id; // Assuming the API returns an array of lessons and you want the first lesson's ID
                 // You can store the lessons in the state if needed
             })
             .addCase(getCourseChapterLessonDetailsById.rejected, (state, action) => {
-                state.isLoading = false;
+                state.isCourseChapterLessondetailsLoading = false;
                 state.error = action.payload as string;
             });
         // getLessonDetailsById async thunk handlers

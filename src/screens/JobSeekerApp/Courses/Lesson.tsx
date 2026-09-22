@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { getCourseChapterLessonDetailsById } from '../../../Redux/slices/coursesSlice';
+import CoursesSkeleton from './CoursesSkeleton';
 
 
 const { width } = Dimensions.get('window');
@@ -27,97 +28,100 @@ const Lesson: React.FC<{ route: any }> = ({ route }) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpanded((prev) => !prev);
   };
-
+  const loader = selector?.isCourseChapterLessondetailsLoading
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-        <TouchableOpacity style={styles.backButton} onPress={() => { navigation.goBack() }}>
-          <MoveLeft size={20} color="#000" />
-          <Text style={styles.backText}>Back to Courses</Text>
-        </TouchableOpacity>
-
-        <View style={styles.courseCard}>
-          <View style={styles.banner}>
-            <Image
-              source={require('../../../assets/py.webp')}
-              style={styles.image}
-              resizeMode="cover"
-            />
-          </View>
-          <Text style={styles.courseTitle}>Test Course</Text>
-          <Text style={styles.courseSubtitle}>test</Text>
-
-          <View style={styles.statsRow}>
-            <View style={styles.metaBox}>
-              <Text style={styles.metaLabel}>Tutor</Text>
-              <Text style={styles.metaValue}>tutor test</Text>
-            </View>
-            <View style={styles.metaBox}>
-              <Text style={styles.metaLabel}>Duration</Text>
-              <Text style={styles.metaValue}>4 hours</Text>
-            </View>
-            <View style={styles.metaBox}>
-              <Text style={styles.metaLabel}>Chapters</Text>
-              <Text style={styles.metaValue}>1</Text>
-            </View>
-          </View>
-
-          <View style={styles.progressSection}>
-            <View style={styles.progressHeader}>
-              <Text style={styles.progressLabel}>Your Progress</Text>
-              <Text style={styles.progressPercent}>0% Complete</Text>
-            </View>
-            <View style={styles.progressTrack}>
-              <View style={styles.progressFill} />
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.chapterSection}>
-          <View style={styles.chapterHeader}>
-            <Text style={styles.chapterTitle}>Course Chapters</Text>
-            <Text style={styles.chapterCount}>1 chapters</Text>
-          </View>
-
-          <TouchableOpacity style={styles.chapterCard} onPress={toggleChapter} activeOpacity={0.9}>
-            <View style={styles.chapterRow}>
-              <View style={styles.chapterIndexBox}>
-                <Text style={styles.chapterIndex}>1</Text>
-              </View>
-              <View style={styles.chapterInfo}>
-                <Text style={styles.chapterName}>python</Text>
-                <Text style={styles.chapterDetail}>1 lesson</Text>
-              </View>
-              <View style={styles.chapterRight}>
-                <Text style={styles.chapterProgress}>0%</Text>
-                <ChevronRight
-                  size={20}
-                  color="#999"
-                  style={expanded ? styles.iconOpen : styles.iconClosed}
-                />
-              </View>
-            </View>
-            <View style={styles.chapterProgressTrack}>
-              <View style={styles.chapterProgressFill} />
-            </View>
-            {expanded && (
-              <View style={styles.lessonSection}>
-                <TouchableOpacity style={styles.lessonItem} activeOpacity={0.85} onPress={() => navigation.navigate('LessonDetails' as never)}>
-                  <View style={styles.lessonRow}>
-                    <View style={styles.lessonIcon}>
-                      <Text style={styles.lessonIconText}>▶</Text>
-                    </View>
-                    <View style={styles.lessonInfoBlock}>
-                      <Text style={styles.lessonTitle}>lesson 1</Text>
-                      <Text style={styles.lessonSub}>Resources</Text>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              </View>
-            )}
+      {loader ?
+        <CoursesSkeleton lesson={true} /> :
+        <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+          <TouchableOpacity style={styles.backButton} onPress={() => { navigation.goBack() }}>
+            <MoveLeft size={20} color="#000" />
+            <Text style={styles.backText}>Back to Courses</Text>
           </TouchableOpacity>
-        </View>
-      </ScrollView>
+
+          <View style={styles.courseCard}>
+            <View style={styles.banner}>
+              <Image
+                source={require('../../../assets/py.webp')}
+                style={styles.image}
+                resizeMode="cover"
+              />
+            </View>
+            <Text style={styles.courseTitle}>Test Course</Text>
+            <Text style={styles.courseSubtitle}>test</Text>
+
+            <View style={styles.statsRow}>
+              <View style={styles.metaBox}>
+                <Text style={styles.metaLabel}>Tutor</Text>
+                <Text style={styles.metaValue}>tutor test</Text>
+              </View>
+              <View style={styles.metaBox}>
+                <Text style={styles.metaLabel}>Duration</Text>
+                <Text style={styles.metaValue}>4 hours</Text>
+              </View>
+              <View style={styles.metaBox}>
+                <Text style={styles.metaLabel}>Chapters</Text>
+                <Text style={styles.metaValue}>1</Text>
+              </View>
+            </View>
+
+            <View style={styles.progressSection}>
+              <View style={styles.progressHeader}>
+                <Text style={styles.progressLabel}>Your Progress</Text>
+                <Text style={styles.progressPercent}>0% Complete</Text>
+              </View>
+              <View style={styles.progressTrack}>
+                <View style={styles.progressFill} />
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.chapterSection}>
+            <View style={styles.chapterHeader}>
+              <Text style={styles.chapterTitle}>Course Chapters</Text>
+              <Text style={styles.chapterCount}>1 chapters</Text>
+            </View>
+
+            <TouchableOpacity style={styles.chapterCard} onPress={toggleChapter} activeOpacity={0.9}>
+              <View style={styles.chapterRow}>
+                <View style={styles.chapterIndexBox}>
+                  <Text style={styles.chapterIndex}>1</Text>
+                </View>
+                <View style={styles.chapterInfo}>
+                  <Text style={styles.chapterName}>python</Text>
+                  <Text style={styles.chapterDetail}>1 lesson</Text>
+                </View>
+                <View style={styles.chapterRight}>
+                  <Text style={styles.chapterProgress}>0%</Text>
+                  <ChevronRight
+                    size={20}
+                    color="#999"
+                    style={expanded ? styles.iconOpen : styles.iconClosed}
+                  />
+                </View>
+              </View>
+              <View style={styles.chapterProgressTrack}>
+                <View style={styles.chapterProgressFill} />
+              </View>
+              {expanded && (
+                <View style={styles.lessonSection}>
+                  <TouchableOpacity style={styles.lessonItem} activeOpacity={0.85} onPress={() => navigation.navigate('LessonDetails' as never)}>
+                    <View style={styles.lessonRow}>
+                      <View style={styles.lessonIcon}>
+                        <Text style={styles.lessonIconText}>▶</Text>
+                      </View>
+                      <View style={styles.lessonInfoBlock}>
+                        <Text style={styles.lessonTitle}>lesson 1</Text>
+                        <Text style={styles.lessonSub}>Resources</Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      }
     </SafeAreaView>
   )
 }

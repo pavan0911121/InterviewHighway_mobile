@@ -1,15 +1,20 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, ActivityIndicator, Alert } from 'react-native';
 import { X, Zap, Heart } from 'lucide-react-native/icons';
 import ApplyJobModal from './ApplyJobModal';
+import DashboardSkeleton from './DashboardSkeleton';
 
 interface JobDetailsModalProps {
   visible: boolean;
   onClose: () => void;
   job: any;
+  isSaved?: boolean;
+  openedFromSavedJobs?: boolean;
   onQuickApply?: (jobId: string) => void;
   onApplyNow?: (jobId: string) => void;
-  onSaveJob?: (jobId: string) => void;
+  onSaveJob?: (jobId: string, isSaved: boolean) => void | Promise<void>;
+  loader?: boolean;
+  applyJobLoader?: boolean;
 }
 
 function underscoreToSpace(str: any) {
@@ -20,12 +25,21 @@ export default function JobDetailsModal({
   visible,
   onClose,
   job,
+  isSaved = false,
+  openedFromSavedJobs = false,
   onQuickApply,
   onApplyNow,
   onSaveJob,
+  loader,
+  applyJobLoader,
 }: JobDetailsModalProps) {
   const matchScore = job?.match_score ?? job?.match_percentage;
   const [showApplyModal, setShowApplyModal] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const saveInProgress = useRef(false);
+  const saveJobLabel = isSaved
+    ? (openedFromSavedJobs ? 'Remove from Saved' : 'Unsave Job')
+    : 'Save Job';
 
   const handleApplicationReview = () => {
     setShowApplyModal(false);
@@ -37,96 +51,132 @@ export default function JobDetailsModal({
     onClose();
   };
 
+  const handleSaveJob = async () => {
+    if (saveInProgress.current || !onSaveJob || !job?.id) {
+      return;
+    }
+    saveInProgress.current = true;
+    setIsSaving(true);
+    try {
+      await onSaveJob(job.id, isSaved);
+      if (openedFromSavedJobs) {
+        onClose();
+      }
+    } catch {
+      Alert.alert('Unable to update saved jobs', 'Please try again.');
+    } finally {
+      saveInProgress.current = false;
+      setIsSaving(false);
+    }
+  };
+
   return (
     <>
       <Modal visible={visible} animationType="slide" transparent>
         <View style={styles.overlay}>
           <View style={styles.sheet}>
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>Job Details</Text>
-            <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-              <X size={18} color="#363535" />
-            </TouchableOpacity>
+            <View style={styles.header}>
+              <Text style={styles.headerTitle}>Job Details</Text>
+              <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+                <X size={18} color="#363535" />
+              </TouchableOpacity>
+            </View>
+
+            {
+              loader ?
+                <DashboardSkeleton jobDetails />
+                : <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+                  <View style={styles.titleRow}>
+                    <View style={styles.companyLogo}>
+                      <Text style={styles.companyInitials}>{job?.companies?.name?.charAt(0) ?? job?.company?.charAt(0)}</Text>
+                    </View>
+                    <View style={styles.titleInfo}>
+                      <Text style={styles.jobTitle}>{job?.title}</Text>
+                      <Text style={styles.jobSubtitle}>
+                        {job?.companies?.name ?? job?.company} • {job?.location}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {matchScore != null && (
+                    <View style={styles.matchCard}>
+                      <Text style={styles.matchTitle}>{matchScore}% Match</Text>
+                      <Text style={styles.matchSubtitle}>Your skills align well with this role</Text>
+                    </View>
+                  )}
+
+                  <View style={styles.actionsRow}>
+                    <TouchableOpacity
+                      style={styles.quickApplyButton}
+                      onPress={() => onQuickApply?.(job?.id)}
+                    >
+                      <Zap size={16} color="#FFFFFF" />
+                      <Text style={styles.quickApplyText}>Quick Apply</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.applyNowButton}
+                      onPress={() => {
+                        onApplyNow?.(job?.id);
+                        onClose();
+                        setShowApplyModal(true);
+                      }}
+                    >
+                      <Text style={styles.applyNowText}>Apply Now</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <TouchableOpacity
+                    style={[styles.saveJobButton, isSaved && styles.savedJobButton]}
+                    onPress={handleSaveJob}
+                    disabled={isSaving}
+                    accessibilityRole="button"
+                    accessibilityLabel={saveJobLabel}
+                    accessibilityState={{ busy: isSaving, disabled: isSaving }}
+                  >
+                    {isSaving ? (
+                      <ActivityIndicator size="small" color={isSaved ? '#D00016' : '#363535'} style={styles.saveJobSpinner} />
+                    ) : (
+                      <Heart size={16} color={isSaved ? '#D00016' : '#363535'} fill={isSaved ? '#D00016' : 'none'} />
+                    )}
+                    <Text style={[styles.saveJobText, isSaved && styles.savedJobText]}>
+                      {saveJobLabel}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {job?.description ? (
+                    <View style={styles.section}>
+                      <Text style={styles.sectionTitle}>Job Description</Text>
+                      <Text style={styles.sectionText}>{job.description}</Text>
+                    </View>
+                  ) : null}
+
+                  {job?.requirements ? (
+                    <View style={styles.section}>
+                      <Text style={styles.sectionTitle}>Requirements</Text>
+                      <Text style={styles.sectionText}>{job.requirements}</Text>
+                    </View>
+                  ) : null}
+
+                  {job?.responsibilities ? (
+                    <View style={styles.section}>
+                      <Text style={styles.sectionTitle}>Responsibilities</Text>
+                      <Text style={styles.sectionText}>{job.responsibilities}</Text>
+                    </View>
+                  ) : null}
+
+                  {job?.benefits ? (
+                    <View style={styles.section}>
+                      <Text style={styles.sectionTitle}>Benefits</Text>
+                      <Text style={styles.sectionText}>{job.benefits}</Text>
+                    </View>
+                  ) : null}
+
+                  {job?.employment_type ? (
+                    <Text style={styles.employmentType}>{underscoreToSpace(job.employment_type)}</Text>
+                  ) : null}
+                </ScrollView>
+            }
           </View>
-
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-            <View style={styles.titleRow}>
-              <View style={styles.companyLogo}>
-                <Text style={styles.companyInitials}>{job?.companies?.name?.charAt(0) ?? job?.company?.charAt(0)}</Text>
-              </View>
-              <View style={styles.titleInfo}>
-                <Text style={styles.jobTitle}>{job?.title}</Text>
-                <Text style={styles.jobSubtitle}>
-                  {job?.companies?.name ?? job?.company} • {job?.location}
-                </Text>
-              </View>
-            </View>
-
-            {matchScore != null && (
-              <View style={styles.matchCard}>
-                <Text style={styles.matchTitle}>{matchScore}% Match</Text>
-                <Text style={styles.matchSubtitle}>Your skills align well with this role</Text>
-              </View>
-            )}
-
-            <View style={styles.actionsRow}>
-              <TouchableOpacity
-                style={styles.quickApplyButton}
-                onPress={() => onQuickApply?.(job?.id)}
-              >
-                <Zap size={16} color="#FFFFFF" />
-                <Text style={styles.quickApplyText}>Quick Apply</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.applyNowButton}
-                onPress={() => {
-                  onApplyNow?.(job?.id);
-                  onClose();
-                  setShowApplyModal(true);
-                }}
-              >
-                <Text style={styles.applyNowText}>Apply Now</Text>
-              </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity style={styles.saveJobButton} onPress={() => onSaveJob?.(job?.id)}>
-              <Heart size={16} color="#363535" />
-              <Text style={styles.saveJobText}>Save Job</Text>
-            </TouchableOpacity>
-
-            {job?.description ? (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Job Description</Text>
-                <Text style={styles.sectionText}>{job.description}</Text>
-              </View>
-            ) : null}
-
-            {job?.requirements ? (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Requirements</Text>
-                <Text style={styles.sectionText}>{job.requirements}</Text>
-              </View>
-            ) : null}
-
-            {job?.responsibilities ? (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Responsibilities</Text>
-                <Text style={styles.sectionText}>{job.responsibilities}</Text>
-              </View>
-            ) : null}
-
-            {job?.benefits ? (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Benefits</Text>
-                <Text style={styles.sectionText}>{job.benefits}</Text>
-              </View>
-            ) : null}
-
-            {job?.employment_type ? (
-              <Text style={styles.employmentType}>{underscoreToSpace(job.employment_type)}</Text>
-            ) : null}
-          </ScrollView>
-        </View>
         </View>
       </Modal>
 
@@ -151,7 +201,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    maxHeight: '85%',
+    height: '85%',
   },
   header: {
     flexDirection: 'row',
@@ -285,6 +335,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#363535',
     fontFamily: 'Geist-VariableFont_wght',
+  },
+  saveJobSpinner: {
+    width: 16,
+    height: 16,
+  },
+  savedJobButton: {
+    backgroundColor: '#FFDDDF',
+  },
+  savedJobText: {
+    color: '#D00016',
   },
   section: {
     marginBottom: 20,

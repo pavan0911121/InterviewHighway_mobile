@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo,useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
@@ -6,7 +6,7 @@ import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { JobSeekerBottomTabParamList } from '../../../types/navigation';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
-import { getJobDetails, getRecommendedJobs, getUserMetaData, getAppliedJobs, getSavedJobsList, handleReloadJobs} from '../../../Redux/slices/homeSlice';
+import { getJobDetails, getRecommendedJobs, getUserMetaData, getAppliedJobs, getSavedJobsList, handleReloadJobs, saveJobs, unsaveJob } from '../../../Redux/slices/homeSlice';
 import { Funnel, Search } from 'lucide-react-native/icons';
 import FilterModal, { Filters, INITIAL_FILTERS } from './FilterModal';
 import JobDetailsModal from './JobDetailsModal';
@@ -14,8 +14,7 @@ import WithdrawApplicationModal from './WithdrawApplicationModal';
 import * as AsyncStore from "../../../AsyncStore";
 import { getProfileById } from '../../../Redux/slices/homeSlice';
 import { useIsFocused } from '@react-navigation/native';
-
-
+import DashboardSkeleton from './DashboardSkeleton';
 
 
 type Props = BottomTabScreenProps<JobSeekerBottomTabParamList, 'HomeTab'>;
@@ -33,24 +32,43 @@ export default function HomeTabScreen({ navigation }: Props) {
   const isFocused = useIsFocused();
 
   const selectedJob = selector?.jobDetails;
+  const loader = !(
+    selector?.isProfileByIdLoading === false &&
+    selector?.isAppliedJobsLoading === false &&
+    selector?.isRecommendJobsLoading === false &&
+    selector?.isSavedJobsLoading === false
+  );
+  const jobDetailsLoader = !(
+    selector?.isJobDetailsLoading === false
+  );
 
 
   const savedJobs = selector?.savedJobs?.savedJobs;
   const appliedJobs = selector?.appliedJobs?.applications;
+  const filterSavedJobs = (jobId: string | null | undefined): boolean => {
+    if (!jobId || !Array.isArray(savedJobs)) {
+      return false;
+    }
+
+    return savedJobs.some((savedJob: any) => savedJob?.job?.id === jobId);
+  };
 
   useEffect(() => {
     if (isFocused) {
       getJobsData();
       getSavedJobsData();
     }
-    if(selector?.reloadJobs) {
+  }, [isFocused]);
+
+  useEffect(() => {
+    if (selector?.reloadJobs) {
       getJobsData();
     }
-  }, [isFocused, selector?.reloadJobs]);
-  
+  }, [selector?.reloadJobs]);
+
   const getSavedJobsData = async () => {
     try {
-       const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
+      const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
       if (userId) {
         const resultId = userId.replace(/"/g, '');
         await dispatch(getSavedJobsList({ userId: resultId }) as any);
@@ -59,17 +77,22 @@ export default function HomeTabScreen({ navigation }: Props) {
       console.log('Error fetching saved jobs:', error);
     }
   };
+  // console.log("logs of apis", selector?.profileByIdData, selector?.userMetaData);
   const getJobsData = async () => {
     try {
       const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
       if (userId) {
         const resultId = userId.replace(/"/g, '');
-        await dispatch(getProfileById(resultId) as any);
+        if (!selector?.profileByIdData) {
+          await dispatch(getProfileById(resultId) as any);
+        }
         await dispatch(getAppliedJobs(resultId) as any);
       }
       // Make API call to fetch recommended jobs
       await dispatch(getRecommendedJobs() as any);
-      await dispatch(getUserMetaData() as any);
+      if (!selector?.userMetaData) {
+        await dispatch(getUserMetaData() as any);
+      }
       await dispatch(handleReloadJobs(false))
     } catch (error) {
       console.log('Error fetching recommended jobs:', error);
@@ -159,10 +182,9 @@ export default function HomeTabScreen({ navigation }: Props) {
     setAppliedFilters(filters);
   };
   const handleGetJobDetails = async (jobId: string) => {
-
     try {
-      await dispatch(getJobDetails(jobId) as any);
       setShowJobDetailsModal(true);
+      await dispatch(getJobDetails(jobId) as any);
     } catch (error) {
       console.error("Failed to get job details:", error);
     }
@@ -171,195 +193,235 @@ export default function HomeTabScreen({ navigation }: Props) {
     setSelectedApplication(application);
     setShowWithdrawApplicationModal(true);
   };
+  const handleSaveJob = async (jobId: string, isSaved: boolean) => {
+    try {
+      const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
+      if (userId) {
+        const resultId = userId.replace(/"/g, '');
+        const payload = { userId: resultId, jobId: jobId };
+        if (!isSaved) {
+          await (dispatch(saveJobs(payload) as any) as any).unwrap();
+        } else {
+          await (dispatch(unsaveJob(payload) as any) as any).unwrap();
+        }
+        await (dispatch(getSavedJobsList({ userId: resultId }) as any) as any).unwrap();
+      } else {
+        throw new Error('Missing user ID');
+      }
+    } catch (error) {
+      console.error("Failed to save job:", error);
+      throw error;
+    }
+  };
   return (
     <SafeAreaView style={styles.container}>
-      {/* Sticky Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.menuButton}
-          onPress={() => (navigation.getParent() as DrawerNavigationProp<any>)?.openDrawer()}
-        >
-          <Text style={styles.menuIcon}>☰</Text>
-        </TouchableOpacity>
-        <View style={styles.searchContainer}>
-          <Search size={18} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search for 'job title'"
-            placeholderTextColor="#797979"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
+      <View style={styles.content}>
+        {/* Sticky Header */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.menuButton}
+            onPress={() => (navigation.getParent() as DrawerNavigationProp<any>)?.openDrawer()}
+          >
+            <Text style={styles.menuIcon}>☰</Text>
+          </TouchableOpacity>
+          <View style={styles.searchContainer}>
+            <Search size={18} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search for 'job title'"
+              placeholderTextColor="#797979"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </View>
+          <TouchableOpacity
+            style={styles.filterButton}
+            onPress={() => setShowFilterModal(true)}
+          >
+            <Funnel size={15} />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={styles.filterButton}
-          onPress={() => setShowFilterModal(true)}
-        >
-          <Funnel size={15} />
-        </TouchableOpacity>
+
+        {/* Tab Navigation */}
+        {
+          loader ?
+            <DashboardSkeleton tabs /> :
+            <View style={styles.tabContainer}>
+              <TouchableOpacity
+                style={[styles.tab, activeTab === 'recommended' && styles.tabActive]}
+                onPress={() => setActiveTab('recommended')}
+              >
+                <View style={styles.tabLabelContainer}>
+                  <Text
+                    style={[
+                      styles.tabText,
+                      activeTab === 'recommended' && styles.tabTextActive,
+                    ]}
+                  >
+                    Recommended
+                  </Text>
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{filteredJobs?.length}</Text>
+                  </View>
+                </View>
+                {activeTab === 'recommended' && <View style={styles.tabIndicator} />}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.tab, activeTab === 'applied' && styles.tabActive]}
+                onPress={() => setActiveTab('applied')}
+              >
+                <View style={styles.tabLabelContainer}>
+                  <Text
+                    style={[
+                      styles.tabText,
+                      activeTab === 'applied' && styles.tabTextActive,
+                    ]}
+                  >
+                    Applied Jobs
+                  </Text>
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{selector?.appliedJobs?.count}</Text>
+                  </View>
+                </View>
+                {activeTab === 'applied' && <View style={styles.tabIndicator} />}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.tab, activeTab === 'saved' && styles.tabActive]}
+                onPress={() => setActiveTab('saved')}
+              >
+                <View style={styles.tabLabelContainer}>
+                  <Text
+                    style={[
+                      styles.tabText,
+                      activeTab === 'saved' && styles.tabTextActive,
+                    ]}
+                  >
+                    Saved Jobs
+                  </Text>
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{selector?.savedJobs?.total}</Text>
+                  </View>
+                </View>
+                {activeTab === 'saved' && <View style={styles.tabIndicator} />}
+              </TouchableOpacity>
+            </View>
+        }
+
+        {
+          loader ?
+            <DashboardSkeleton jobs /> :
+            <View style={styles.content}>
+              {/* Job Listings */}
+              {activeTab === 'recommended' ? (
+                <ScrollView style={styles.jobsContainer} showsVerticalScrollIndicator={false}>
+                  {filteredJobs?.length > 0 ? (
+                    filteredJobs?.map((job: any, index: number) => (
+                      <TouchableOpacity key={`${job?.id}-${index}`} style={styles.jobCard} onPress={() => handleGetJobDetails(job?.id)}>
+                        <View style={styles.jobCompanyLogo}>
+                          <Text style={styles.companyInitials}>{job?.company}</Text>
+                        </View>
+                        <View style={styles.jobDetails}>
+                          <Text style={styles.jobTitle}>{job?.title}</Text>
+                          <Text style={styles.jobCompany}>{job?.companies?.name}</Text>
+                          <Text style={styles.jobMeta}>
+                            {job?.location} • {underscoreToSpace(job?.employment_type)}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    ))
+                  ) : (
+                    <View style={styles.emptyState}>
+                      <Text style={styles.emptyStateText}>No recommended jobs available right now</Text>
+                    </View>
+                  )}
+                </ScrollView>
+              ) : activeTab === 'applied' ? (
+                <ScrollView style={styles.jobsContainer} showsVerticalScrollIndicator={false}>
+                  {appliedJobs?.length > 0 ? (
+                    appliedJobs?.map((job: any, index: number) => (
+                      <TouchableOpacity key={`${job?.id}-${index}`} style={styles.jobCard} onPress={() => handleOpenWithdrawApplicationModal(job)}>
+                        <View style={styles.jobCompanyLogo}>
+                          <Text style={styles.companyInitials}>{job?.company}</Text>
+                        </View>
+                        <View style={styles.jobDetails}>
+                          <Text style={styles.jobTitle}>{job?.job?.title}</Text>
+                          <Text style={styles.jobCompany}>{job?.job?.company?.name}</Text>
+                          <Text style={styles.jobMeta}>
+                            {job?.job?.location} • {underscoreToSpace(job?.job?.employment_type)}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    ))
+                  ) : (
+                    <View style={styles.emptyState}>
+                      <Text style={styles.emptyStateText}>No applications yet.</Text>
+                    </View>
+                  )}
+                </ScrollView>
+              ) : (
+                <ScrollView style={styles.jobsContainer} showsVerticalScrollIndicator={false}>
+                  {savedJobs?.length > 0 ? (
+                    savedJobs?.map((job: any, index: number) => (
+                      <TouchableOpacity key={`${job?.id}-${index}`} style={styles.jobCard} onPress={() => handleGetJobDetails(job?.job?.id)}>
+                        <View style={styles.jobCompanyLogo}>
+                          <Text style={styles.companyInitials}>{job?.company}</Text>
+                        </View>
+                        <View style={styles.jobDetails}>
+                          <Text style={styles.jobTitle}>{job?.job?.title}</Text>
+                          <Text style={styles.jobCompany}>{job?.job?.company?.name}</Text>
+                          <Text style={styles.jobMeta}>
+                            {job?.job?.location} • {underscoreToSpace(job?.job?.employmentType)}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    ))
+                  ) : (
+                    <View style={styles.emptyState}>
+                      <Text style={styles.emptyStateText}>No saved jobs yet.</Text>
+                    </View>
+                  )}
+                </ScrollView>
+              )}</View>
+        }
+
+        {/* Filter Modal */}
+        <FilterModal
+          visible={showFilterModal}
+          onClose={() => setShowFilterModal(false)}
+          onApply={handleApplyFilters}
+          appliedFilters={appliedFilters}
+        />
+
+        {/* Job Details Modal */}
+        <JobDetailsModal
+          visible={showJobDetailsModal}
+          onClose={() => setShowJobDetailsModal(false)}
+          job={selectedJob}
+          isSaved={filterSavedJobs(selectedJob?.id)}
+          openedFromSavedJobs={activeTab === 'saved'}
+          onSaveJob={handleSaveJob}
+          loader={jobDetailsLoader}
+        />
+
+        <WithdrawApplicationModal
+          visible={showWithdrawApplicationModal}
+          application={selectedApplication}
+          onClose={() => setShowWithdrawApplicationModal(false)}
+        />
       </View>
 
-      {/* Tab Navigation */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'recommended' && styles.tabActive]}
-          onPress={() => setActiveTab('recommended')}
-        >
-          <View style={styles.tabLabelContainer}>
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === 'recommended' && styles.tabTextActive,
-              ]}
-            >
-              Recommended
-            </Text>
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{filteredJobs?.length}</Text>
-            </View>
-          </View>
-          {activeTab === 'recommended' && <View style={styles.tabIndicator} />}
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'applied' && styles.tabActive]}
-          onPress={() => setActiveTab('applied')}
-        >
-          <View style={styles.tabLabelContainer}>
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === 'applied' && styles.tabTextActive,
-              ]}
-            >
-              Applied Jobs
-            </Text>
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{appliedJobs?.length}</Text>
-            </View>
-          </View>
-          {activeTab === 'applied' && <View style={styles.tabIndicator} />}
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'saved' && styles.tabActive]}
-          onPress={() => setActiveTab('saved')}
-        >
-          <View style={styles.tabLabelContainer}>
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === 'saved' && styles.tabTextActive,
-              ]}
-            >
-              Saved Jobs
-            </Text>
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{savedJobs?.length||0}</Text>
-            </View>
-          </View>
-          {activeTab === 'saved' && <View style={styles.tabIndicator} />}
-        </TouchableOpacity>
-      </View>
-
-      {/* Job Listings */}
-      {activeTab === 'recommended' ? (
-        <ScrollView style={styles.jobsContainer} showsVerticalScrollIndicator={false}>
-          {filteredJobs?.length > 0 ? (
-            filteredJobs?.map((job: any, index: number) => (
-              <TouchableOpacity key={`${job?.id}-${index}`} style={styles.jobCard} onPress={() => handleGetJobDetails(job?.id)}>
-                <View style={styles.jobCompanyLogo}>
-                  <Text style={styles.companyInitials}>{job?.company}</Text>
-                </View>
-                <View style={styles.jobDetails}>
-                  <Text style={styles.jobTitle}>{job?.title}</Text>
-                  <Text style={styles.jobCompany}>{job?.companies?.name}</Text>
-                  <Text style={styles.jobMeta}>
-                    {job?.location} • {underscoreToSpace(job?.employment_type)}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            ))
-          ) : (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>No jobs found for selected filters</Text>
-            </View>
-          )}
-        </ScrollView>
-      ) : activeTab === 'applied' ? (
-       <ScrollView style={styles.jobsContainer} showsVerticalScrollIndicator={false}>
-          {appliedJobs?.length > 0 ? (
-            appliedJobs?.map((job: any, index: number) => (
-              <TouchableOpacity key={`${job?.id}-${index}`} style={styles.jobCard} onPress={() => handleOpenWithdrawApplicationModal(job)}>
-                <View style={styles.jobCompanyLogo}>
-                  <Text style={styles.companyInitials}>{job?.company}</Text>
-                </View>
-                <View style={styles.jobDetails}>
-                  <Text style={styles.jobTitle}>{job?.job?.title}</Text>
-                  <Text style={styles.jobCompany}>{job?.job?.company?.name}</Text>
-                  <Text style={styles.jobMeta}>
-                    {job?.job?.location} • {underscoreToSpace(job?.job?.employment_type)}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            ))
-          ) : (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>No jobs found for selected filters</Text>
-            </View>
-          )}
-        </ScrollView>
-      ) : (
-        <ScrollView style={styles.jobsContainer} showsVerticalScrollIndicator={false}>
-         {savedJobs?.length > 0 ? (
-            savedJobs?.map((job: any, index: number) => (
-              <TouchableOpacity key={`${job?.id}-${index}`} style={styles.jobCard} onPress={() => handleGetJobDetails(job?.id)}>
-                <View style={styles.jobCompanyLogo}>
-                  <Text style={styles.companyInitials}>{job?.company}</Text>
-                </View>
-                <View style={styles.jobDetails}>
-                  <Text style={styles.jobTitle}>{job?.job?.title}</Text>
-                  <Text style={styles.jobCompany}>{job?.job?.company?.name}</Text>
-                  <Text style={styles.jobMeta}>
-                    {job?.job?.location} • {underscoreToSpace(job?.job?.employmentType)}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            ))
-          ) : (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>No jobs found for selected filters</Text>
-            </View>
-          )}
-        </ScrollView>
-      )}
-
-      {/* Filter Modal */}
-      <FilterModal
-        visible={showFilterModal}
-        onClose={() => setShowFilterModal(false)}
-        onApply={handleApplyFilters}
-        appliedFilters={appliedFilters}
-      />
-
-      {/* Job Details Modal */}
-      <JobDetailsModal
-        visible={showJobDetailsModal}
-        onClose={() => setShowJobDetailsModal(false)}
-        job={selectedJob}
-      />
-
-      <WithdrawApplicationModal
-        visible={showWithdrawApplicationModal}
-        application={selectedApplication}
-        onClose={() => setShowWithdrawApplicationModal(false)}
-      />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  content: {
     flex: 1,
     backgroundColor: '#FFFFFF',
   },

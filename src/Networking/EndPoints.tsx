@@ -107,8 +107,10 @@ export const SKILLS_ENDPOINTS = {
 export const JOBS_ENDPOINTS = {
   recommendedJobs: `${RAILWAY_API_BASE_URL}/api/jobs`,
   saveJobs: `${RAILWAY_API_BASE_URL}/api/saved-jobs`,
-  savedJob: (userId: string) =>
+  savedJobs: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/saved-jobs/user/${userId}`,
+  unsaveJob: (jobId: string) =>
+    `${RAILWAY_API_BASE_URL}/api/saved-jobs/${jobId}`,
   appliedJobs: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/applications/user/${userId}`,
   jobDetails: (jobId: string) =>
