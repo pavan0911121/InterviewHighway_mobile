@@ -2,13 +2,14 @@ import React, { useEffect, useState } from 'react'
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, ActivityIndicator, Platform } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
-import { getLessonDetailsById } from '../../../Redux/slices/coursesSlice';
+import { completeCourse, getLessonDetailsById } from '../../../Redux/slices/coursesSlice';
 import { COURSE_ENDPOINTS } from '../../../Networking/EndPoints';
 import * as AsyncStore from '../../../AsyncStore';
 import RNFS from 'react-native-fs';
 import FileViewer from 'react-native-file-viewer';
-import { MoveLeft } from 'lucide-react-native';
+import { Book, BookOpen, CircleCheckBig, MoveLeft } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
+import CoursesSkeleton from './CoursesSkeleton';
 
 const resources = [
     {
@@ -36,11 +37,11 @@ const LessonDetails = () => {
     const [downloadedPdfPaths, setDownloadedPdfPaths] = useState<Record<string, string>>({})
     const [isLoadingPdf, setIsLoadingPdf] = useState(false)
     const [currentDownloadingId, setCurrentDownloadingId] = useState<string | null>(null)
+    const [isCompleting, setIsCompleting] = useState(false)
     const selector = useSelector((state: any) => state.courses);
     const dispatch = useDispatch();
     const navigation = useNavigation<any>();
     const lessonId = selector?.lessonId
-
     useEffect(() => {
         if (lessonId) {
             dispatch(getLessonDetailsById(lessonId) as any);
@@ -48,12 +49,12 @@ const LessonDetails = () => {
     }, [lessonId]);
 
     const handleDownload = async (documentId: string) => {
-        
+
         try {
             if (!lessonId) return
-    
+
             const downloadUrl = COURSE_ENDPOINTS.DownloadLessonById(lessonId, documentId)
-            
+
             setIsLoadingPdf(true)
             setCurrentDownloadingId(documentId)
             const tokenValue = await AsyncStore.getData(AsyncStore?.Keys?.USER_TOKEN)
@@ -64,7 +65,7 @@ const LessonDetails = () => {
             const extension = resourceName.includes('.') ? resourceName.split('.').pop()?.toLowerCase() : 'pdf'
             const fileName = resourceName.includes('.') ? safeName : `${safeName}.${extension}`
             const filePath = `${RNFS.DocumentDirectoryPath}/${fileName}`
-            
+
             const downloadOptions = {
                 fromUrl: downloadUrl,
                 toFile: filePath,
@@ -72,7 +73,7 @@ const LessonDetails = () => {
                 background: false,
                 discretionary: false,
             }
-            
+
             const result = await RNFS.downloadFile(downloadOptions).promise
             console.log("download", result);
             if (result.statusCode === 200 || result.statusCode === 201) {
@@ -104,108 +105,150 @@ const LessonDetails = () => {
             console.error('Open document failed:', error)
         }
     }
+    const handleCourseComplete = async () => {
+        if (isCompleting) return
 
+        setIsCompleting(true)
+        try {
+            const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
+            if (userId) {
+                const resultId = userId.replace(/"/g, '');
+                const payload = {
+                    userId: resultId,
+                    watchTimeSeconds: 0,
+                    totalDurationSeconds: 0,
+                    manualCompletion: true
+                }
+                await dispatch(completeCourse({ courseId: lessonId, payload }) as any);
+            }
+        } catch (error) {
+            console.error('Failed to mark course as complete:', error)
+        } finally {
+            setIsCompleting(false)
+        }
+    }
+    const loader = selector?.isLessonDetailsLoading;
+    const lessonCompletedStatus = selector?.lessonsData?.lesson?.is_completed;
     return (
         <SafeAreaView style={styles.safeArea}>
-            {/* Header */}
-            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                <MoveLeft size={20} color={'#000'} />
-                <Text style={styles.back}> Back to Courses</Text>
-            </TouchableOpacity>
-            <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-                <View style={styles.headerRow}>
-                    <Text style={styles.lessonTitle}>lesson 1</Text>
-                    <Text style={styles.lessonCount}>0</Text>
-                </View>
-
-                <TouchableOpacity style={styles.completeButton} activeOpacity={0.8}>
-                    <View style={styles.completeIcon}>
-                        <Text style={styles.completeIconText}>✓</Text>
-                    </View>
-                    <Text style={styles.completeButtonText}>Mark as Complete</Text>
+            {loader ? <CoursesSkeleton lessonDetails /> : <View>
+                {/* Header */}
+                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                    <MoveLeft size={20} color={'#000'} />
+                    <Text style={styles.back}> Back to Courses</Text>
                 </TouchableOpacity>
-
-                <View style={styles.lessonCard}>
-                    <View style={styles.lessonIconWrapper}>
-                        <Text style={styles.lessonIcon}>📘</Text>
+                <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+                    <View style={styles.headerRow}>
+                        <Text style={styles.lessonTitle}>lesson 1</Text>
+                        <Text style={styles.lessonCount}>0</Text>
                     </View>
-                    <Text style={styles.lessonCardTitle}>Text-Based Lesson</Text>
-                    <Text style={styles.lessonCardSubtitle}>This lesson contains written content and resources.</Text>
-                </View>
 
-                <View style={styles.tabRow}>
-                    <TouchableOpacity
-                        style={[styles.tabItem, activeTab === 'Overview' && styles.activeTab]}
-                        activeOpacity={0.8}
-                        onPress={() => setActiveTab('Overview')}
-                    >
-                        <Text style={[styles.tabText, activeTab === 'Overview' && styles.activeTabText]}>Overview</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.tabItem, activeTab === 'Resources' && styles.activeTab]}
-                        activeOpacity={0.8}
-                        onPress={() => setActiveTab('Resources')}
-                    >
-                        <Text style={[styles.tabText, activeTab === 'Resources' && styles.activeTabText]}>Resources</Text>
-                    </TouchableOpacity>
-                </View>
-
-                {activeTab === 'Overview' ? (
-                    <>
-                        <View style={styles.infoCard}>
-                            <Text style={styles.infoLabel}>COURSE</Text>
-                            <Text style={styles.infoTitle}>{selector?.lessonsData?.course?.title}</Text>
-                            <Text style={styles.infoSubtitle}>by {selector?.lessonsData?.course?.instructor_name}</Text>
+                    {lessonCompletedStatus === true ? (
+                        <View style={styles.completedTile}>
+                            <CircleCheckBig color={"#005C2D"} size={12} />
+                            <Text style={styles.completedTileText}>Lesson Completed</Text>
                         </View>
+                    ) : (
+                        <TouchableOpacity
+                            style={[styles.completeButton, isCompleting && styles.completeButtonDisabled]}
+                            activeOpacity={0.8}
+                            onPress={handleCourseComplete}
+                            disabled={isCompleting}
+                        >
+                            <View style={styles.completeIcon}>
+                                {isCompleting ? (
+                                    <ActivityIndicator size="small" color="#000" />
+                                ) : (
+                                    <Text style={styles.completeIconText}>✓</Text>
+                                )}
+                            </View>
+                            <Text style={styles.completeButtonText}>Mark as Complete</Text>
+                        </TouchableOpacity>
+                    )}
 
-                        <View style={styles.infoCard}>
-                            <Text style={styles.infoLabel}>CHAPTER</Text>
-                            <Text style={styles.infoTitle}>{selector?.lessonsData?.chapter?.title}</Text>
-                            <Text style={styles.infoSubtitle}>Chapter {selector?.lessonsData?.chapter?.chapter_order}</Text>
+                    <View style={styles.lessonCard}>
+                        <View style={styles.lessonIconWrapper}>
+                            <BookOpen size={24} color={'#0050F4'} />
                         </View>
-                    </>
-                ) : (
-                    <View style={styles.resourcesContainer}>
-                        <Text style={styles.resourcesHeading}>Downloadable Resources</Text>
-                        {selector?.lessonsData?.resources?.map((item: any) => (
-                            <View key={item.id} style={styles.resourceCard}>
-                                <View style={styles.resourceLeft}>
-                                    <Text style={styles.resourceIcon}>{item.icon}</Text>
-                                </View>
-                                <View style={styles.resourceInfo}>
-                                    <Text style={styles.resourceTitle}>{item.resource_name}</Text>
-                                    <Text style={styles.resourceSize}>{item.size}</Text>
-                                </View>
-                                <View style={styles.resourceActions}>
-                                    <TouchableOpacity
-                                        style={[styles.downloadButton, currentDownloadingId === item.id && styles.downloadButtonDisabled]}
-                                        activeOpacity={0.85}
-                                        onPress={() => handleDownload(item.id)}
-                                        disabled={currentDownloadingId === item.id}
-                                    >
-                                        {currentDownloadingId === item.id ? (
-                                            <ActivityIndicator size="small" color="#fff" />
-                                        ) : (
-                                            <Text style={styles.downloadText}>{downloadedPdfPaths[item.id] ? 'Redownload' : 'Download'}</Text>
-                                        )}
-                                    </TouchableOpacity>
-                                    {downloadedPdfPaths[item.id] && (
-                                        <TouchableOpacity style={styles.openButton} activeOpacity={0.85} onPress={() => handleOpenDocument(item.id)}>
-                                            <Text style={styles.openButtonText}>Open</Text>
+                        <Text style={styles.lessonCardTitle}>Text-Based Lesson</Text>
+                        <Text style={styles.lessonCardSubtitle}>This lesson contains written content and resources.</Text>
+                    </View>
+
+                    <View style={styles.tabRow}>
+                        <TouchableOpacity
+                            style={[styles.tabItem, activeTab === 'Overview' && styles.activeTab]}
+                            activeOpacity={0.8}
+                            onPress={() => setActiveTab('Overview')}
+                        >
+                            <Text style={[styles.tabText, activeTab === 'Overview' && styles.activeTabText]}>Overview</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.tabItem, activeTab === 'Resources' && styles.activeTab]}
+                            activeOpacity={0.8}
+                            onPress={() => setActiveTab('Resources')}
+                        >
+                            <Text style={[styles.tabText, activeTab === 'Resources' && styles.activeTabText]}>Resources</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {activeTab === 'Overview' ? (
+                        <>
+                            <View style={styles.infoCard}>
+                                <Text style={styles.infoLabel}>COURSE</Text>
+                                <Text style={styles.infoTitle}>{selector?.lessonsData?.course?.title}</Text>
+                                <Text style={styles.infoSubtitle}>by {selector?.lessonsData?.course?.instructor_name}</Text>
+                            </View>
+
+                            <View style={styles.infoCard}>
+                                <Text style={styles.infoLabel}>CHAPTER</Text>
+                                <Text style={styles.infoTitle}>{selector?.lessonsData?.chapter?.title}</Text>
+                                <Text style={styles.infoSubtitle}>Chapter {selector?.lessonsData?.chapter?.chapter_order}</Text>
+                            </View>
+                        </>
+                    ) : (
+                        <View style={styles.resourcesContainer}>
+                            <Text style={styles.resourcesHeading}>Downloadable Resources</Text>
+                            {selector?.lessonsData?.resources?.map((item: any) => (
+                                <View key={item.id} style={styles.resourceCard}>
+                                    <View style={styles.resourceLeft}>
+                                        <Text style={styles.resourceIcon}>{item.icon}</Text>
+                                    </View>
+                                    <View style={styles.resourceInfo}>
+                                        <Text style={styles.resourceTitle}>{item.resource_name}</Text>
+                                        <Text style={styles.resourceSize}>{item.size}</Text>
+                                    </View>
+                                    <View style={styles.resourceActions}>
+                                        <TouchableOpacity
+                                            style={[styles.downloadButton, currentDownloadingId === item.id && styles.downloadButtonDisabled]}
+                                            activeOpacity={0.85}
+                                            onPress={() => handleDownload(item.id)}
+                                            disabled={currentDownloadingId === item.id}
+                                        >
+                                            {currentDownloadingId === item.id ? (
+                                                <ActivityIndicator size="small" color="#fff" />
+                                            ) : (
+                                                <Text style={styles.downloadText}>{downloadedPdfPaths[item.id] ? 'Redownload' : 'Download'}</Text>
+                                            )}
                                         </TouchableOpacity>
-                                    )}
+                                        {downloadedPdfPaths[item.id] && (
+                                            <TouchableOpacity style={styles.openButton} activeOpacity={0.85} onPress={() => handleOpenDocument(item.id)}>
+                                                <Text style={styles.openButtonText}>Open</Text>
+                                            </TouchableOpacity>
+                                        )}
+                                    </View>
                                 </View>
-                            </View>
-                        ))}
-                        {isLoadingPdf && (
-                            <View style={styles.loadingContainer}>
-                                <ActivityIndicator size="small" color="#000" />
-                                <Text style={styles.loadingText}>Loading document...</Text>
-                            </View>
-                        )}
-                    </View>
-                )}
-            </ScrollView>
+                            ))}
+                            {isLoadingPdf && (
+                                <View style={styles.loadingContainer}>
+                                    <ActivityIndicator size="small" color="#000" />
+                                    <Text style={styles.loadingText}>Loading document...</Text>
+                                </View>
+                            )}
+                        </View>
+                    )}
+                </ScrollView>
+            </View>}
+
         </SafeAreaView>
     )
 }
@@ -218,6 +261,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 8,
         marginBottom: 12,
+        paddingTop: 25,
+        paddingHorizontal: 16,
 
     },
     back: {
@@ -262,6 +307,34 @@ const styles = StyleSheet.create({
         alignSelf: 'flex-start',
         marginBottom: 20,
     },
+    completeButtonDisabled: {
+        opacity: 0.7,
+    },
+    completedTile: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        alignSelf: 'flex-start',
+        backgroundColor: '#D1FAE5',
+        borderRadius: 5,
+        paddingHorizontal: 8,
+        paddingVertical: 8,
+        marginBottom: 20,
+        gap: 4,
+    },
+    completedIcon: {
+        fontSize: 12,
+        lineHeight: 12,
+        fontWeight: '700',
+        color: '#166534',
+        marginRight: 4,
+    },
+    completedTileText: {
+        fontSize: 12,
+        lineHeight: 12,
+        fontWeight: '500',
+        color: '#166534',
+        fontFamily: 'Geist-VariableFont_wght',
+    },
     completeIcon: {
         width: 28,
         height: 28,
@@ -297,8 +370,8 @@ const styles = StyleSheet.create({
     lessonIconWrapper: {
         width: 56,
         height: 56,
-        borderRadius: 16,
-        backgroundColor: '#E8F0FF',
+        borderRadius: 100,
+        backgroundColor: '#D3E7FD',
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 16,

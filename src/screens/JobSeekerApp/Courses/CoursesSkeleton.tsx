@@ -6,16 +6,17 @@ interface CoursesSkeletonProps {
     courses?: boolean;
     courseDetails?: boolean;
     lesson?: boolean;
+    lessonDetails?: boolean;
 }
 
-const CoursesSkeleton = ({ courseDetails = false, lesson = false, courses = !courseDetails && !lesson }: CoursesSkeletonProps) => {
+const CoursesSkeleton = ({ courseDetails = false, lesson = false, lessonDetails = false, courses = !courseDetails && !lesson && !lessonDetails }: CoursesSkeletonProps) => {
     return (
         <ScrollView
             style={styles.container}
-            contentContainerStyle={[styles.content, courseDetails && styles.detailsContent, lesson && styles.lessonContent]}
+            contentContainerStyle={[styles.content, courseDetails && styles.detailsContent, lesson && styles.lessonContent, lessonDetails && styles.lessonDetailsContent]}
             showsVerticalScrollIndicator={false}
             accessible
-            accessibilityLabel={lesson ? 'Loading lesson' : courseDetails ? (courses ? 'Loading courses and course details' : 'Loading course details') : 'Loading courses'}
+            accessibilityLabel={lessonDetails ? 'Loading lesson details' : lesson ? 'Loading lesson' : courseDetails ? (courses ? 'Loading courses and course details' : 'Loading course details') : 'Loading courses'}
             accessibilityState={{ busy: true }}
         >
             {lesson && (
@@ -43,6 +44,23 @@ const CoursesSkeleton = ({ courseDetails = false, lesson = false, courses = !cou
                         },
                         { key: 'lesson-progress', width: '96%', height: 10, borderRadius: 5, alignSelf: 'flex-end', marginBottom: 64 },
                         { key: 'lesson-content', width: '100%', height: 167, borderRadius: 12 },
+                    ]}
+                />
+            )}
+            {lessonDetails && (
+                <Skeleton
+                    containerStyle={styles.layout}
+                    isLoading={true}
+                    animationDirection="horizontalRight"
+                    boneColor="#F3F4F6"
+                    highlightColor="#FAFAFB"
+                    layout={[
+                        { key: 'lesson-details-heading', width: '40%', height: 30, borderRadius: 9, marginBottom: 15 },
+                        { key: 'lesson-details-subheading', width: '53%', height: 40, borderRadius: 10, marginBottom: 20 },
+                        { key: 'lesson-details-video', width: '100%', height: 170, borderRadius: 20, marginBottom: 20 },
+                        { key: 'lesson-details-action', width: '98%', height: 40, borderRadius: 10, alignSelf: 'center', marginBottom: 20 },
+                        { key: 'lesson-details-section', width: '100%', height: 100, borderRadius: 10, marginBottom: 20 },
+                        { key: 'lesson-details-footer', width: '100%', height: 100, borderRadius: 10 },
                     ]}
                 />
             )}
@@ -127,5 +145,10 @@ const styles = StyleSheet.create({
         paddingTop: 50,
         paddingBottom: 47,
         gap: 16,
+    },
+    lessonDetailsContent: {
+        paddingHorizontal: 41,
+        paddingTop: 25,
+        paddingBottom: 48,
     },
 });

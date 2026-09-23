@@ -20,6 +20,7 @@ interface coursesState {
     isCourseDetailsLoading: boolean;
     isCreateOrderLoading: boolean;
     isCourseChapterLessondetailsLoading: boolean;
+    isLessonDetailsLoading: boolean;
 }
 
 const initialState: coursesState = {
@@ -39,6 +40,7 @@ const initialState: coursesState = {
     isCourseDetailsLoading: false,
     isCreateOrderLoading: false,
     isCourseChapterLessondetailsLoading: false,
+    isLessonDetailsLoading: false,
 };
 //Recommended jobs API call
 export const getCourses = createAsyncThunk(
@@ -142,6 +144,22 @@ export const getLessonDetailsById = createAsyncThunk(
             console.log('Error fetching lesson details:', error);
             return rejectWithValue({
                 message: error?.message || 'Failed to fetch lesson details',
+                code: error?.code || 'ERROR',
+            });
+        }
+    }
+);
+//completeCourse async thunk
+export const completeCourse = createAsyncThunk(
+    "courses/completeCourse",
+    async ({ courseId, payload }: { courseId: string; payload: any }, { rejectWithValue }) => {
+        try {
+            const response = await client.post(COURSE_ENDPOINTS.completeCourse(courseId), payload);
+            return response.data || response;
+        } catch (error: any) {
+            console.log('Error completing course:', error);
+            return rejectWithValue({
+                message: error?.message || 'Failed to complete course',
                 code: error?.code || 'ERROR',
             });
         }
@@ -285,18 +303,18 @@ const coursesSlice = createSlice({
         // getLessonDetailsById async thunk handlers
         builder
             .addCase(getLessonDetailsById.pending, (state) => {
-                state.isLoading = true;
+                state.isLessonDetailsLoading = true;
                 state.error = null;
 
             })
             .addCase(getLessonDetailsById.fulfilled, (state, action) => {
-                state.isLoading = false;
+                state.isLessonDetailsLoading = false;
                 state.error = null;// Assuming the API returns lesson details
                 state.lessonsData = action.payload.data; // Assuming the API returns lesson details
                 // You can store the lesson details in the state if needed
             })
             .addCase(getLessonDetailsById.rejected, (state, action) => {
-                state.isLoading = false;
+                state.isLessonDetailsLoading = false;
                 state.error = action.payload as string;
             });
     }

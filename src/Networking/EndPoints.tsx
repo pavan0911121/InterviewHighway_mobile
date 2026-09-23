@@ -85,6 +85,8 @@ export const COURSE_ENDPOINTS = {
     `${RAILWAY_API_BASE_URL}/api/lessons/${lessonId}`,
   DownloadLessonById: (lessonId: string, DocumentId: string) =>
     `${RAILWAY_API_BASE_URL}/api/admin/courses/lessons/${lessonId}/resources/${DocumentId}/download`,
+  completeCourse: (courseId: string) =>
+    `${RAILWAY_API_BASE_URL}/api/student/lessons/${courseId}/complete`
 };
 
 // ======================

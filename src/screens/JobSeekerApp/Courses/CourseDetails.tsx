@@ -1,4 +1,4 @@
-import { useNavigation } from '@react-navigation/native';
+import { useIsFocused, useNavigation } from '@react-navigation/native';
 import React, { useEffect, useRef } from 'react';
 import {
   View,
@@ -28,12 +28,13 @@ const CourseDetails: React.FC<{ route: any }> = ({ route }) => {
   const selector = useSelector((state: any) => state.courses);
   const orderRequestInProgress = useRef(false);
   const courseDetails = courseData
+  const isFocused = useIsFocused();
   useEffect(() => {
 
     if (courseDetails?.id) {
       dispatch(getCourseChaptersById(courseDetails?.id) as any);
     }
-  }, [])
+  }, [isFocused])
   const handlePayment = async () => {
     if (createOrderLoader || orderRequestInProgress.current) {
       return;
