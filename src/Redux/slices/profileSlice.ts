@@ -21,6 +21,12 @@ interface profileState {
     educationData: any[];
     profileUploadData: object | null;
     isResumesLoading: boolean;
+    isProfileDataLoading: boolean;
+    isSkillsLoading: boolean;
+    isVideoDataLoading: boolean;
+    isUserSkillsLoading: boolean;
+    isWorkexperienceLoading: boolean;
+    isEducationLoading: boolean;
 }
 
 const initialState: profileState = {
@@ -41,6 +47,12 @@ const initialState: profileState = {
     educationData: [],
     profileUploadData: null,
     isResumesLoading: false,
+    isProfileDataLoading: false,
+    isSkillsLoading: false,
+    isUserSkillsLoading: false,
+    isWorkexperienceLoading: false,
+    isEducationLoading: false,
+    isVideoDataLoading: false,
 };
 type Config = {
   headers?: string;
@@ -423,19 +435,19 @@ const profileSlice = createSlice({
         builder
             // getProfileData async thunk handlers
             .addCase(getProfileData.pending, (state) => {
-                state.isLoading = true;
+                state.isProfileDataLoading = true;
                 state.error = null;
 
             })
             .addCase(getProfileData.fulfilled, (state, action) => {
-                state.isLoading = false;
+                state.isProfileDataLoading = false;
                 const data = action.payload;
                 
                 state.data = data; // Assuming the API returns an array of courses
                 state.error = null;
             })
             .addCase(getProfileData.rejected, (state, action) => {
-                state.isLoading = false;
+                state.isProfileDataLoading = false;
                 state.error = action.payload as string;
             })
             //Add or Update Profile Photo async thunk handlers
@@ -483,16 +495,16 @@ const profileSlice = createSlice({
             })
             // getVideoData async thunk handlers
             .addCase(getVideoData.pending, (state) => {
-                state.isLoading = true;
+                state.isVideoDataLoading = true;
                 state.error = null;
             })
             .addCase(getVideoData.fulfilled, (state, action) => {
-                state.isLoading = false;
+                state.isVideoDataLoading = false;
                 state.videoData = action.payload;
                 state.error = null;
             })
             .addCase(getVideoData.rejected, (state, action) => {
-                state.isLoading = false;
+                state.isVideoDataLoading = false;
                 state.error = action.payload as string;
                 state.videoData = null;
             })
@@ -563,61 +575,61 @@ const profileSlice = createSlice({
             //getAllSkills async thunk handlers
             builder
             .addCase(getAllSkills.pending, (state) => {
-                state.isLoading = true;
+                state.isSkillsLoading = true;
                 state.error = null;
             })
             .addCase(getAllSkills.fulfilled, (state, action) => {
-                state.isLoading = false;
+                state.isSkillsLoading = false;
                 state.allSkills = action.payload; // Assuming the API returns all skills data
                 state.error = null;
             })
             .addCase(getAllSkills.rejected, (state, action) => {
-                state.isLoading = false;
+                state.isSkillsLoading = false;
                 state.error = action.payload as string;
             });
             //Get User Skills async thunk handlers
             builder
             .addCase(getUserSkills.pending, (state) => {
-                state.isLoading = true;
+                state.isUserSkillsLoading = true;
                 state.error = null;
             })
             .addCase(getUserSkills.fulfilled, (state, action) => {
-                state.isLoading = false;
+                state.isUserSkillsLoading = false;
                 state.userSkills = action.payload; // Assuming the API returns user skills data
                 state.error = null;
             })
             .addCase(getUserSkills.rejected, (state, action) => {
-                state.isLoading = false;
+                state.isUserSkillsLoading = false;
                 state.error = action.payload as string;
             });
             //getWorkExperience async thunk handlers
             builder
             .addCase(getWorkExperience.pending, (state) => {
-                state.isLoading = true;
+                state.isWorkexperienceLoading = true;
                 state.error = null;
             })
             .addCase(getWorkExperience.fulfilled, (state, action) => {
-                state.isLoading = false;
+                state.isWorkexperienceLoading = false;
                 state.workExperience = action.payload; // Assuming the API returns work experience data
                 state.error = null;
             })
             .addCase(getWorkExperience.rejected, (state, action) => {
-                state.isLoading = false;
+                state.isWorkexperienceLoading = false;
                 state.error = action.payload as string;
             });
             //getEducation async thunk handlers
             builder
             .addCase(getEducation.pending, (state) => {
-                state.isLoading = true;
+                state.isEducationLoading = true;
                 state.error = null;
             })
             .addCase(getEducation.fulfilled, (state, action) => {
-                state.isLoading = false;
+                state.isEducationLoading = false;
                 state.educationData = action.payload; // Assuming the API returns education data
                 state.error = null;
             })
             .addCase(getEducation.rejected, (state, action) => {
-                state.isLoading = false;
+                state.isEducationLoading = false;
                 state.error = action.payload as string;
             });
             //getResumes async thunk handlers

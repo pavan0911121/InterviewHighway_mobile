@@ -5,15 +5,15 @@ import { PAYMENT_ENDPOINTS } from '../../Networking/EndPoints';
 
 interface paymentsState {
     data: object | null;
-    isLoading: boolean;
+    isPaymentsLoading: boolean;
     error: string | null;
     total: number
 
 }
 
 const initialState: paymentsState = {
-    data: [],
-    isLoading: false,
+    data: null,
+    isPaymentsLoading: false,
     error: null,
     total: 0
 };
@@ -50,18 +50,18 @@ const paymentsSlice = createSlice({
         builder
             // getPaymentHistoryData async thunk handlers
             .addCase(getPaymentHistoryData.pending, (state) => {
-                state.isLoading = true;
+                state.isPaymentsLoading = true;
                 state.error = null;
 
             })
             .addCase(getPaymentHistoryData.fulfilled, (state, action) => {
-                state.isLoading = false;
+                state.isPaymentsLoading = false;
                 const data = action.payload;
                 state.data = data; // Assuming the API returns an array of courses
                 state.error = null;
             })
             .addCase(getPaymentHistoryData.rejected, (state, action) => {
-                state.isLoading = false;
+                state.isPaymentsLoading = false;
                 state.error = action.payload as string;
             })
     }

@@ -14,6 +14,8 @@ import * as AsyncStore from "../../../AsyncStore";
 import { addEducation, addSkill, deleteEducation, deleteSkill, deleteWorkExperience, getAllSkills, getEducation, getPersonalData, getProfileData, getResumes, getUserSkills, getVideoData, getWorkExperience, updateBio, uploadResume, addWorkExperience, deleteResume, addUpdateProfilePhoto, deleteProfilePhoto, deleteVideo, updateSocialLinks } from '../../../Redux/slices/profileSlice';
 import Video from 'react-native-video';
 import { RadialSlider } from 'react-native-radial-slider';
+import ProfileSkeleton from './ProfileSkeleton';
+import { useIsFocused } from '@react-navigation/native';
 
 
 type Props = BottomTabScreenProps<JobSeekerBottomTabParamList, 'ProfileTab'>;
@@ -115,7 +117,9 @@ const formatVideoUploadDate = (dateStr?: string | null) => {
 export default function ProfileTabScreen({ navigation }: Props) {
   const [videoTitle, setVideoTitle] = useState('');
   const [isFullVideoModalVisible, setIsFullVideoModalVisible] = useState(false);
+  const [isDeletingVideo, setIsDeletingVideo] = useState(false);
   const [isEditingPersonal, setIsEditingPersonal] = useState(false);
+  const [isUpdatingPersonal, setIsUpdatingPersonal] = useState(false);
   const [personalForm, setPersonalForm] = useState({
     name: '',
     email: '',
@@ -124,13 +128,16 @@ export default function ProfileTabScreen({ navigation }: Props) {
     current_role: '',
   });
   const [isEditingBio, setIsEditingBio] = useState(false);
+  const [isSavingBio, setIsSavingBio] = useState(false);
   const [bio, setBio] = useState('');
   const [isEditingSocialLinks, setIsEditingSocialLinks] = useState(false);
+  const [isSavingSocialLinks, setIsSavingSocialLinks] = useState(false);
   const [linkedinUrl, setLinkedinUrl] = useState('');
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [linkedinDraft, setLinkedinDraft] = useState('');
   const [websiteDraft, setWebsiteDraft] = useState('');
   const [isAddSkillModalVisible, setIsAddSkillModalVisible] = useState(false);
+  const [isSavingSkill, setIsSavingSkill] = useState(false);
   const [editingSkillId, setEditingSkillId] = useState<string | null>(null);
   const [addSkillTab, setAddSkillTab] = useState<'list' | 'custom'>('list');
   const [selectedSkillId, setSelectedSkillId] = useState('');
@@ -139,6 +146,7 @@ export default function ProfileTabScreen({ navigation }: Props) {
   const [proficiencyLevel, setProficiencyLevel] = useState('Intermediate');
   const [yearsOfExperience, setYearsOfExperience] = useState('1');
   const [isExperienceModalVisible, setIsExperienceModalVisible] = useState(false);
+  const [isSavingExperience, setIsSavingExperience] = useState(false);
   const [editingExperienceId, setEditingExperienceId] = useState<string | null>(null);
   const [workExperienceItems, setWorkExperienceItems] = useState<any[]>([]);
   const [experienceForm, setExperienceForm] = useState({
@@ -152,6 +160,7 @@ export default function ProfileTabScreen({ navigation }: Props) {
     job_description: '',
   });
   const [isEducationModalVisible, setIsEducationModalVisible] = useState(false);
+  const [isSavingEducation, setIsSavingEducation] = useState(false);
   const [editingEducationId, setEditingEducationId] = useState<string | null>(null);
   const [educationForm, setEducationForm] = useState({
     institution_name: '',
@@ -172,6 +181,7 @@ export default function ProfileTabScreen({ navigation }: Props) {
   const dispatch = useDispatch();
   const [displaySpeed, setDisplaySpeed] = useState(0);
   const [speed, setSpeed] = useState(0);
+  const isFocused = useIsFocused();
 
 
   const selector = useSelector((state: any) => state.profile);
@@ -316,6 +326,11 @@ export default function ProfileTabScreen({ navigation }: Props) {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
+            if (isDeletingVideo) {
+              return;
+            }
+
+            setIsDeletingVideo(true);
             try {
               const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
               if (userId) {
@@ -325,6 +340,8 @@ export default function ProfileTabScreen({ navigation }: Props) {
               }
             } catch (error) {
               console.log('Error deleting video:', error);
+            } finally {
+              setIsDeletingVideo(false);
             }
           },
         },
@@ -351,6 +368,11 @@ export default function ProfileTabScreen({ navigation }: Props) {
   };
 
   const handlePersonalDetailsUpdate = async () => {
+    if (isUpdatingPersonal) {
+      return;
+    }
+
+    setIsUpdatingPersonal(true);
     try {
       const payload = { ...personalForm };
       const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
@@ -363,6 +385,8 @@ export default function ProfileTabScreen({ navigation }: Props) {
     }
     catch (error) {
       console.log('Error updating personal details:', error);
+    } finally {
+      setIsUpdatingPersonal(false);
     }
   }
 
@@ -376,6 +400,11 @@ export default function ProfileTabScreen({ navigation }: Props) {
   };
 
   const handleSaveBio = async () => {
+    if (isSavingBio) {
+      return;
+    }
+
+    setIsSavingBio(true);
     try {
       const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
       if (userId) {
@@ -388,6 +417,8 @@ export default function ProfileTabScreen({ navigation }: Props) {
       }
     } catch (error) {
       console.log('Error updating bio:', error);
+    } finally {
+      setIsSavingBio(false);
     }
     setIsEditingBio(false);
   };
@@ -401,6 +432,11 @@ export default function ProfileTabScreen({ navigation }: Props) {
   };
 
   const handleSaveSocialLinks = async () => {
+    if (isSavingSocialLinks) {
+      return;
+    }
+
+    setIsSavingSocialLinks(true);
     try {
       const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
       if (userId) {
@@ -418,6 +454,8 @@ export default function ProfileTabScreen({ navigation }: Props) {
       }
     } catch (error) {
       console.log('Error updating social links:', error);
+    } finally {
+      setIsSavingSocialLinks(false);
     }
     setIsEditingSocialLinks(false);
   };
@@ -483,10 +521,16 @@ export default function ProfileTabScreen({ navigation }: Props) {
   };
 
   const handleAddSkill = async () => {
+    if (isSavingSkill) {
+      return;
+    }
+
     const name = addSkillTab === 'list' ? selectedSkillName : customSkillName.trim();
     if (addSkillTab === 'list' ? !selectedSkillId : !name) {
       return;
     }
+
+    setIsSavingSkill(true);
     try {
       const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
       if (userId) {
@@ -503,6 +547,8 @@ export default function ProfileTabScreen({ navigation }: Props) {
       setIsAddSkillModalVisible(false);
     } catch (error) {
       console.log('Error adding skill:', error);
+    } finally {
+      setIsSavingSkill(false);
     }
   };
 
@@ -545,23 +591,29 @@ export default function ProfileTabScreen({ navigation }: Props) {
     setExperienceForm(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSaveExperience = () => {
+  const handleSaveExperience = async () => {
+    if (isSavingExperience) {
+      return;
+    }
+
     if (!experienceForm.company_name.trim() || !experienceForm.job_title.trim()) {
       return;
     }
-    (async () => {
-      try {
-        const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
-        if (userId) {
-          const resultId = userId.replace(/"/g, '');
-          await dispatch(addWorkExperience({ userId: resultId, payload: experienceForm }) as any);
-          dispatch(getWorkExperience({ userId: resultId }) as any);
-        }
-        setIsExperienceModalVisible(false);
-      } catch (error) {
-        console.log('Error saving work experience:', error);
+
+    setIsSavingExperience(true);
+    try {
+      const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
+      if (userId) {
+        const resultId = userId.replace(/"/g, '');
+        await dispatch(addWorkExperience({ userId: resultId, payload: experienceForm }) as any);
+        dispatch(getWorkExperience({ userId: resultId }) as any);
       }
-    })();
+      setIsExperienceModalVisible(false);
+    } catch (error) {
+      console.log('Error saving work experience:', error);
+    } finally {
+      setIsSavingExperience(false);
+    }
 
   };
 
@@ -685,9 +737,15 @@ export default function ProfileTabScreen({ navigation }: Props) {
   };
 
   const handleSaveEducation = async () => {
+    if (isSavingEducation) {
+      return;
+    }
+
     if (!educationForm.institution_name.trim() || !educationForm.degree.trim() || !educationForm.field_of_study.trim() || !educationForm.start_date.trim()) {
       return;
     }
+
+    setIsSavingEducation(true);
     try {
       const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
       if (userId) {
@@ -700,6 +758,8 @@ export default function ProfileTabScreen({ navigation }: Props) {
       setIsEducationModalVisible(false);
     } catch (error) {
       console.log('Error adding education:', error);
+    } finally {
+      setIsSavingEducation(false);
     }
   };
   const handleDeleteEducation = async (id: string) => {
@@ -811,6 +871,17 @@ export default function ProfileTabScreen({ navigation }: Props) {
 
     requestAnimationFrame(animate);
   }, [apiSpeed]);
+  // const loader = !(
+  //   selector?.isProfileDataLoading === false &&
+  //   selector?.isSkillsLoading === false &&
+  //   selector?.isVideoDataLoading === false &&
+  //   selector?.isUserSkillsLoading === false &&
+  //   selector?.isWorkexperienceLoading === false &&
+  //   selector?.isEducationLoading === false &&
+  //   selector?.isResumesLoading === false&&
+  //   isFocused
+  // );
+  const loader = false
   return (
     <SafeAreaView style={styles.container}>
       {/* Sticky Header */}
@@ -830,7 +901,11 @@ export default function ProfileTabScreen({ navigation }: Props) {
           <ActivityIndicator size="large" color="#165DFC" />
         </View>
       ) : ( */}
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+     {
+      loader?
+      <ProfileSkeleton/>:
+      <View>
+         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Profile Avatar Section */}
         <View style={styles.avatarSection}>
           <View style={styles.avatarContainer}>
@@ -1010,12 +1085,19 @@ export default function ProfileTabScreen({ navigation }: Props) {
                 }
 
                 <TouchableOpacity
-                  style={styles.deleteVideoButton}
+                  style={[styles.deleteVideoButton, isDeletingVideo && styles.deleteVideoButtonDisabled]}
                   onPress={handleDeleteVideo}
                   activeOpacity={0.8}
+                  disabled={isDeletingVideo}
                 >
-                  <Trash2 size={18} color="#DC2626" />
-                  <Text style={styles.deleteVideoButtonText}>Delete</Text>
+                  {isDeletingVideo ? (
+                    <ActivityIndicator size="small" color="#DC2626" />
+                  ) : (
+                    <>
+                      <Trash2 size={18} color="#DC2626" />
+                      <Text style={styles.deleteVideoButtonText}>Delete</Text>
+                    </>
+                  )}
                 </TouchableOpacity>
               </View>
             </View>
@@ -1122,8 +1204,16 @@ export default function ProfileTabScreen({ navigation }: Props) {
               <TouchableOpacity style={styles.cancelButton} onPress={handleCancelPersonalDetails}>
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.submitButton} onPress={handlePersonalDetailsUpdate}>
-                <Text style={styles.submitButtonText}>Submit</Text>
+              <TouchableOpacity
+                style={[styles.submitButton, isUpdatingPersonal && styles.submitButtonDisabled]}
+                onPress={handlePersonalDetailsUpdate}
+                disabled={isUpdatingPersonal}
+              >
+                {isUpdatingPersonal ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.submitButtonText}>Submit</Text>
+                )}
               </TouchableOpacity>
             </View>
           )}
@@ -1166,9 +1256,19 @@ export default function ProfileTabScreen({ navigation }: Props) {
                 <TouchableOpacity style={styles.modalCancelButton} onPress={handleCancelBio}>
                   <Text style={styles.modalCancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.bioSaveButton} onPress={handleSaveBio}>
-                  <Save color={'#FFFFFF'} size={16} />
-                  <Text style={styles.modalSaveButtonText}>Save Bio</Text>
+                <TouchableOpacity
+                  style={[styles.bioSaveButton, isSavingBio && styles.bioSaveButtonDisabled]}
+                  onPress={handleSaveBio}
+                  disabled={isSavingBio}
+                >
+                  {isSavingBio ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <>
+                      <Save color={'#FFFFFF'} size={16} />
+                      <Text style={styles.modalSaveButtonText}>Save Bio</Text>
+                    </>
+                  )}
                 </TouchableOpacity>
               </View>
             </>
@@ -1240,9 +1340,19 @@ export default function ProfileTabScreen({ navigation }: Props) {
                 <TouchableOpacity style={styles.modalCancelButton} onPress={handleCancelSocialLinks}>
                   <Text style={styles.modalCancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.socialSaveButton} onPress={handleSaveSocialLinks}>
-                  <Save color={'#FFFFFF'} size={16} />
-                  <Text style={styles.modalSaveButtonText}>Save Links</Text>
+                <TouchableOpacity
+                  style={[styles.socialSaveButton, isSavingSocialLinks && styles.socialSaveButtonDisabled]}
+                  onPress={handleSaveSocialLinks}
+                  disabled={isSavingSocialLinks}
+                >
+                  {isSavingSocialLinks ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <>
+                      <Save color={'#FFFFFF'} size={16} />
+                      <Text style={styles.modalSaveButtonText}>Save Links</Text>
+                    </>
+                  )}
                 </TouchableOpacity>
               </View>
             </>
@@ -1442,8 +1552,16 @@ export default function ProfileTabScreen({ navigation }: Props) {
                 <TouchableOpacity style={styles.modalCancelButton} onPress={handleCloseAddSkillModal}>
                   <Text style={styles.modalCancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.skillAddButton} onPress={handleAddSkill}>
-                  <Text style={styles.modalSaveButtonText}>{editingSkillId ? 'Save Changes' : 'Add Skill'}</Text>
+                <TouchableOpacity
+                  style={[styles.skillAddButton, isSavingSkill && styles.skillAddButtonDisabled]}
+                  onPress={handleAddSkill}
+                  disabled={isSavingSkill}
+                >
+                  {isSavingSkill ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.modalSaveButtonText}>{editingSkillId ? 'Save Changes' : 'Save Skill'}</Text>
+                  )}
                 </TouchableOpacity>
               </View>
             </View>
@@ -1632,8 +1750,16 @@ export default function ProfileTabScreen({ navigation }: Props) {
                 <TouchableOpacity style={styles.modalCancelButton} onPress={handleCloseExperienceModal}>
                   <Text style={styles.modalCancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.experienceSaveButton} onPress={handleSaveExperience}>
-                  <Text style={styles.modalSaveButtonText}>{editingExperienceId ? 'Save Changes' : 'Add Experience'}</Text>
+                <TouchableOpacity
+                  style={[styles.experienceSaveButton, isSavingExperience && styles.experienceSaveButtonDisabled]}
+                  onPress={handleSaveExperience}
+                  disabled={isSavingExperience}
+                >
+                  {isSavingExperience ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.modalSaveButtonText}>{editingExperienceId ? 'Save Changes' : 'Add Experience'}</Text>
+                  )}
                 </TouchableOpacity>
               </View>
             </ScrollView>
@@ -1845,8 +1971,16 @@ export default function ProfileTabScreen({ navigation }: Props) {
                 <TouchableOpacity style={styles.modalCancelButton} onPress={handleCloseEducationModal}>
                   <Text style={styles.modalCancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.educationSaveButton} onPress={handleSaveEducation}>
-                  <Text style={styles.modalSaveButtonText}>{editingEducationId ? 'Save Changes' : 'Add Education'}</Text>
+                <TouchableOpacity
+                  style={[styles.educationSaveButton, isSavingEducation && styles.educationSaveButtonDisabled]}
+                  onPress={handleSaveEducation}
+                  disabled={isSavingEducation}
+                >
+                  {isSavingEducation ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.modalSaveButtonText}>{editingEducationId ? 'Save Changes' : 'Add Education'}</Text>
+                  )}
                 </TouchableOpacity>
               </View>
             </ScrollView>
@@ -2111,6 +2245,8 @@ export default function ProfileTabScreen({ navigation }: Props) {
         </View>
 
       </ScrollView>
+      </View>
+     }
       {/* // )} */}
 
       {/* Full Video Modal */}
@@ -2633,6 +2769,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#165DFC',
   },
+  submitButtonDisabled: {
+    opacity: 0.7,
+  },
   submitButtonText: {
     fontSize: 14,
     fontWeight: '600',
@@ -3056,6 +3195,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#9810FA',
   },
+  bioSaveButtonDisabled: {
+    opacity: 0.7,
+  },
   socialInput: {
     borderWidth: 1,
     borderColor: '#E5E7EB',
@@ -3085,6 +3227,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 8,
     backgroundColor: '#00A63E',
+  },
+  socialSaveButtonDisabled: {
+    opacity: 0.7,
   },
   // Add Skill modal
   skillModalCard: {
@@ -3158,6 +3303,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 8,
     backgroundColor: '#9810FA',
+  },
+  skillAddButtonDisabled: {
+    opacity: 0.7,
   },
   workExperienceSection: {
     width: '100%',
@@ -3331,11 +3479,17 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#F97316',
   },
+  experienceSaveButtonDisabled: {
+    opacity: 0.7,
+  },
   educationSaveButton: {
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,
     backgroundColor: '#165DFC',
+  },
+  educationSaveButtonDisabled: {
+    opacity: 0.7,
   },
   achievementInputRow: {
     flexDirection: 'row',
@@ -4191,6 +4345,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+  },
+  deleteVideoButtonDisabled: {
+    opacity: 0.7,
   },
   deleteVideoButtonText: {
     fontSize: 15,

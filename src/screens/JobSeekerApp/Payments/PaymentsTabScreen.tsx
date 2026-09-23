@@ -8,6 +8,7 @@ import { AppDispatch } from '../../../Redux'
 import * as AsyncStore from "../../../AsyncStore";
 import { getPaymentHistoryData } from '../../../Redux/slices/paymentsSlice'
 import { CircleCheckBig, CreditCard } from 'lucide-react-native'
+import PaymentsSkeleton from './PaymentsSkeleton'
 
 interface InvoiceDetail {
   courseId: string
@@ -82,7 +83,7 @@ const PaymentsTabScreen = ({ }) => {
         paymentId: item.razorpay_payment_id || '',
         orderId: item.razorpay_order_id || '',
         method: item?.method,
-        brand:'InterviewHighway',
+        brand: 'InterviewHighway',
         companyName: 'INLINE4 SOLUTIONS PRIVATE LIMITED',
         invoiceDate: formatDate(item.created_at),
         invoiceDetails: {
@@ -97,8 +98,8 @@ const PaymentsTabScreen = ({ }) => {
   // Fetch payment history on mount
   useEffect(() => {
     dispatch(getPaymentHistoryData() as any)
-  }, [dispatch])
-
+  }, [])
+  const loader = selector?.isPaymentsLoading;
   // Update transactions when selector data changes
   useEffect(() => {
 
@@ -146,7 +147,7 @@ const PaymentsTabScreen = ({ }) => {
             <View style={[styles.statusBadge, item.status === 'Paid' && styles.statusPaid]}>
               <View style={styles.statusIcon}>
 
-              <CircleCheckBig color={"#00AA28"} size={15} />
+                <CircleCheckBig color={"#00AA28"} size={15} />
               </View>
               <Text style={styles.statusText}>{item.status}</Text>
             </View>
@@ -258,59 +259,61 @@ const PaymentsTabScreen = ({ }) => {
         >
           <Text style={styles.menuIcon}>☰</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Payments</Text>
-        <TouchableOpacity style={styles.filterButton}>
-          <Text style={styles.filterIcon}>⚙️</Text>
-        </TouchableOpacity>
+
       </View>
-
-      {/* Scrollable Content */}
-      {selector?.isLoading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#165DFC" />
-          <Text style={styles.loadingText}>Loading transactions...</Text>
-        </View>
-      ) : transactions && transactions?.length === 0 ? (
-        renderEmptyState()
-      ) : (
-        <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-          {/* Payment History Header */}
-          <View style={styles.historyHeader}>
-            <Text style={styles.historyTitle}>Payment History</Text>
-            <Text style={styles.historySubtitle}>All your course purchases with GST invoices</Text>
-          </View>
-
-          {/* Stats Cards */}
-          <View style={styles.statsContainer}>
-            <View style={styles.statCard}>
-              <Text style={styles.statLabel}>TOTAL SPENT</Text>
-              <Text style={styles.statValue}>₹{totalSpent.toFixed(2)}</Text>
+      {loader ?
+        <PaymentsSkeleton /> : 
+        <View style={styles.contentContainer}>
+          {/* Scrollable Content */}
+          {selector?.isLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#165DFC" />
+              <Text style={styles.loadingText}>Loading transactions...</Text>
             </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statLabel}>COURSES BOUGHT</Text>
-              <Text style={styles.statValue}>{coursesBought}</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statLabel}>TOTAL GST PAID</Text>
-              <Text style={styles.statValue}>₹{totalGST.toFixed(2)}</Text>
-            </View>
-          </View>
-
-          {/* Transactions Label */}
-          <View style={styles.transactionsLabel}>
-            <Text style={styles.transactionsCount}>{transactions.length} TRANSACTION — CLICK ANY ROW TO VIEW INVOICE</Text>
-          </View>
-
-          {/* Transactions List */}
-          <View style={styles.transactionsList}>
-            {transactions.map((transaction) => (
-              <View key={transaction.id}>
-                {renderTransactionItem({ item: transaction })}
+          ) : transactions && transactions?.length === 0 ? (
+            renderEmptyState()
+          ) : (
+            <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+              {/* Payment History Header */}
+              <View style={styles.historyHeader}>
+                <Text style={styles.historyTitle}>Payment History</Text>
+                <Text style={styles.historySubtitle}>All your course purchases with GST invoices</Text>
               </View>
-            ))}
-          </View>
-        </ScrollView>
-      )}
+
+              {/* Stats Cards */}
+              <View style={styles.statsContainer}>
+                <View style={styles.statCard}>
+                  <Text style={styles.statLabel}>TOTAL SPENT</Text>
+                  <Text style={styles.statValue}>₹{totalSpent.toFixed(2)}</Text>
+                </View>
+                <View style={styles.statCard}>
+                  <Text style={styles.statLabel}>COURSES BOUGHT</Text>
+                  <Text style={styles.statValue}>{coursesBought}</Text>
+                </View>
+                <View style={styles.statCard}>
+                  <Text style={styles.statLabel}>TOTAL GST PAID</Text>
+                  <Text style={styles.statValue}>₹{totalGST.toFixed(2)}</Text>
+                </View>
+              </View>
+
+              {/* Transactions Label */}
+              <View style={styles.transactionsLabel}>
+                <Text style={styles.transactionsCount}>{transactions.length} TRANSACTION — CLICK ANY ROW TO VIEW INVOICE</Text>
+              </View>
+
+              {/* Transactions List */}
+              <View style={styles.transactionsList}>
+                {transactions.map((transaction) => (
+                  <View key={transaction.id}>
+                    {renderTransactionItem({ item: transaction })}
+                  </View>
+                ))}
+              </View>
+            </ScrollView>
+          )}
+        </View>}
+
+
     </SafeAreaView>
   )
 }
@@ -320,7 +323,10 @@ export default PaymentsTabScreen
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#FFF',
+  },
+  contentContainer: {
+    flex: 1,
   },
   loadingContainer: {
     flex: 1,
