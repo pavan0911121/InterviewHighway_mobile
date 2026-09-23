@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView } from 'react-native'
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Image } from 'react-native'
 import React, { useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
@@ -15,6 +15,8 @@ const AccountSelectionPage = () => {
     navigation.navigate(screen);
     // TODO: Implement sign in navigation
   };
+const appLogo = require('../../assets/logoFull.png');
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Top Blue Bar */}
@@ -22,8 +24,8 @@ const AccountSelectionPage = () => {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Heading */}
-        <Text style={styles.mainHeading}>Join</Text>
-        <Text style={styles.mainHeading}>InterviewHighway</Text>
+        <Image source={appLogo} style={styles.appLogo} resizeMode="contain" />
+        <Text style={styles.mainHeading}>Join InterviewHighway</Text>
 
         {/* Subtitle */}
         <Text style={styles.subtitle}>
@@ -107,6 +109,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
+  appLogo: {
+    width: '60%',
+    height: 40,
+    marginBottom: 18,
+  },
   topBar: {
     height: 4,
     // backgroundColor: '#165DFC',
@@ -117,7 +124,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   mainHeading: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
     color: '#363535',
     fontFamily: 'Geist-VariableFont_wght',

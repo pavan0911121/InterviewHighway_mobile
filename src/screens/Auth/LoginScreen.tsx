@@ -35,6 +35,7 @@ interface MenuItem {
 }
 
 const googleIcon = require('../../assets/google.png');
+const appLogo = require('../../assets/logoFull.png');
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 
@@ -114,14 +115,14 @@ const LoginScreen: React.FC = () => {
     try {
       setLoginError('');
       setIsLoading(true);
-      
+
       const data = {
         email: form.email,
         password: form.password,
       };
 
       const result = await dispatch(postUserData(data) as any);
-      const userId = await dispatch(getVerifiedUser(result?.payload?.user?.id) as any);   
+      const userId = await dispatch(getVerifiedUser(result?.payload?.user?.id) as any);
 
       if (result.type.includes('fulfilled')) {
         // Login successful
@@ -162,63 +163,63 @@ const LoginScreen: React.FC = () => {
 
       // Check for Play Services availability
       try {
-          await GoogleSignin.hasPlayServices()
-          const response = await GoogleSignin.signIn()
-          if (response?.type === 'success' ) {
-            const { data, error } = await supabase.auth.signInWithIdToken({
-              provider: 'google',
-              token: response.data.idToken as string,
-            })
-            
-            if(error) {
-              setLoginError(error.message || 'Authentication failed');
-              setIsLoading(false);
-              return;
-            }
+        await GoogleSignin.hasPlayServices()
+        const response = await GoogleSignin.signIn()
+        if (response?.type === 'success') {
+          const { data, error } = await supabase.auth.signInWithIdToken({
+            provider: 'google',
+            token: response.data.idToken as string,
+          })
 
-            if(data?.session?.access_token) {
-              // Store token and login status
-              await AsyncStore.storeData(AsyncStore.Keys.USER_TOKEN, data?.session?.access_token);
-              await AsyncStore.storeData(AsyncStore.Keys.REFRESH_TOKEN, data?.session?.refresh_token);
-              await AsyncStore.storeData(AsyncStore.Keys.IS_LOGIN, "true");
-              await AsyncStore.storeData(AsyncStore.Keys.USER_DATA, JSON.stringify(data?.session?.user));
-
-              const sessionUser = data?.session?.user;
-              const sessionEmail = sessionUser?.email ?? '';
-              const userWithName = {
-                ...sessionUser,
-                email: sessionEmail,
-                name: sessionEmail ? sessionEmail.split('@')[0] : 'User',
-              };
-
-              dispatch(loginSuccess({
-                user: userWithName as any,
-                token: data?.session?.access_token,
-                isAuthenticated: true,
-              }) as any);
-              
-              // Store user data
-              if(data?.user) {
-                await AsyncStore.storeData(AsyncStore.Keys.USER_DATA, JSON.stringify(data.user));
-              }
-            }
-            
-            // Fetch verified user and role - this will update Redux state
-            const userResult = await dispatch(getVerifiedUser(data?.user?.id) as any);
-            
-            
-            // The App.tsx will automatically detect Redux state changes and navigate
+          if (error) {
+            setLoginError(error.message || 'Authentication failed');
+            setIsLoading(false);
+            return;
           }
-        } catch (error: any) {
-          if (error.code === statusCodes.IN_PROGRESS) {
-            setLoginError('Sign in already in progress');
-          } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-            setLoginError('Google Play Services not available or outdated');
-          } else {
-            setLoginError('Google Sign-In failed. Please try again.');
-            console.error('Google Sign-In Error:', error);
+
+          if (data?.session?.access_token) {
+            // Store token and login status
+            await AsyncStore.storeData(AsyncStore.Keys.USER_TOKEN, data?.session?.access_token);
+            await AsyncStore.storeData(AsyncStore.Keys.REFRESH_TOKEN, data?.session?.refresh_token);
+            await AsyncStore.storeData(AsyncStore.Keys.IS_LOGIN, "true");
+            await AsyncStore.storeData(AsyncStore.Keys.USER_DATA, JSON.stringify(data?.session?.user));
+
+            const sessionUser = data?.session?.user;
+            const sessionEmail = sessionUser?.email ?? '';
+            const userWithName = {
+              ...sessionUser,
+              email: sessionEmail,
+              name: sessionEmail ? sessionEmail.split('@')[0] : 'User',
+            };
+
+            dispatch(loginSuccess({
+              user: userWithName as any,
+              token: data?.session?.access_token,
+              isAuthenticated: true,
+            }) as any);
+
+            // Store user data
+            if (data?.user) {
+              await AsyncStore.storeData(AsyncStore.Keys.USER_DATA, JSON.stringify(data.user));
+            }
           }
+
+          // Fetch verified user and role - this will update Redux state
+          const userResult = await dispatch(getVerifiedUser(data?.user?.id) as any);
+
+
+          // The App.tsx will automatically detect Redux state changes and navigate
         }
+      } catch (error: any) {
+        if (error.code === statusCodes.IN_PROGRESS) {
+          setLoginError('Sign in already in progress');
+        } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+          setLoginError('Google Play Services not available or outdated');
+        } else {
+          setLoginError('Google Sign-In failed. Please try again.');
+          console.error('Google Sign-In Error:', error);
+        }
+      }
 
     } catch (error: any) {
       console.error('Google Sign-In Error:', error);
@@ -227,7 +228,7 @@ const LoginScreen: React.FC = () => {
       setIsLoading(false);
     }
   };
-   const menuItems: MenuItem[] = [
+  const menuItems: MenuItem[] = [
     { id: '1', label: 'About us', url: 'https://interviewhighway.com/about' },
     { id: '2', label: 'Acceptable Use Policy', url: 'https://interviewhighway.com/acceptable-use' },
     { id: '3', label: 'Employer Service Agreement', url: 'https://interviewhighway.com/employer-agreement' },
@@ -248,7 +249,8 @@ const LoginScreen: React.FC = () => {
         >
           {/* Header Section */}
           <View style={styles.headerContainer}>
-            <Text style={styles.welcomeText}>Welcome</Text>
+            <Image source={appLogo} style={styles.appLogo} resizeMode="contain" />
+            <Text style={styles.welcomeText}>Welcome Back</Text>
             <Text style={styles.subtitleText}>Sign in to your account to continue your career journey</Text>
           </View>
 
@@ -467,6 +469,12 @@ const styles = StyleSheet.create({
     marginBottom: 40,
     alignItems: 'center',
   },
+
+  appLogo: {
+    width: '60%',
+    height: 40,
+    marginBottom: 18,
+  },
   welcomeText: {
     fontSize: 32,
     fontFamily: 'Geist-VariableFont_wght',
@@ -675,7 +683,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: 'Geist-VariableFont_wght',
     fontWeight: '400',
-   color: '#1853E9',
+    color: '#1853E9',
     textDecorationLine: 'none',
   },
   copyrightText: {

@@ -1,12 +1,20 @@
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, TextInput } from 'react-native'
-import React, { useState, useMemo } from 'react'
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Image, Linking } from 'react-native'
+import React, { useEffect, useState, useMemo } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react-native'
 import { useDispatch, useSelector } from 'react-redux'
-import { checkEmail, registerJobSeeker, updateExperience, updateUserData } from '../../Redux/slices/loginSlice'
+import { checkEmail, getVerifiedUser, loginSuccess, registerJobSeeker, updateExperience, updateUserData } from '../../Redux/slices/loginSlice'
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin'
+import supabase from '../../../supabase'
+import * as AsyncStore from '../../AsyncStore'
+
+const googleIcon = require('../../assets/google.png')
 
 const JobSeekerSignup = ({ navigation }: any) => {
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1)
+  const [isCreatingAccount, setIsCreatingAccount] = useState(false)
+  const [isGoogleSigningIn, setIsGoogleSigningIn] = useState(false)
+  const [googleConfigInitialized, setGoogleConfigInitialized] = useState(false)
 
   // Step 1 - Basic Information
   const [firstName, setFirstName] = useState('')
@@ -34,6 +42,32 @@ const JobSeekerSignup = ({ navigation }: any) => {
   const experienceLevels = ['Fresher', '0-1 Years', '1-3 Years', '3-5 Years', '5+ Years']
   const dispatch = useDispatch();
   const selector = useSelector((state: any) => state.login);
+
+  useEffect(() => {
+    const initializeGoogleSignIn = async () => {
+      try {
+        GoogleSignin.configure({
+          webClientId: '788719402448-7bgr231umerf4nqmjodp3qiar26terre.apps.googleusercontent.com',
+          iosClientId: '788719402448-19qjpf9u043a7p82jcoajbkee6bcctfp.apps.googleusercontent.com',
+          offlineAccess: false,
+          forceCodeForRefreshToken: true,
+        })
+
+        try {
+          await GoogleSignin.signOut()
+        } catch (signOutError) {
+          // Ignore sign-out errors when no account is connected.
+        }
+
+        setGoogleConfigInitialized(true)
+      } catch (error) {
+        console.error('Error initializing Google Sign-In:', error)
+        setGoogleConfigInitialized(true)
+      }
+    }
+
+    initializeGoogleSignIn()
+  }, [])
 
   // Password validation
   const passwordValidation = useMemo(() => {
@@ -147,6 +181,11 @@ const JobSeekerSignup = ({ navigation }: any) => {
   }
 
   const handleCreateAccount = async () => {
+    if (isCreatingAccount) {
+      return
+    }
+
+    setIsCreatingAccount(true)
     const payload = {
       firstName: firstName,
       lastName: lastName,
@@ -159,11 +198,75 @@ const JobSeekerSignup = ({ navigation }: any) => {
       password: password,
       jobAlerts: jobAlerts
     }
-    const response = await dispatch(registerJobSeeker((payload)) as any);
-    if (response?.payload?.id) {
-      navigation.navigate('Login')
+    try {
+      const response = await dispatch(registerJobSeeker((payload)) as any);
+      if (response?.payload?.id) {
+        navigation.navigate('Login')
+      }
+    } catch (error) {
+      console.log('Account creation error:', error)
+    } finally {
+      setIsCreatingAccount(false)
     }
-    // TODO: Implement account creation logic
+  }
+
+  const handleGoogleSignIn = async () => {
+    if (isGoogleSigningIn || !googleConfigInitialized) {
+      return
+    }
+
+    try {
+      setIsGoogleSigningIn(true)
+
+      await GoogleSignin.hasPlayServices()
+      const response = await GoogleSignin.signIn()
+      if (response?.type !== 'success') {
+        return
+      }
+
+      const { data, error } = await supabase.auth.signInWithIdToken({
+        provider: 'google',
+        token: response.data.idToken as string,
+      })
+
+      if (error) {
+        console.error('Google authentication failed:', error)
+        return
+      }
+
+      if (data?.session?.access_token) {
+        await AsyncStore.storeData(AsyncStore.Keys.USER_TOKEN, data.session.access_token)
+        await AsyncStore.storeData(AsyncStore.Keys.REFRESH_TOKEN, data.session.refresh_token)
+        await AsyncStore.storeData(AsyncStore.Keys.IS_LOGIN, 'true')
+        await AsyncStore.storeData(AsyncStore.Keys.USER_DATA, JSON.stringify(data.session.user))
+
+        const sessionUser = data.session.user
+        const sessionEmail = sessionUser?.email ?? ''
+        const userWithName = {
+          ...sessionUser,
+          email: sessionEmail,
+          name: sessionEmail ? sessionEmail.split('@')[0] : 'User',
+        }
+
+        dispatch(loginSuccess({
+          user: userWithName as any,
+          token: data.session.access_token,
+          isAuthenticated: true,
+        }) as any)
+      }
+
+      await dispatch(getVerifiedUser(data?.user?.id) as any)
+    } catch (error: any) {
+      if (error.code === statusCodes.IN_PROGRESS) {
+        console.log('Google Sign-In is already in progress')
+      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        console.error('Google Play Services unavailable:', error)
+      } else {
+        console.error('Google Sign-In failed:', error)
+      }
+    } finally {
+      setIsGoogleSigningIn(false)
+    }
   }
 
   return (
@@ -273,9 +376,20 @@ const JobSeekerSignup = ({ navigation }: any) => {
                 <View style={styles.dividerLine} />
               </View>
 
-              <TouchableOpacity style={styles.googleButton}>
-                <Text style={styles.googleIcon}>🔍</Text>
-                <Text style={styles.googleButtonText}>Continue with google</Text>
+              <TouchableOpacity
+                style={[styles.googleButton, (isGoogleSigningIn || !googleConfigInitialized) && styles.googleButtonDisabled]}
+                disabled={isGoogleSigningIn || !googleConfigInitialized}
+                activeOpacity={0.7}
+                onPress={handleGoogleSignIn}
+              >
+                {isGoogleSigningIn ? (
+                  <ActivityIndicator size="small" color="#000000" />
+                ) : (
+                  <Image source={googleIcon} style={styles.googleButtonIcon} />
+                )}
+                <Text style={styles.googleButtonText}>
+                  {!googleConfigInitialized ? 'Initializing...' : 'Continue with google'}
+                </Text>
               </TouchableOpacity>
             </>
           ) : null}
@@ -503,11 +617,11 @@ const JobSeekerSignup = ({ navigation }: any) => {
                   </View>
                   <View style={styles.checkboxText}>
                     <Text style={styles.checkboxLabel}>I accept the </Text>
-                    <TouchableOpacity>
+                    <TouchableOpacity onPress={() => Linking.openURL('https://interviewhighway.com/terms')}>
                       <Text style={styles.checkboxLink}>Terms of Service</Text>
                     </TouchableOpacity>
                     <Text style={styles.checkboxLabel}> and </Text>
-                    <TouchableOpacity>
+                    <TouchableOpacity onPress={() => Linking.openURL('https://interviewhighway.com/privacy')}>
                       <Text style={styles.checkboxLink}>Privacy Policy</Text>
                     </TouchableOpacity>
                   </View>
@@ -534,9 +648,19 @@ const JobSeekerSignup = ({ navigation }: any) => {
                 <TouchableOpacity style={styles.previousButton} onPress={handlePreviousStep}>
                   <Text style={styles.previousButtonText}>Previous</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.createButton} onPress={handleCreateAccount}>
-                  <Text style={styles.createButtonText}>Create</Text>
-                  <Text style={styles.createButtonText}>Account</Text>
+                <TouchableOpacity
+                  style={[styles.createButton, isCreatingAccount && styles.createButtonDisabled]}
+                  onPress={handleCreateAccount}
+                  disabled={isCreatingAccount}
+                >
+                  {isCreatingAccount ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <>
+                      <Text style={styles.createButtonText}>Create</Text>
+                      <Text style={styles.createButtonText}>Account</Text>
+                    </>
+                  )}
                 </TouchableOpacity>
               </View>
             </>
@@ -560,7 +684,7 @@ export default JobSeekerSignup
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F3F1FF',
+    backgroundColor: '#ECF4FE',
   },
   backButton: {
     marginBottom: 16,
@@ -575,7 +699,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   mainTitle: {
-    fontSize: 36,
+    fontSize: 26,
     fontWeight: '700',
     color: '#000000',
     fontFamily: 'Geist-VariableFont_wght',
@@ -860,6 +984,9 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
   },
+  createButtonDisabled: {
+    opacity: 0.7,
+  },
   createButtonText: {
     fontSize: 16,
     fontWeight: '600',
@@ -891,6 +1018,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+  },
+  googleButtonDisabled: {
+    opacity: 0.6,
+  },
+  googleButtonIcon: {
+    width: 20,
+    height: 20,
   },
   googleIcon: {
     fontSize: 20,
