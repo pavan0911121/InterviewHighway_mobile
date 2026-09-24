@@ -196,15 +196,33 @@ export const EMPLOYER_ENDPOINTS = {
   // Jobs list
   employerJobsList: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/employer/jobs?userId=${userId}`,
+  employerJob: (userId: string, jobId: string) =>
+    `${RAILWAY_API_BASE_URL}/api/employer/jobs/${jobId}?userId=${userId}`,
 
   // Applications list
   employerApplicationsList: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/employer/applications?userId=${userId}`,
+  employerJobApplications: (userId: string, jobId: string) =>
+    `${RAILWAY_API_BASE_URL}/api/employer/applications?userId=${userId}&jobId=${jobId}`,
+  updateApplicationStatus: ( applicationId: string) =>
+    `${RAILWAY_API_BASE_URL}/api/employer/applications/${applicationId}`,
 
   //Employer checking the candidate profile details
   employerCheckCandidateDetails: (candidateId: string) =>
     `${API_BASE_URL}/rest/v1/profiles?select=*&user_id=eq.${candidateId}`,
 
+  //candidateSKill
+  employerCheckCandidateSkills: (candidateId: string) =>
+    `${API_BASE_URL}/rest/v1/user_skills?select=id%2Cproficiency_level%2Cyears_of_experience%2Cis_primary%2Ccreated_at%2Cskills%28id%2Cname%2Ccategory%29&user_id=eq.${candidateId}&order=created_at.desc`,
+  //employercheck candidate work experience
+  employerCheckCandidateWorkExperience: (candidateId: string) =>
+    `${API_BASE_URL}/rest/v1/work_experience?select=*&user_id=eq.${candidateId}&order=start_date.desc`,
+  //employer check candidate education
+  employerCheckCandidateEducation: (candidateId: string) =>
+    `${RAILWAY_API_BASE_URL}/api/profiles/user/${candidateId}/education`,
+  //emploeyr check candidate video
+  employerCheckCandidateVideo: (candidateId: string) =>
+    `${RAILWAY_API_BASE_URL}/api/profiles/user/${candidateId}/video`,
   // Credit tiers
   employerCreditTiers: `${RAILWAY_API_BASE_URL}/api/employer/credits/tiers`,
 
@@ -229,7 +247,7 @@ export const EMPLOYER_ENDPOINTS = {
     `${RAILWAY_API_BASE_URL}/api/employer/dashboard/applications-timeline?userId=${userId}&period=${period}`,
 
   // Analytics - Job Performance
-  analyticsJobsPerformance: (userId: string) =>
+  analyticsJobPerformance: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/employer/dashboard/jobs-performance?userId=${userId}`,
 
   // Analytics - Count Stats

@@ -36,6 +36,7 @@ export type StackIdentifiersParamList = {
   LessonDetails: undefined;
   CandidateProfile:undefined;
   ReviewJobApplication: undefined;
+  ViewApplications: undefined;
 };
 
 export type RootStackParamList = AuthStackParamList & AppStackParamList;

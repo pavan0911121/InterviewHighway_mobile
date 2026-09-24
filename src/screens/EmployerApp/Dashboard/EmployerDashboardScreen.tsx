@@ -71,7 +71,7 @@ const dispatch = useDispatch();
             <View style={styles.cardHeader}>
               <Text style={styles.cardLabel}>Total Jobs</Text>
               <View style={[styles.cardIcon, styles.iconBlue]}>
-                <Briefcase color={'#005FFF'}/>
+                <Briefcase color={'#005FFF'} size={15}/>
               </View>
             </View>
             <Text style={styles.cardValue}>{dashboardStats?.totalJobs}</Text>
@@ -83,7 +83,7 @@ const dispatch = useDispatch();
             <View style={styles.cardHeader}>
               <Text style={styles.cardLabel}>Total Applications</Text>
               <View style={[styles.cardIcon, styles.iconPurple]}>
-                 <Users color={'#A800FF'}/>
+                 <Users color={'#A800FF'} size={15}/>
               </View>
             </View>
             <Text style={styles.cardValue}>{dashboardStats?.totalApplications}</Text>
@@ -95,7 +95,7 @@ const dispatch = useDispatch();
             <View style={styles.cardHeader}>
               <Text style={styles.cardLabel}>Shortlisted</Text>
               <View style={[styles.cardIcon, styles.iconYellow]}>
-                 <Clock4 color={'#DC8400'}/>
+                 <Clock4 color={'#DC8400'} size={15}/>
               </View>
             </View>
             <Text style={styles.cardValue}>{dashboardStats?.shortlistedCount}</Text>
@@ -107,7 +107,7 @@ const dispatch = useDispatch();
             <View style={styles.cardHeader}>
               <Text style={styles.cardLabel}>Hired</Text>
               <View style={[styles.cardIcon, styles.iconGreen]}>
-                  <CircleCheckBig color={'#00A746'}/>
+                  <CircleCheckBig color={'#00A746'} size={15}/>
               </View>
             </View>
             <Text style={styles.cardValue}>{dashboardStats?.hiredCount}</Text>
@@ -116,7 +116,7 @@ const dispatch = useDispatch();
         </View>
 
         {/* No Applications Yet Section */}
-        <View style={styles.emptyStateCard}>
+        {/* <View style={styles.emptyStateCard}>
           <View style={styles.emptyStateIconContainer}>
             <Users color={'#98A1AE'}/>
           </View>
@@ -127,7 +127,7 @@ const dispatch = useDispatch();
           <TouchableOpacity style={styles.postJobButton}>
             <Text style={styles.postJobButtonText}>Post a Job</Text>
           </TouchableOpacity>
-        </View>
+        </View> */}
       </ScrollView>
     </SafeAreaView>
   )
@@ -182,8 +182,11 @@ const styles = StyleSheet.create({
     fontFamily: 'Geist-VariableFont_wght',
   },
   cardsContainer: {
-    gap: 16,
+    columnGap: 16,
+    rowGap: 16,
     marginBottom: 20,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
   },
   card: {
     backgroundColor: '#FFFFFF',
@@ -195,6 +198,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
+    width: '47%',
+    minHeight: 176,
     elevation: 3,
   },
   cardHeader: {
@@ -211,9 +216,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   cardIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
+    width: 25,
+    height: 25,
+    borderRadius: 6,
     justifyContent: 'center',
     alignItems: 'center',
   },

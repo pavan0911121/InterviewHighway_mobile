@@ -33,6 +33,7 @@ import PaymentStatusScreen from '../screens/JobSeekerApp/Courses/PaymentStatusSc
 import { ActivityIndicator } from 'react-native';
 import Lesson from '../screens/JobSeekerApp/Courses/Lesson';
 import LessonDetails from '../screens/JobSeekerApp/Courses/LessonDetails';
+import ViewApplications from '../screens/EmployerApp/Jobs/ViewApplications';
 import CandidateProfile from '../screens/EmployerApp/Applications/CandidateProfile';
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
@@ -233,6 +234,11 @@ function EmployerDrawerNavigator() {
       <Stack.Screen
         name="CandidateProfile"
         component={CandidateProfile}
+        options={{ animation: 'slide_from_right' }}
+      />
+      <Stack.Screen
+        name="ViewApplications"
+        component={ViewApplications}
         options={{ animation: 'slide_from_right' }}
       />
 

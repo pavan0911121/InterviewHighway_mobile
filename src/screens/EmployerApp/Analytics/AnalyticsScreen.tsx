@@ -1,11 +1,13 @@
 import { StyleSheet, Text, View, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native'
 import React, { useEffect, useState } from 'react'
+import { getEmployerJobPerformance } from '../../../Redux/slices/employerAnalyticsSlice'
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { DrawerNavigationProp } from '@react-navigation/drawer'
 import { useDispatch, useSelector } from 'react-redux'
 import { getJobPostingStats } from '../../../Redux/slices/jobPostings'
+import { getEmployerTimeline } from '../../../Redux/slices/employerAnalyticsSlice'
 import * as AsyncStore from "../../../AsyncStore";
 import { getEmployerAnalytics } from '../../../Redux/slices/employerAnalyticsSlice'
 import { Briefcase, ChartColumn, RefreshCcw, TrendingUp, UserCheck, Users } from 'lucide-react-native'
@@ -26,7 +28,9 @@ const AnalyticsScreen = () => {
       if (userLoggedInData) {
         const parsedUserData = JSON.parse(userLoggedInData);
         const userId = parsedUserData?.id || null;
-        const response = await dispatch(getEmployerAnalytics(userId) as any);
+        await dispatch(getEmployerAnalytics(userId) as any);
+        await dispatch(getEmployerTimeline(userId) as any);
+        await dispatch(getEmployerJobPerformance(userId) as any);
 
       }
     } catch (error) {
@@ -37,11 +41,13 @@ const AnalyticsScreen = () => {
   const isLoading = selector?.loading;
   const analytics = selector?.data
   const timelineData = selector?.timelineData
+  const jobPerformanceData = selector?.jobPerformanceData
+  const statusData = selector?.data
 
   const handleRefresh = () => {
     // Handle refresh logic
   }
-
+  
   return (
     <SafeAreaView style={styles.container}>
       {/* Sticky Header */}
@@ -67,7 +73,7 @@ const AnalyticsScreen = () => {
               <Text style={styles.subtitle}>Comprehensive insights for Test Company Ltd 1dev</Text>
             </View>
             <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
-              <RefreshCcw size={20} color="#000" />
+              <RefreshCcw size={15} color="#000" />
               <Text style={styles.refreshButtonText}>Refresh</Text>
             </TouchableOpacity>
           </View>
@@ -79,7 +85,7 @@ const AnalyticsScreen = () => {
               <View style={styles.metricHeader}>
                 <Text style={styles.metricLabel}>Total Jobs</Text>
                 <View style={[styles.metricIcon, styles.blueIcon]}>
-                  <Briefcase size={28} color="#165DFC" />
+                  <Briefcase size={15} color="#165DFC" />
                 </View>
               </View>
               <Text style={[styles.metricNumber, styles.blueNumber]}>{analytics?.totalJobs}</Text>
@@ -89,9 +95,9 @@ const AnalyticsScreen = () => {
             {/* Total Applications Card */}
             <View style={styles.metricCard}>
               <View style={styles.metricHeader}>
-                <Text style={styles.metricLabel}>Total Applications</Text>
+                <Text style={styles.metricLabel}>Total {'\n'}Applications</Text>
                 <View style={[styles.metricIcon, styles.purpleIcon]}>
-                  <Users size={28} color="#9C27B0" />
+                  <Users size={15} color="#9C27B0" />
                 </View>
               </View>
               <Text style={[styles.metricNumber, styles.purpleNumber]}>{analytics?.totalApplications}</Text>
@@ -101,26 +107,25 @@ const AnalyticsScreen = () => {
             {/* Hired Candidates Card */}
             <View style={styles.metricCard}>
               <View style={styles.metricHeader}>
-                <Text style={styles.metricLabel}>Hired Candidates</Text>
+                <Text style={styles.metricLabel}>Hired {'\n'}Candidates</Text>
                 <View style={[styles.metricIcon, styles.greenIcon]}>
-                  <UserCheck size={28} color="#00C853" />
+                  <UserCheck size={15} color="#00C853" />
                 </View>
               </View>
               <Text style={[styles.metricNumber, styles.greenNumber]}>{analytics?.hiredCount}</Text>
               <Text style={styles.metricSubtitle}>{analytics?.shortlistedCount} shortlisted</Text>
             </View>
-          </View>
-
-          {/* Conversion Rate Card */}
-          <View style={styles.conversionCard}>
-            <View style={styles.conversionHeader}>
-              <Text style={styles.conversionLabel}>Conversion Rate</Text>
-              <View style={[styles.conversionIcon, styles.orangeIcon]}>
-                <TrendingUp size={28} color="#FF9500" />
+            {/* Conversion Rate Card */}
+            <View style={styles.metricCard}>
+              <View style={styles.metricHeader}>
+                <Text style={styles.metricLabel}>Conversion {'\n'}Rate</Text>
+                <View style={[styles.metricIcon, styles.orangeIcon]}>
+                  <TrendingUp size={15} color="#FF9500" />
+                </View>
               </View>
+              <Text style={styles.conversionRate}>{analytics?.conversionRate}%</Text>
+              <Text style={styles.conversionSubtitle}>Applications to hires</Text>
             </View>
-            <Text style={styles.conversionRate}>{analytics?.conversionRate}%</Text>
-            <Text style={styles.conversionSubtitle}>Applications to hires</Text>
           </View>
 
           {/* Applications Timeline Card */}
@@ -194,6 +199,28 @@ const AnalyticsScreen = () => {
               <Text style={styles.chartPlaceholderSubtext}>{timelineData?.length || 0} data points loaded</Text>
             </View>
           </View>
+
+          {/* Jobs Performance Card */}
+          <View style={styles.performanceCard}>
+            <Text style={styles.performanceTitle}>Jobs Performance</Text>
+            <Text style={styles.performanceSubtitle}>Application breakdown by job posting</Text>
+            <View style={styles.performanceChartPlaceholder}>
+              <ChartColumn size={42} color="#8996A7" strokeWidth={1.8} />
+              <Text style={styles.performanceChartText}>Performance Chart will appear here</Text>
+              <Text style={styles.performanceChartSubtext}>{jobPerformanceData?.length || 0} jobs loaded</Text>
+            </View>
+          </View>
+
+          {/* Application Status Distribution Card */}
+          <View style={styles.performanceCard}>
+            <Text style={styles.performanceTitle}>Application Status Distribution</Text>
+            <Text style={styles.performanceSubtitle}>Breakdown of application statuses</Text>
+            <View style={styles.performanceChartPlaceholder}>
+              <ChartColumn size={42} color="#8996A7" strokeWidth={1.8} />
+              <Text style={styles.performanceChartText}>Status Distribution Chart will appear here</Text>
+            </View>
+          </View>
+
           {/* Status Summary Card */}
           <View style={styles.statusSummaryCard}>
             <Text style={styles.statusSummaryTitle}>Status Summary</Text>
@@ -207,7 +234,7 @@ const AnalyticsScreen = () => {
                   <View style={[styles.statusDotCircle, styles.pendingDot]} />
                   <Text style={styles.statusLabel}>Pending</Text>
                 </View>
-                <Text style={styles.statusValue}>{0}</Text>
+                <Text style={styles.statusValue}>{statusData?.pendingApplications}</Text>
               </View>
 
               {/* Shortlisted */}
@@ -216,7 +243,7 @@ const AnalyticsScreen = () => {
                   <View style={[styles.statusDotCircle, styles.shortlistedDot]} />
                   <Text style={styles.statusLabel}>Shortlisted</Text>
                 </View>
-                <Text style={styles.statusValue}>{0}</Text>
+                <Text style={styles.statusValue}>{statusData?.shortlistedCount}</Text>
               </View>
 
               {/* Hired */}
@@ -225,7 +252,7 @@ const AnalyticsScreen = () => {
                   <View style={[styles.statusDotCircle, styles.hiredDot]} />
                   <Text style={styles.statusLabel}>Hired</Text>
                 </View>
-                <Text style={styles.statusValue}>{0}</Text>
+                <Text style={styles.statusValue}>{statusData?.hiredCount}</Text>
               </View>
 
               {/* Rejected */}
@@ -234,7 +261,7 @@ const AnalyticsScreen = () => {
                   <View style={[styles.statusDotCircle, styles.rejectedDot]} />
                   <Text style={styles.statusLabel}>Rejected</Text>
                 </View>
-                <Text style={styles.statusValue}>{0}</Text>
+                <Text style={styles.statusValue}>{statusData?.rejectedCount}</Text>
               </View>
             </View>
 
@@ -244,7 +271,7 @@ const AnalyticsScreen = () => {
             {/* Total Applications */}
             <View style={styles.totalApplicationsRow}>
               <Text style={styles.totalApplicationsLabel}>Total Applications</Text>
-              <Text style={styles.totalApplicationsValue}>{0}</Text>
+              <Text style={styles.totalApplicationsValue}>{statusData?.totalApplications}</Text>
             </View>
           </View>
 
@@ -304,14 +331,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '700',
     color: '#000',
     fontFamily: 'Geist-VariableFont_wght',
     lineHeight: 36,
   },
   titleSecond: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '700',
     color: '#000',
     fontFamily: 'Geist-VariableFont_wght',
@@ -343,16 +370,25 @@ const styles = StyleSheet.create({
     fontFamily: 'Geist-VariableFont_wght',
   },
   metricsContainer: {
-    gap: 16,
+    columnGap: 16,
+    rowGap: 16,
     marginBottom: 24,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
   },
   metricCard: {
     backgroundColor: '#fff',
-    borderRadius: 16,
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+    borderRadius: 12,
+    padding: 16,
     borderWidth: 1,
     borderColor: '#e8e8e8',
+    width: '47%',
+    minHeight: 176,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
   },
   metricHeader: {
     flexDirection: 'row',
@@ -367,9 +403,9 @@ const styles = StyleSheet.create({
     fontFamily: 'Geist-VariableFont_wght',
   },
   metricIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 12,
+    width: 25,
+    height: 25,
+    borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -532,6 +568,57 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     marginTop: 4,
     textAlign: 'center',
+  },
+  performanceCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 18,
+    borderWidth: 1,
+    borderColor: '#D9DDE4',
+    marginBottom: 24,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  performanceTitle: {
+    color: '#111827',
+    fontSize: 15,
+    fontWeight: '600',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  performanceSubtitle: {
+    color: '#253044',
+    fontSize: 11,
+    marginTop: 10,
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  performanceChartPlaceholder: {
+    minHeight: 246,
+    marginTop: 18,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: '#AEBCCC',
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+  },
+  performanceChartText: {
+    color: '#253044',
+    fontSize: 11,
+    marginTop: 12,
+    textAlign: 'center',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  performanceChartSubtext: {
+    color: '#657080',
+    fontSize: 10,
+    marginTop: 6,
+    textAlign: 'center',
+    fontFamily: 'Geist-VariableFont_wght',
   },
   statusSummaryCard: {
     backgroundColor: '#fff',

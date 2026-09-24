@@ -117,11 +117,11 @@ const CompanyProfileScreen = () => {
           <Text style={styles.menuIcon}>☰</Text>
         </TouchableOpacity>
       </View>
-      {isLoading ? (
+      {/* {isLoading ? (
         <View style={styles.loaderContainer}>
           <ActivityIndicator size="large" color="#165DFC" />
         </View>
-      ) : (
+      ) : ( */}
         <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Header Section */}
           <View style={styles.headerContainer}>
@@ -358,7 +358,8 @@ const CompanyProfileScreen = () => {
               <Text style={styles.verificationStatusText}>Your company has been verified. A trust badge is displayed on all your job postings.</Text>
             </View>
           </View>
-        </ScrollView>)}
+        </ScrollView>
+        {/* )} */}
     </SafeAreaView>
   )
 }

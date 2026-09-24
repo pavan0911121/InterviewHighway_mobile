@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Linking } from 'react-native'
+import { StyleSheet, Text, View, TouchableOpacity, Pressable, ScrollView, TextInput, ActivityIndicator, Linking } from 'react-native'
 import React, { useEffect, useState, useMemo } from 'react'
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -7,7 +7,8 @@ import { DrawerNavigationProp } from '@react-navigation/drawer'
 import { useDispatch, useSelector } from 'react-redux'
 import * as AsyncStore from "../../../AsyncStore";
 import { getApplicationsList } from '../../../Redux/slices/employerApplicationsSlice'
-import { Briefcase, Calendar, ChevronDown, Clock4, Layers, Mail, Search, StickyNote, User, Users } from 'lucide-react-native'
+import { ArrowDownToLine, Briefcase, Calendar, ChevronDown, Clock3, Download, Eye, FileText, Layers, Mail, Search, User, UserRound, Users } from 'lucide-react-native'
+import { updateApplicationStatus } from '../../../Redux/slices/jobPostings'
 
 
 const ApplicationsScreen = () => {
@@ -15,6 +16,8 @@ const ApplicationsScreen = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedJob, setSelectedJob] = useState('All Jobs')
   const [selectedSort, setSelectedSort] = useState('Newest First')
+  const [openStatusId, setOpenStatusId] = useState<string | number | null>(null)
+  const [statusOverrides, setStatusOverrides] = useState<Record<string, string>>({})
   const dispatch = useDispatch();
   useEffect(() => {
     LocalStorageaData();
@@ -37,7 +40,7 @@ const ApplicationsScreen = () => {
   const selector = useSelector((state: any) => state.employerApplications);
   const selectorData = selector?.data?.applications // Assuming the API returns an object with an "applications" array
   const isLoading = selector?.loading;
-
+  
   // Calculate application stats from selectorData using useMemo
   const applicationStats = useMemo(() => {
     if (!selectorData || !Array.isArray(selectorData)) {
@@ -60,12 +63,45 @@ const ApplicationsScreen = () => {
       shortlisted: selectorData.filter((app: any) => app.status === 'shortlisted').length,
       rejected: selectorData.filter((app: any) => app.status === 'rejected').length,
       hired: selectorData.filter((app: any) => app.status === 'hired').length,
-      unviewed: selectorData.filter((app: any) => app.status === 'unviewed').length,
+      unviewed: selectorData.filter((app: any) => app.viewed_by_employer === false).length,
       jobs: new Set(selectorData.map((app: any) => app.job_id)).size, // Count unique jobs
     };
   }, [selectorData]);
   const handleViewProfile = (application: any) => {
-    (navigation.navigate as any)('CandidateProfile', { candidateData: application });
+    (navigation.navigate as any)('CandidateProfile', { candidateData: application, candidateId: application?.user_id, email: application?.candidate?.email });
+  }
+
+  const statusOptions = [
+    { value: 'pending', label: 'Pending Review', icon: <Clock3 size={14} color="#6B7280" /> },
+    { value: 'reviewing', label: 'Under Review', icon: <Eye size={14} color="#155EEF" /> },
+    { value: 'shortlisted', label: 'Shortlist', icon: <UserRound size={14} color="#A020F0" /> },
+    { value: 'hired', label: 'Hire Candidate', icon: <UserRound size={14} color="#00A63E" /> },
+    { value: 'rejected', label: 'Reject', icon: <UserRound size={14} color="#E11D48" /> },
+  ]
+
+  const getApplicationAge = (appliedAt?: string) => {
+    if (!appliedAt) return 'Date unavailable'
+    const appliedDate = new Date(appliedAt)
+    if (Number.isNaN(appliedDate.getTime())) return 'Date unavailable'
+    const elapsedDays = Math.floor((Date.now() - appliedDate.getTime()) / (1000 * 60 * 60 * 24))
+    return elapsedDays <= 0 ? 'Today' : `${elapsedDays} day${elapsedDays === 1 ? '' : 's'} ago`
+  }
+
+  const handleUpdateStatus = async (application: any, status: string) => {
+    setOpenStatusId(null)
+    setStatusOverrides((current) => ({ ...current, [String(application.id)]: status }))
+    try {
+      const userLoggedInData = await AsyncStore.getData(AsyncStore.Keys.USER_DATA)
+      if (!userLoggedInData) return
+      const userId = JSON.parse(userLoggedInData)?.id
+      await (dispatch as any)(updateApplicationStatus({
+        applicationId: String(application.id),
+        body: { status, userId },
+      })).unwrap()
+      await (dispatch as any)(getApplicationsList(userId))
+    } catch (error) {
+      console.error('Failed to update application status', error)
+    }
   }
 
   return (
@@ -103,7 +139,7 @@ const ApplicationsScreen = () => {
             {/* Total Card */}
             <View style={[styles.statsCard, styles.totalCard]}>
               <Text style={[styles.statsNumber, styles.totalNumber]}>
-                {applicationStats.total}
+                {applicationStats?.total}
               </Text>
               <Text style={styles.statsLabel}>Total</Text>
             </View>
@@ -111,7 +147,7 @@ const ApplicationsScreen = () => {
             {/* Pending Card */}
             <View style={[styles.statsCard, styles.pendingCard]}>
               <Text style={[styles.statsNumber, styles.pendingNumber]}>
-                {applicationStats.pending}
+                {applicationStats?.pending}
               </Text>
               <Text style={styles.statsLabel}>Pending</Text>
             </View>
@@ -119,7 +155,7 @@ const ApplicationsScreen = () => {
             {/* Reviewing Card */}
             <View style={[styles.statsCard, styles.reviewingCard]}>
               <Text style={[styles.statsNumber, styles.reviewingNumber]}>
-                {applicationStats.reviewing}
+                {applicationStats?.reviewing}
               </Text>
               <Text style={styles.statsLabel}>Reviewing</Text>
             </View>
@@ -127,7 +163,7 @@ const ApplicationsScreen = () => {
             {/* Shortlisted Card */}
             <View style={[styles.statsCard, styles.shortlistedCard]}>
               <Text style={[styles.statsNumber, styles.shortlistedNumber]}>
-                {applicationStats.shortlisted}
+                {applicationStats?.shortlisted}
               </Text>
               <Text style={styles.statsLabel}>Shortlisted</Text>
             </View>
@@ -135,7 +171,7 @@ const ApplicationsScreen = () => {
             {/* Rejected Card */}
             <View style={[styles.statsCard, styles.rejectedCard]}>
               <Text style={[styles.statsNumber, styles.rejectedNumber]}>
-                {applicationStats.rejected}
+                {applicationStats?.rejected}
               </Text>
               <Text style={styles.statsLabel}>Rejected</Text>
             </View>
@@ -143,7 +179,7 @@ const ApplicationsScreen = () => {
             {/* Hired Card */}
             <View style={[styles.statsCard, styles.hiredCard]}>
               <Text style={[styles.statsNumber, styles.hiredNumber]}>
-                {applicationStats.hired}
+                {applicationStats?.hired}
               </Text>
               <Text style={styles.statsLabel}>Hired</Text>
             </View>
@@ -151,7 +187,7 @@ const ApplicationsScreen = () => {
             {/* Unviewed Card */}
             <View style={[styles.statsCard, styles.unviewedCard]}>
               <Text style={[styles.statsNumber, styles.unviewedNumber]}>
-                {applicationStats.unviewed}
+                {applicationStats?.unviewed}
               </Text>
               <Text style={styles.statsLabel}>Unviewed</Text>
             </View>
@@ -159,7 +195,7 @@ const ApplicationsScreen = () => {
             {/* Jobs Card */}
             <View style={[styles.statsCard, styles.jobsCard]}>
               <Text style={[styles.statsNumber, styles.jobsNumber]}>
-                {applicationStats.jobs}
+                {applicationStats?.jobs}
               </Text>
               <Text style={styles.statsLabel}>Jobs</Text>
             </View>
@@ -201,47 +237,58 @@ const ApplicationsScreen = () => {
                 <View style={styles.applicationsListContainer} key={application.id}>
                   <View style={styles.applicationCard}>
                     <View style={styles.avatarContainer}>
-                      <Text style={styles.avatarText}>M</Text>
+                      <Text style={styles.avatarText}>{application?.candidate?.name?.[0] || 'T'}</Text>
                     </View>
-
                     <View style={styles.applicationMainContent}>
                       <View style={styles.cardHeaderRow}>
-                        <Text style={styles.candidateName}>{application?.candidate?.name}</Text>
-                        <View style={styles.badgeContainer}>
-                          <Text style={styles.badgeText}>New</Text>
+                        <View style={styles.candidateNameBlock}>
+                          <Text style={styles.candidateName}>{application?.candidate?.name}</Text>
+                          {application?.viewed_by_employer === false && <Text style={styles.newBadge}>New</Text>}
+                        </View>
+                        <View style={styles.statusMenuContainer}>
+                          <Pressable style={styles.statusButton} onPress={() => setOpenStatusId(openStatusId === application.id ? null : application.id)}>
+                            <Text style={styles.statusButtonText}>
+                              {statusOptions.find((option) => option.value === (statusOverrides[String(application.id)] || application.status))?.label || application.status}
+                            </Text>
+                            <ChevronDown size={14} color="#111827" />
+                          </Pressable>
+                          {openStatusId === application.id && (
+                            <View style={styles.statusMenu}>
+                              <Text style={styles.statusMenuTitle}>Change Status</Text>
+                              {statusOptions.map((option) => (
+                                <Pressable key={option.value} style={styles.statusOption} onPress={() => handleUpdateStatus(application, option.value)}>
+                                  {option.icon}
+                                  <Text style={styles.statusOptionText}>{option.label}</Text>
+                                </Pressable>
+                              ))}
+                            </View>
+                          )}
                         </View>
                       </View>
-
                       <View style={styles.statusRow}>
                         <View style={styles.statusItem}>
-                          <Clock4 size={14} color="#6B7280" />
+                          <Clock3 size={14} color="#111827" />
                           <Text style={styles.statusText}>{application?.status}</Text>
                         </View>
                       </View>
-
                       <View style={styles.emailRow}>
-                        <Mail size={16} color="#6B7280"/>
-                        <Text style={styles.emailText} numberOfLines={1}>
-                          {application?.candidate?.email}
-                        </Text>
+                        <Mail size={16} color="#6B7280" />
+                        <Text style={styles.emailText} numberOfLines={1}>{application?.candidate?.email}</Text>
                       </View>
-
-                      <View style={styles.actionRow}>
+                      <View style={styles.applicationActionRow}>
                         <View style={styles.metaInfo}>
                           <Calendar size={13} color="#6B7280" />
-                          <Text style={styles.metaText}>Applied 1 week ago</Text>
+                          <Text style={styles.metaText}>Applied {getApplicationAge(application.applied_at)}</Text>
                         </View>
-
                         <View style={styles.actionButtonsRow}>
-                          <TouchableOpacity style={styles.primaryActionButton} onPress={() => handleViewProfile(application)}>
-                            <User color={'#fff'} size={15} />
+                          <Pressable style={styles.primaryActionButton} onPress={() => handleViewProfile(application)}>
+                            <UserRound color="#FFFFFF" size={15} />
                             <Text style={styles.primaryActionText}>View Profile</Text>
-                          </TouchableOpacity>
-
-                          <TouchableOpacity style={styles.secondaryActionButton}>
-                            <StickyNote size={15} color="#374151"/>
-                            <Text style={styles.secondaryActionText}>Add Notes</Text>
-                          </TouchableOpacity>
+                          </Pressable>
+                          <Pressable style={styles.secondaryActionButton}>
+                            <Download size={15} color="#374151" />
+                            <Text style={styles.secondaryActionText}>Resume</Text>
+                          </Pressable>
                         </View>
                       </View>
                     </View>
@@ -348,7 +395,7 @@ const styles = StyleSheet.create({
   },
   statsCard: {
     width: '48%',
-    paddingVertical: 24,
+    paddingVertical: 15,
     paddingHorizontal: 16,
     borderRadius: 16,
     alignItems: 'center',
@@ -462,22 +509,20 @@ const styles = StyleSheet.create({
     fontFamily: 'Geist-VariableFont_wght',
   },
   applicationsListContainer: {
-    backgroundColor: '#EAF0FF',
+    backgroundColor: '#F4F8FC',
     borderRadius: 18,
     padding: 18,
     borderWidth: 1,
-    borderColor: '#D9E2FF',
+    borderColor: '#B4D7FD',
     marginBottom: 24,
   },
   applicationCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 14,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F4F8FC',
     borderRadius: 16,
     padding: 14,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
   },
   avatarContainer: {
     width: 52,
@@ -503,12 +548,87 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 10,
   },
+  candidateNameBlock: {
+    flex: 1,
+    paddingRight: 8,
+  },
   candidateName: {
     fontSize: 18,
     fontWeight: '600',
     color: '#111827',
     fontFamily: 'Geist-VariableFont_wght',
     flex: 1,
+  },
+  newBadge: {
+    alignSelf: 'flex-start',
+    color: '#FFFFFF',
+    backgroundColor: '#155EEF',
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    fontSize: 11,
+    fontWeight: '700',
+    marginTop: 4,
+    overflow: 'hidden',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  statusMenuContainer: {
+    position: 'relative',
+    zIndex: 10,
+  },
+  statusButton: {
+    minWidth: 112,
+    height: 32,
+    borderWidth: 1,
+    borderColor: '#CBD2DB',
+    borderRadius: 5,
+    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 7,
+  },
+  statusButtonText: {
+    color: '#111827',
+    fontSize: 11,
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  statusMenu: {
+    position: 'absolute',
+    top: 37,
+    right: 0,
+    width: 178,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D9DDE4',
+    borderRadius: 4,
+    shadowColor: '#000000',
+    shadowOpacity: 0.16,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 6,
+    zIndex: 20,
+  },
+  statusMenuTitle: {
+    color: '#111827',
+    fontSize: 12,
+    fontFamily: 'Geist-VariableFont_wght',
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  statusOption: {
+    minHeight: 34,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 10,
+  },
+  statusOptionText: {
+    color: '#111827',
+    fontSize: 12,
+    fontFamily: 'Geist-VariableFont_wght',
   },
   badgeContainer: {
     backgroundColor: '#E5E7EB',
@@ -561,6 +681,13 @@ const styles = StyleSheet.create({
     gap: 10,
     flexWrap: 'wrap',
   },
+  applicationActionRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
   metaInfo: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -596,11 +723,13 @@ const styles = StyleSheet.create({
   secondaryActionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#FFF',
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 6,
+    borderWidth: 1,
+    borderColor: '#E1E1E1',
   },
   secondaryActionText: {
     color: '#374151',

@@ -10,6 +10,7 @@ interface analyticsState {
     error: string | null;
     total: number
     timelineData: Array<any> | null;
+    jobPerformanceData: object | null;
    
 }
 
@@ -18,7 +19,8 @@ const initialState: analyticsState = {
     isLoading: false,
     error: null,
     total: 0,
-    timelineData: null
+    timelineData: null,
+    jobPerformanceData: null,
 };
 //employer analytics API call
 export const getEmployerAnalytics = createAsyncThunk(
@@ -52,6 +54,22 @@ export const getEmployerTimeline = createAsyncThunk(
         }
     }
 );
+// Employer job performance Slice
+export const getEmployerJobPerformance = createAsyncThunk(
+    "employerAnalytics/getEmployerJobPerformance",
+    async (userId: string, { rejectWithValue }) => {
+        try {
+            const response = await client.get(EMPLOYER_ENDPOINTS.analyticsJobPerformance(userId));
+            return response.data || response;
+        } catch (error: any) {
+            console.log('Error fetching employer job performance:', error);
+            return rejectWithValue({
+                message: error?.message || 'Failed to fetch employer job performance',
+                code: error?.code || 'ERROR',
+            });
+        }
+    }
+);
 
 const employerAnalyticsSlice = createSlice({
     name: 'employerAnalytics',
@@ -61,6 +79,7 @@ const employerAnalyticsSlice = createSlice({
             state.data = null;
             state.total = 0;
             state.timelineData = null;
+            state.jobPerformanceData = null;
         },
         clearError: (state) => {
             state.error = null;
@@ -98,6 +117,21 @@ const employerAnalyticsSlice = createSlice({
                 state.isLoading = false;
                 state.error = action.payload as string;
                 console.log('Error fetching employer timeline analytics:', action.payload);
+            })
+            // getEmployerJobPerformance async thunk handlers
+            .addCase(getEmployerJobPerformance.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(getEmployerJobPerformance.fulfilled, (state, action) => {
+                state.isLoading = false;
+                state.jobPerformanceData = action.payload; // Assuming the API returns an object with employer job performance analytics
+                state.error = null;
+            })
+            .addCase(getEmployerJobPerformance.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.payload as string;
+                console.log('Error fetching employer job performance analytics:', action.payload);
             })
     }
 });

@@ -15,6 +15,8 @@ import { Briefcase, CheckCircle, CircleX, Clock, Currency, DollarSign, EllipsisV
 
 const JobsScreen = () => {
   const [userId, setUserId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedJobForMenu, setSelectedJobForMenu] = useState<any>(null);
@@ -221,6 +223,26 @@ const JobsScreen = () => {
   const dashboardSelector = useSelector((state: any) => state?.employerDashboard);
   const selectorData = selector?.data?.jobs;
   const isLoading = selector?.loading;
+  const filteredJobs = useMemo(() => {
+    if (!Array.isArray(selectorData)) {
+      return [];
+    }
+
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    return selectorData.filter((job: any) => {
+      const matchesStatus = !statusFilter || job.status === statusFilter;
+      const matchesSearch = !normalizedQuery || [
+        job.title,
+        job.location,
+        job.description,
+        job.employment_type,
+        job.experience_level,
+        job.status,
+      ].some((value) => String(value || '').toLowerCase().includes(normalizedQuery));
+
+      return matchesStatus && matchesSearch;
+    });
+  }, [searchQuery, selectorData, statusFilter]);
   // Calculate job stats from selectorData using useMemo
   const jobStats = useMemo(() => {
     if (!selectorData || !Array.isArray(selectorData)) {
@@ -323,58 +345,88 @@ const JobsScreen = () => {
           {/* Stats Cards */}
           <View style={styles.statsContainer}>
             {/* Total Jobs Card */}
-            <View style={[styles.card, styles.totalJobsCard]}>
+            <TouchableOpacity
+              style={[styles.card, styles.totalJobsCard, !statusFilter && styles.cardSelected]}
+              onPress={() => setStatusFilter(null)}
+              activeOpacity={0.8}
+            >
               <View style={styles.cardContent}>
                 <Text style={styles.cardLabel}>Total Jobs</Text>
                 <Text style={styles.cardNumber}>{jobStats.totalJobs}</Text>
               </View>
-              <Briefcase color={'#005FFF'} />
-            </View>
+              <View style={[styles.cardIcon, styles.iconBlue]}>
+                <Briefcase color={'#005FFF'} />
+              </View>
+            </TouchableOpacity>
 
             {/* Active Card */}
-            <View style={[styles.card, styles.activeCard]}>
+            <TouchableOpacity
+              style={[styles.card, styles.activeCard, statusFilter === 'active' && styles.cardSelected]}
+              onPress={() => setStatusFilter('active')}
+              activeOpacity={0.8}
+            >
               <View style={styles.cardContent}>
                 <Text style={styles.cardLabel}>Active</Text>
                 <Text style={[styles.cardNumber, styles.activeNumber]}>
                   {jobStats.activeJobs}
                 </Text>
               </View>
-              <CheckCircle color={'#00C853'} />
+              <View style={[styles.cardIcon, styles.iconGreen]}>
+                <CheckCircle color={'#00C853'} />
+              </View>
 
-            </View>
+            </TouchableOpacity>
 
             {/* Draft Card */}
-            <View style={[styles.card, styles.draftCard]}>
+            <TouchableOpacity
+              style={[styles.card, styles.draftCard, statusFilter === 'draft' && styles.cardSelected]}
+              onPress={() => setStatusFilter('draft')}
+              activeOpacity={0.8}
+            >
               <View style={styles.cardContent}>
                 <Text style={styles.cardLabel}>Draft</Text>
                 <Text style={styles.cardNumber}>
                   {jobStats.draftJobs}
                 </Text>
               </View>
-              <FileText color={'#475567'} />
-            </View>
+              <View style={[styles.cardIcon, styles.iconGray]}>
+                <FileText color={'#475567'} />
+              </View>
+            </TouchableOpacity>
 
             {/* Paused Card */}
-            <View style={[styles.card, styles.pausedCard]}>
+            <TouchableOpacity
+              style={[styles.card, styles.pausedCard, statusFilter === 'paused' && styles.cardSelected]}
+              onPress={() => setStatusFilter('paused')}
+              activeOpacity={0.8}
+            >
               <View style={styles.cardContent}>
                 <Text style={styles.cardLabel}>Paused</Text>
                 <Text style={[styles.cardNumber, styles.pausedNumber]}>
                   {jobStats.pausedJobs}
                 </Text>
               </View>
-              <PauseCircle color={'#FF9500'} />
-            </View>
+              <View style={[styles.cardIcon, styles.iconYellow]}>
+                <PauseCircle color={'#FF9500'} />
+              </View>
+            </TouchableOpacity>
 
             {/* Closed Card */}
-            <View style={[styles.card, styles.closedCard]}>
+            <TouchableOpacity
+              style={[styles.card, styles.closedCard, statusFilter === 'closed' && styles.cardSelected]}
+              onPress={() => setStatusFilter('closed')}
+              activeOpacity={0.8}
+            >
               <View style={styles.cardContent}>
                 <Text style={styles.cardLabel}>Closed</Text>
                 <Text style={[styles.cardNumber, styles.closedNumber]}>
                   {jobStats.closedJobs}
                 </Text>
               </View>
-              <CircleX color={'#FF3B30'} />
-            </View>
+              <View style={[styles.cardIcon, styles.iconRed]}>
+                <CircleX color={'#FF3B30'} />
+              </View>
+            </TouchableOpacity>
           </View>
 
           {/* Search Bar */}
@@ -384,13 +436,25 @@ const JobsScreen = () => {
               style={styles.searchInput}
               placeholder="Search jobs by title, location, or description"
               placeholderTextColor="#999"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
             />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity
+                style={styles.clearSearchButton}
+                onPress={() => setSearchQuery('')}
+                accessibilityRole="button"
+                accessibilityLabel="Clear search"
+              >
+                <Text style={styles.clearSearchButtonText}>Clear</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Job Listings */}
           <View style={styles.jobListingsContainer}>
-            {selectorData && selectorData?.length > 0 ? (
-              selectorData.map((job: any) => (
+            {filteredJobs.length > 0 ? (
+              filteredJobs.map((job: any) => (
                 <View key={job.id} style={styles.jobCard}>
                   {/* Header with Title and Menu */}
                   <View style={styles.jobHeaderRow}>
@@ -466,14 +530,19 @@ const JobsScreen = () => {
                   </View>
 
                   {/* View Applications Button */}
-                  <TouchableOpacity style={styles.viewApplicationsButton}>
+                  <TouchableOpacity
+                    style={styles.viewApplicationsButton}
+                    onPress={() => (navigation as any).navigate('ViewApplications', { job })}
+                  >
                     <Users color={'#165DFC'} size={20} />
                     <Text style={styles.viewApplicationsButtonText}>View Applications</Text>
                   </TouchableOpacity>
                 </View>
               ))
             ) : (
-              <Text style={{ textAlign: 'center', marginVertical: 20, color: '#666' }}>No job listings found</Text>
+              <Text style={{ textAlign: 'center', marginVertical: 20, color: '#666' }}>
+                {searchQuery.trim() ? 'No matching job listings found' : 'No job listings found'}
+              </Text>
             )}
           </View>
         </ScrollView>
@@ -1216,21 +1285,36 @@ const styles = StyleSheet.create({
     fontFamily: 'Geist-VariableFont_wght',
   },
   statsContainer: {
-    gap: 16,
+    columnGap: 16,
+    rowGap: 16,
     marginBottom: 24,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
   },
   card: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 24,
-    paddingHorizontal: 20,
+    alignItems: 'flex-start',
+    padding: 16,
     borderRadius: 12,
     backgroundColor: '#fff',
+    width: '47%',
+    minHeight: 100,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
   },
   totalJobsCard: {
     borderWidth: 2,
     borderColor: '#165DFC',
+  },
+  cardSelected: {
+    borderColor: '#000000',
+    borderWidth: 2,
   },
   activeCard: {
     backgroundColor: '#fff',
@@ -1270,7 +1354,27 @@ const styles = StyleSheet.create({
     color: '#FF3B30',
   },
   cardIcon: {
-    marginLeft: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  iconBlue: {
+    backgroundColor: '#E0E7FF',
+  },
+  iconGreen: {
+    backgroundColor: '#D1FAE5',
+  },
+  iconGray: {
+    backgroundColor: '#F3F4F6',
+  },
+  iconYellow: {
+    backgroundColor: '#FEF3C7',
+  },
+  iconRed: {
+    backgroundColor: '#FEE2E2',
   },
   searchContainer: {
     flexDirection: 'row',
@@ -1292,6 +1396,16 @@ const styles = StyleSheet.create({
     color: '#000',
     fontFamily: 'Geist-VariableFont_wght',
     padding: 0,
+  },
+  clearSearchButton: {
+    marginLeft: 10,
+    paddingVertical: 4,
+  },
+  clearSearchButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#165DFC',
+    fontFamily: 'Geist-VariableFont_wght',
   },
   jobListingsContainer: {
     marginBottom: 24,

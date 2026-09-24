@@ -50,6 +50,46 @@ const CreditsScreen = () => {
   const priceFormat = (priceFormatted: string): string => {
     return priceFormatted?.replace(/[₹,]/g, '') || '0';
   };
+  const standardPlanPrice = 0;
+  const proPlanPrice = 0;
+  console.log("transactions", selector?.transactions);
+  const transactions = Array.isArray(selector?.transactions)
+    ? selector.transactions
+    : Array.isArray(selector?.transactions?.transactions)
+      ? selector.transactions.transactions
+      : []
+
+  const formatTransactionDate = (date?: string) => {
+    if (!date) return 'Date unavailable'
+    const parsedDate = new Date(date)
+    if (Number.isNaN(parsedDate.getTime())) return date
+    return parsedDate.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    })
+  }
+
+  const formatTransactionTime = (date?: string) => {
+    if (!date) return ''
+    const parsedDate = new Date(date)
+    if (Number.isNaN(parsedDate.getTime())) return ''
+    return parsedDate.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    })
+  }
+
+  const formatTransactionNote = (note?: string) => {
+    if (!note) return 'Credit used for job posting:'
+    return note.replace(/_usage$/, '').replace(/_/g, ' ')
+  }
+
+  const formatTransactionType = (type?: string) => {
+    if (!type) return 'Job Post'
+    return type.replace(/_usage$/, '').replace(/_/g, ' ')
+  }
   return (
     <SafeAreaView style={styles.container}>
       {/* Sticky Header */}
@@ -327,7 +367,9 @@ const CreditsScreen = () => {
 
                   <View style={isFreeTier ? styles.priceContainer : isStandardTier ? styles.standardMainPriceContainer : styles.proMainPriceContainer}>
                     <IndianRupee color="#000" size={25} />
-                    <Text style={getPriceAmountStyle()}>{priceFormat(tier?.price_formatted)}</Text>
+                    {/* <Text style={getPriceAmountStyle()}>{priceFormat(tier?.price_formatted)}</Text> */}
+                    <Text style={getPriceAmountStyle()}>{standardPlanPrice}</Text>
+
                   </View>
                   <Text style={isFreeTier ? styles.priceSubtitle : isStandardTier ? styles.standardPriceSubtitle : styles.proPriceSubtitle}>
                     {isFreeTier ? 'Auto-assigned on signup' : 'No payment required • Launch Offer'}
@@ -458,12 +500,52 @@ const CreditsScreen = () => {
             </TouchableOpacity>
           </View>
 
-          {/* Empty State */}
-          <View style={styles.transactionEmptyState}>
-            <History size={56} color="#E0E0E0" />
-            <Text style={styles.transactionEmptyTitle}>No transactions yet</Text>
-            <Text style={styles.transactionEmptySubtitle}>Your credit purchases and usage will appear here</Text>
-          </View>
+          {transactions.length === 0 ? (
+            <View style={styles.transactionEmptyState}>
+              <History size={56} color="#E0E0E0" />
+              <Text style={styles.transactionEmptyTitle}>No transactions yet</Text>
+              <Text style={styles.transactionEmptySubtitle}>Your credit purchases and usage will appear here</Text>
+            </View>
+          ) : (
+            <View style={styles.transactionsList}>
+              {transactions.map((transaction: any, index: number) => {
+                const transactionDate = transaction?.created_at || transaction?.transaction_date || transaction?.date
+                const credits = transaction?.credits_changed
+                const creditValue = Number(credits)
+                const creditsDisplay = credits === null || credits === undefined || credits === ''
+                  ? '-'
+                  : String(credits).startsWith('-')
+                    ? String(credits)
+                    : `+${credits}`
+                const creditColor = creditValue < 0
+                  ? '#FF1F2D'
+                  : creditValue > 0
+                    ? '#00A63E'
+                    : '#13294B'
+                const amount = transaction?.amount ?? transaction?.amount_paid ?? transaction?.price ?? '-'
+                const balance = transaction?.credits_after 
+
+                return (
+                  <View key={transaction?.id || index} style={styles.transactionCard}>
+                    <View style={styles.transactionDetails}>
+                      <Text style={styles.transactionDescription}>{formatTransactionNote(transaction?.admin_notes)}</Text>
+                      <Text style={styles.transactionJobTitle}>{transaction?.job?.title || transaction?.job_title || transaction?.description || 'Job Post'}</Text>
+                      <Text style={styles.transactionDate}>{formatTransactionDate(transactionDate)},</Text>
+                      <Text style={styles.transactionTime}>{formatTransactionTime(transactionDate)}</Text>
+                      <View style={[styles.transactionTypeBadge, creditValue > 0 && styles.positiveTransactionTypeBadge]}>
+                        <Text style={[styles.transactionTypeText, creditValue > 0 && styles.positiveTransactionTypeText]}>{formatTransactionType(transaction?.transaction_type)}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.transactionSummary}>
+                      <View style={styles.transactionSummaryRow}><Text style={styles.transactionSummaryLabel}>CREDITS</Text><Text style={[styles.transactionCredits, { color: creditColor }]}>{creditsDisplay}</Text></View>
+                      <View style={styles.transactionSummaryRow}><Text style={styles.transactionSummaryLabel}>AMOUNT</Text><Text style={styles.transactionSummaryValue}>{amount}</Text></View>
+                      <View style={styles.transactionSummaryRow}><Text style={styles.transactionSummaryLabel}>BALANCE</Text><Text style={styles.transactionSummaryValue}>{balance}</Text></View>
+                    </View>
+                  </View>
+                )
+              })}
+            </View>
+          )}
         </View>
 
         {/* How Credits Work Section */}
@@ -1378,6 +1460,103 @@ const styles = StyleSheet.create({
     fontFamily: 'Geist-VariableFont_wght',
     fontWeight: '400',
     textAlign: 'center',
+  },
+  transactionsList: {
+    gap: 24,
+  },
+  transactionCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 18,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#B7D4FA',
+    borderRadius: 9,
+    padding: 16,
+    minHeight: 204,
+  },
+  transactionDetails: {
+    flex: 1,
+    paddingTop: 10,
+  },
+  transactionDescription: {
+    color: '#13294B',
+    fontSize: 17,
+    lineHeight: 25,
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  transactionJobTitle: {
+    color: '#13294B',
+    fontSize: 17,
+    lineHeight: 25,
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  transactionDate: {
+    color: '#13294B',
+    fontSize: 17,
+    marginTop: 18,
+    lineHeight: 25,
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  transactionTime: {
+    color: '#13294B',
+    fontSize: 17,
+    lineHeight: 25,
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  transactionTypeBadge: {
+    alignSelf: 'flex-start',
+    marginTop: 18,
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#FFF0E2',
+  },
+  transactionTypeText: {
+    color: '#E76F00',
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  positiveTransactionTypeBadge: {
+    backgroundColor: '#E8F7ED',
+  },
+  positiveTransactionTypeText: {
+    color: '#00A63E',
+  },
+  transactionSummary: {
+    width: '46%',
+    justifyContent: 'center',
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    backgroundColor: '#FFFFFF',
+    borderLeftWidth: 2,
+    borderLeftColor: '#E7EEF8',
+    borderBottomRightRadius: 12,
+    borderTopRightRadius: 12,
+    gap: 16,
+  },
+  transactionSummaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  transactionSummaryLabel: {
+    color: '#7890B1',
+    fontSize: 13,
+    fontWeight: '600',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  transactionCredits: {
+    color: '#FF1F2D',
+    fontSize: 18,
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  transactionSummaryValue: {
+    color: '#13294B',
+    fontSize: 17,
+    fontFamily: 'Geist-VariableFont_wght',
   },
   howCreditsWorkContainer: {
     backgroundColor: '#fff',
