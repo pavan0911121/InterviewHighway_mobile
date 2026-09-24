@@ -23,86 +23,95 @@ const formatTransactionDate = (timestamp?: string) => {
 };
 
 const dashboardNavigation = (navigation: any) => {
-  navigation.navigate('JobSeekerDrawer', {
-    screen: 'HomeTab',
-  });
-}
+  navigation.goBack();
+};
 
-const PaymentSuccess = ({ goBack, transaction, navigation }: PaymentStatusProps) => (
+const PaymentSuccess = ({ goBack, transaction, navigation, courseDetails }: PaymentStatusProps) => (
 
   <SafeAreaView style={styles.safeAreaContainer}>
     <ScrollView contentContainerStyle={styles.container}>
-    <View style={styles.iconCircle}>
-      <CircleCheckBig color={'#00AA28'}/>
-    </View>
-    <Text style={styles.successTitle}>Payment Successful! <PartyPopper color={'#D9A403'} fill={'#A039E0'}/></Text>
-    <Text style={styles.successSubtitle}>Welcome to your learning journey! You now have full access to the course content.</Text>
-
-    <View style={styles.card}>
-      <Text style={styles.cardTitle}>Payment Confirmed</Text>
-      <View style={styles.cardRow}>
-        <View style={styles.cardCol}>
-          <Text style={styles.cardLabel}>Amount Paid</Text>
-          <Text style={styles.cardValue}>₹{transaction?.amount/100}</Text>
-        </View>
-        <View style={styles.cardCol}>
-          <Text style={styles.cardLabel}>Transaction Date</Text>
-          <Text style={styles.cardValue}>{formatTransactionDate(transaction?.created_at)}</Text>
-        </View>
+      <View style={styles.iconCircle}>
+        <CircleCheckBig color={'#00AA28'} />
       </View>
-      <View style={styles.cardRow}>
-        <View style={styles.cardCol}>
-          <Text style={styles.cardLabel}>Payment ID:</Text>
-          <Text style={styles.cardValue}>{transaction?.payment_id}</Text>
-        </View>
-        <View style={styles.cardCol}>
-          <Text style={styles.cardLabel}>Order ID:</Text>
-          <Text style={styles.cardValue}>{transaction?.order_id}</Text>
-        </View>
-      </View>
-    </View>
+      <Text style={styles.successTitle}>Payment Successful! <PartyPopper color={'#D9A403'} fill={'#A039E0'} /></Text>
+      <Text style={styles.successSubtitle}>Welcome to your learning journey! You now have full access to the course content.</Text>
 
-    <View style={styles.courseCard}>
-      <Text style={styles.courseAccess}>Course Access Granted</Text>
-      <View style={styles.courseRow}>
-        <Image source={{ uri: 'https://img.icons8.com/color/96/python.png' }} style={styles.courseImage} />
-        <View style={styles.courseInfo}>
-          <Text style={styles.courseTitle}>Test Course</Text>
-          <View style={styles.courseTags}>
-            <Text style={styles.courseTag}>Certificate Eligible</Text>
-            <Text style={styles.courseTag}>Lifetime Access</Text>
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Payment Confirmed</Text>
+        <View style={styles.cardRow}>
+          <View style={styles.cardCol}>
+            <Text style={styles.cardLabel}>Amount Paid</Text>
+            <Text style={styles.cardValue}>₹{transaction?.amount / 100}</Text>
+          </View>
+          <View style={styles.cardCol}>
+            <Text style={styles.cardLabel}>Transaction Date</Text>
+            <Text style={styles.cardValue}>{formatTransactionDate(transaction?.created_at)}</Text>
+          </View>
+        </View>
+        <View style={styles.cardRow}>
+          <View style={styles.cardCol}>
+            <Text style={styles.cardLabel}>Payment ID:</Text>
+            <Text style={styles.cardValue}>{transaction?.payment_id}</Text>
+          </View>
+          <View style={styles.cardCol}>
+            <Text style={styles.cardLabel}>Order ID:</Text>
+            <Text style={styles.cardValue}>{transaction?.order_id}</Text>
           </View>
         </View>
       </View>
-      <TouchableOpacity style={styles.primaryBtn}>
-        <Text style={styles.primaryBtnText}>Start Learning Now →</Text>
-      </TouchableOpacity>
-    </View>
 
-    <TouchableOpacity style={styles.secondaryBtn}><Text style={styles.secondaryBtnText}>Download Receipt</Text></TouchableOpacity>
-    <TouchableOpacity style={styles.secondaryBtn} onPress={() => dashboardNavigation(navigation)}><Text style={styles.secondaryBtnText}>View Dashboard</Text></TouchableOpacity>
-    <TouchableOpacity style={styles.secondaryBtn}><Text style={styles.secondaryBtnText}>Share Success</Text></TouchableOpacity>
+      <View style={styles.courseCard}>
+        <Text style={styles.courseAccess}>Course Access Granted</Text>
+        <View style={styles.courseRow}>
 
-    <View style={styles.whatsNextCard}>
-      <Text style={styles.whatsNextTitle}>What's Next?</Text>
-      <Text style={styles.whatsNextSubtitle}>Make the most of your course enrollment</Text>
-      <View style={styles.whatsNextStep}><Text style={styles.whatsNextStepNum}>1</Text><Text style={styles.whatsNextStepText}>Start with the first lesson</Text></View>
-      <Text style={styles.whatsNextStepDesc}>Begin your learning journey with the course introduction</Text>
-      <View style={styles.whatsNextStep}><Text style={styles.whatsNextStepNum}>2</Text><Text style={styles.whatsNextStepText}>Join the community</Text></View>
-      <Text style={styles.whatsNextStepDesc}>Connect with other learners and ask questions</Text>
-      <View style={styles.whatsNextStep}><Text style={styles.whatsNextStepNum}>3</Text><Text style={styles.whatsNextStepText}>Track your progress</Text></View>
-      <Text style={styles.whatsNextStepDesc}>Monitor your learning progress and earn certificates</Text>
-      <TouchableOpacity style={styles.secondaryBtn}><Text style={styles.secondaryBtnText}>Get Support</Text></TouchableOpacity>
-    </View>
+          <Image
+            source={{
+              uri: courseDetails?.thumbnail_url || courseDetails?.thumbnailUrl
+            }}
+            style={styles.courseImage}
+          />
+          <View style={styles.courseInfo}>
+            <Text style={styles.courseTitle}>{courseDetails?.title}</Text>
+            <View style={styles.courseTags}>
+              <Text style={styles.courseTag}>Certificate Eligible</Text>
+              <Text style={styles.courseTag}>Lifetime Access</Text>
+            </View>
+          </View>
+        </View>
+        <TouchableOpacity style={styles.primaryBtn} onPress={()=>navigation.goBack()}>
+          <Text style={styles.primaryBtnText}>Start Learning Now →</Text>
+        </TouchableOpacity>
+      </View>
 
-    <Text style={styles.footerNote}>Your payment information is secure and encrypted</Text>
-    <Text style={styles.footerNote}>A confirmation email has been sent to your registered email</Text>
-    <Text style={styles.footerNote}>30-day money-back guarantee applies</Text>
-  </ScrollView>
+      <TouchableOpacity style={styles.secondaryBtn}><Text style={styles.secondaryBtnText}>Download Receipt</Text></TouchableOpacity>
+      <TouchableOpacity style={styles.secondaryBtn} onPress={() => dashboardNavigation(navigation)}><Text style={styles.secondaryBtnText}>Go Back</Text></TouchableOpacity>
+      <TouchableOpacity style={styles.secondaryBtn}><Text style={styles.secondaryBtnText}>Share Success</Text></TouchableOpacity>
+
+      <View style={styles.whatsNextCard}>
+        <Text style={styles.whatsNextTitle}>What's Next?</Text>
+        <Text style={styles.whatsNextSubtitle}>Make the most of your course enrollment</Text>
+        <View style={styles.whatsNextStep}><Text style={styles.whatsNextStepNum}>1</Text><Text style={styles.whatsNextStepText}>Start with the first lesson</Text></View>
+        <Text style={styles.whatsNextStepDesc}>Begin your learning journey with the course introduction</Text>
+        <View style={styles.whatsNextStep}><Text style={styles.whatsNextStepNum}>2</Text><Text style={styles.whatsNextStepText}>Join the community</Text></View>
+        <Text style={styles.whatsNextStepDesc}>Connect with other learners and ask questions</Text>
+        <View style={styles.whatsNextStep}><Text style={styles.whatsNextStepNum}>3</Text><Text style={styles.whatsNextStepText}>Track your progress</Text></View>
+        <Text style={styles.whatsNextStepDesc}>Monitor your learning progress and earn certificates</Text>
+        <TouchableOpacity
+          style={styles.secondaryBtn}
+          onPress={() => Linking.openURL('mailto:support@interviewhighway.com')}
+        >
+          <Text style={styles.secondaryBtnText}>Get Support</Text>
+        </TouchableOpacity>
+      </View>
+
+      <Text style={styles.footerNote}>Your payment information is secure and encrypted</Text>
+      <Text style={styles.footerNote}>A confirmation email has been sent to your registered email</Text>
+      <Text style={styles.footerNote}>30-day money-back guarantee applies</Text>
+    </ScrollView>
   </SafeAreaView>
 );
 
-const PaymentFailed = ({ goBack , courseDetails}: PaymentStatusProps) => (
+const PaymentFailed = ({ goBack, navigation, courseDetails }: PaymentStatusProps) => (
   <SafeAreaView style={styles.safeAreaContainer}>
 
     <ScrollView contentContainerStyle={styles.container}>
@@ -136,8 +145,8 @@ const PaymentFailed = ({ goBack , courseDetails}: PaymentStatusProps) => (
         </View>
         <Text style={styles.tryAgainList}>• Check your internet connection{"\n"}• Verify your payment method details{""}• Ensure sufficient balance in your account{""}• Try a different payment method if available</Text>
         <View style={styles.tryAgainBtnRow}>
-          <TouchableOpacity style={styles.primaryBtn}><CreditCard color={'#fff'}/><Text style={styles.primaryBtnText}>Retry Payment</Text></TouchableOpacity>
-          <TouchableOpacity style={styles.secondaryBtn} onPress={() => goBack()}><ArrowLeft color={'#000000'}/><Text style={styles.secondaryBtnText}>Go Back</Text></TouchableOpacity>
+          {/* <TouchableOpacity style={styles.primaryBtn}><CreditCard color={'#fff'} /><Text style={styles.primaryBtnText}>Retry Payment</Text></TouchableOpacity> */}
+          <TouchableOpacity style={styles.secondaryBtn} onPress={() => goBack()}><ArrowLeft color={'#000000'} /><Text style={styles.secondaryBtnText}>Go Back</Text></TouchableOpacity>
         </View>
       </View>
 
@@ -153,8 +162,8 @@ const PaymentFailed = ({ goBack , courseDetails}: PaymentStatusProps) => (
         <Text style={styles.helpContact}>Live Chat: Available during business hours</Text>
       </View>
 
-      <TouchableOpacity style={styles.secondaryBtn}><Text style={styles.secondaryBtnText}>Browse Other Courses</Text></TouchableOpacity>
-      <TouchableOpacity style={styles.secondaryBtn}><Text style={styles.secondaryBtnText}>Go to Dashboard</Text></TouchableOpacity>
+      <TouchableOpacity style={styles.secondaryBtn} onPress={()=>navigation.goBack()}><Text style={styles.secondaryBtnText}>Browse Other Courses</Text></TouchableOpacity>
+      {/* <TouchableOpacity style={styles.secondaryBtn}><Text style={styles.secondaryBtnText}>Go to Dashboard</Text></TouchableOpacity> */}
 
       <View style={styles.infoCard}>
         <Text style={styles.infoTitle}>Don't worry, you're not charged</Text>
@@ -177,7 +186,7 @@ const PaymentStatusScreen = () => {
   const goBack = () => {
     navigation.goBack();
   }
-  return isSuccess ? <PaymentSuccess goBack={goBack as () => void} transaction={selector?.verifyData?.transaction} navigation={navigation} /> : <PaymentFailed goBack={goBack as () => void} navigation={navigation} courseDetails={courseData} />;
+  return isSuccess ? <PaymentSuccess goBack={goBack as () => void} transaction={selector?.verifyData?.transaction} navigation={navigation} courseDetails={courseData} /> : <PaymentFailed goBack={goBack as () => void} navigation={navigation} courseDetails={courseData} />;
 
 };
 
@@ -555,7 +564,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: FONT_FAMILY,
   },
-   emojis: {
+  emojis: {
     fontSize: 24,
     fontFamily: 'Apple Color Emoji',
     marginTop: 8,
