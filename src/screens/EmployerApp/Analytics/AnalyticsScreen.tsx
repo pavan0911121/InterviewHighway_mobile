@@ -49,10 +49,11 @@ const AnalyticsScreen = () => {
     // Handle refresh logic
   }
   const loader = !(
-    selector?.isemployerAnalyticsLoading === false &&
-    selector?.isemployerTimelineLoading === false &&
-    selector?.isemployerJobPerformanceLoading === false
+    selector?.isEmployerAnalyticsLoading === false &&
+    selector?.isEmployerTimelineLoading === false &&
+    selector?.isEmployerJobPerformanceLoading === false
   );
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Sticky Header */}

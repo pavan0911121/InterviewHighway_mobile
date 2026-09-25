@@ -11,6 +11,9 @@ interface analyticsState {
     total: number
     timelineData: Array<any> | null;
     jobPerformanceData: object | null;
+    isEmployerAnalyticsLoading: boolean;
+    isEmployerTimelineLoading: boolean;
+    isEmployerJobPerformanceLoading: boolean;
    
 }
 
@@ -21,6 +24,9 @@ const initialState: analyticsState = {
     total: 0,
     timelineData: null,
     jobPerformanceData: null,
+    isEmployerAnalyticsLoading: false,
+    isEmployerTimelineLoading: false,
+    isEmployerJobPerformanceLoading: false,
 };
 //employer analytics API call
 export const getEmployerAnalytics = createAsyncThunk(
@@ -89,47 +95,47 @@ const employerAnalyticsSlice = createSlice({
         builder
             // getEmployerAnalytics async thunk handlers
             .addCase(getEmployerAnalytics.pending, (state) => {
-                state.isLoading = true;
+                state.isEmployerAnalyticsLoading = true;
                 state.error = null;
 
             })
             .addCase(getEmployerAnalytics.fulfilled, (state, action) => {
-                state.isLoading = false;
+                state.isEmployerAnalyticsLoading = false;
                 state.data = action.payload; // Assuming the API returns an object with employer analytics
                 state.error = null;
             })
             .addCase(getEmployerAnalytics.rejected, (state, action) => {
-                state.isLoading = false;
+                state.isEmployerAnalyticsLoading = false;
                 state.error = action.payload as string;
                 console.log('Error fetching employer analytics:', action.payload);
             })
             // getEmployerTimeline async thunk handlers
             .addCase(getEmployerTimeline.pending, (state) => {
-                state.isLoading = true;
+                state.isEmployerTimelineLoading = true;
                 state.error = null;
             })
             .addCase(getEmployerTimeline.fulfilled, (state, action) => {
-                state.isLoading = false;
+                state.isEmployerTimelineLoading = false;
                 state.timelineData = action.payload; // Assuming the API returns an array with employer timeline analytics
                 state.error = null;
             })
             .addCase(getEmployerTimeline.rejected, (state, action) => {
-                state.isLoading = false;
+                state.isEmployerTimelineLoading = false;
                 state.error = action.payload as string;
                 console.log('Error fetching employer timeline analytics:', action.payload);
             })
             // getEmployerJobPerformance async thunk handlers
             .addCase(getEmployerJobPerformance.pending, (state) => {
-                state.isLoading = true;
+                state.isEmployerJobPerformanceLoading = true;
                 state.error = null;
             })
             .addCase(getEmployerJobPerformance.fulfilled, (state, action) => {
-                state.isLoading = false;
+                state.isEmployerJobPerformanceLoading = false;
                 state.jobPerformanceData = action.payload; // Assuming the API returns an object with employer job performance analytics
                 state.error = null;
             })
             .addCase(getEmployerJobPerformance.rejected, (state, action) => {
-                state.isLoading = false;
+                state.isEmployerJobPerformanceLoading = false;
                 state.error = action.payload as string;
                 console.log('Error fetching employer job performance analytics:', action.payload);
             })
