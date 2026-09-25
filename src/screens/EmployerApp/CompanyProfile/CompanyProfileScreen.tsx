@@ -10,6 +10,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import * as AsyncStore from "../../../AsyncStore";
 import { getEmployerProfile, updateEmployerProfile } from '../../../Redux/slices/employerProfileSlice'
 import { Briefcase, Building2, Globe, MapPin, ShieldCheck, Upload, Users } from 'lucide-react-native'
+import CompanyProfileSkeleton from './CompanyProfileSkeleton'
 
 const INDUSTRY_OPTIONS = ['Technology', 'Finance & Banking', 'Healthcare', 'Education', 'Retail & E-commerce', 'Manufacturing', 'Consulting', 'Media & Entertainment', 'Other']
 const COMPANY_SIZE_OPTIONS = ['1-10 employees', '11-50 employees', '51-200 employees', '201-500 employees', '501-1000 employees', '1000+ employees']
@@ -105,7 +106,7 @@ const CompanyProfileScreen = () => {
       setIsSaving(false)
     }
   }
-
+  const loader = selector?.isEmployerProfileLoading;
   return (
     <SafeAreaView style={styles.container}>
       {/* Sticky Header */}
@@ -122,6 +123,7 @@ const CompanyProfileScreen = () => {
           <ActivityIndicator size="large" color="#165DFC" />
         </View>
       ) : ( */}
+      {loader ? <CompanyProfileSkeleton /> :
         <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Header Section */}
           <View style={styles.headerContainer}>
@@ -293,7 +295,7 @@ const CompanyProfileScreen = () => {
             {/* Location */}
             <View style={styles.infoSection}>
               <View style={styles.infoLabelRow}>
-               <MapPin color={'#666'} size={16} />
+                <MapPin color={'#666'} size={16} />
                 <Text style={styles.infoLabel}>Location</Text>
               </View>
               {isEditing ? (
@@ -358,8 +360,8 @@ const CompanyProfileScreen = () => {
               <Text style={styles.verificationStatusText}>Your company has been verified. A trust badge is displayed on all your job postings.</Text>
             </View>
           </View>
-        </ScrollView>
-        {/* )} */}
+        </ScrollView>}
+      {/* )} */}
     </SafeAreaView>
   )
 }

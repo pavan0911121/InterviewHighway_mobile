@@ -9,6 +9,7 @@ interface EmployerApplicationsState {
     error: string | null;
     total: number;
     candidateData?: object | null;
+    isApplicationsStatsLoading: boolean; 
    
 }
 
@@ -18,6 +19,7 @@ const initialState: EmployerApplicationsState = {
     error: null,
     total: 0,
     candidateData: null,
+    isApplicationsStatsLoading: false,
 };
 //applications list API call
 export const getApplicationsList = createAsyncThunk(
@@ -68,17 +70,17 @@ const employerApplicationsSlice = createSlice({
         builder
             // getApplicationsList async thunk handlers
             .addCase(getApplicationsList.pending, (state) => {
-                state.isLoading = true;
+                state.isApplicationsStatsLoading = true;
                 state.error = null;
 
             })
             .addCase(getApplicationsList.fulfilled, (state, action) => {
-                state.isLoading = false;
+                state.isApplicationsStatsLoading = false;
                 state.data = action.payload; // Assuming the API returns an object with applications list
                 state.error = null;
             })
             .addCase(getApplicationsList.rejected, (state, action) => {
-                state.isLoading = false;
+                state.isApplicationsStatsLoading = false;
                 state.error = action.payload as string;
                 console.log('Error fetching applications list:', action.payload);
             })

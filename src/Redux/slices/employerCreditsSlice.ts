@@ -10,12 +10,18 @@ interface creditsState {
     error: string | null;
     total: number,
     tiers?: object | null; // Add this if you want to store credit tiers in the same slice
-   transactions?: object[] | null; // Add this if you want to store transactions in the same slice
+    transactions?: object[] | null; // Add this if you want to store transactions in the same slice
+    isemployerCreditsLoading: boolean;
+    isEmployerTierLoading: boolean;
+    isEmployerTransactionLoading: boolean;
 }
 
 const initialState: creditsState = {
     data: null,
     isLoading: false,
+    isemployerCreditsLoading: false,
+    isEmployerTierLoading: false,
+    isEmployerTransactionLoading: false,
     error: null,
     total: 0,
     tiers: null, // Initialize tiers as null
@@ -88,50 +94,50 @@ const employerCreditsSlice = createSlice({
         builder
             // getEmployerCredits async thunk handlers
             .addCase(getEmployerCredits.pending, (state) => {
-                state.isLoading = true;
+                state.isemployerCreditsLoading = true;
                 state.error = null;
 
             })
             .addCase(getEmployerCredits.fulfilled, (state, action) => {
-                state.isLoading = false;
+                state.isemployerCreditsLoading = false;
                 state.data = action.payload; // Assuming the API returns an object with employer credits
                 state.error = null;
             })
             .addCase(getEmployerCredits.rejected, (state, action) => {
-                state.isLoading = false;
+                state.isemployerCreditsLoading = false;
                 state.error = action.payload as string;
                 console.log('Error fetching employer credits:', action.payload);
             })
             // getEmployerCreditTiers async thunk handlers
             .addCase(getEmployerCreditTiers.pending, (state) => {
-                state.isLoading = true;
+                state.isEmployerTierLoading = true;
                 state.error = null;
             })
             .addCase(getEmployerCreditTiers.fulfilled, (state, action) => {
-                state.isLoading = false;
+                state.isEmployerTierLoading = false;
                 // Assuming the API returns an object with credit tiers, you can store it in a separate property if needed
                 state.tiers = action.payload;
                 state.error = null;
             })
             .addCase(getEmployerCreditTiers.rejected, (state, action) => {
-                state.isLoading = false;
+                state.isEmployerTierLoading = false;
                 state.error = action.payload as string;
                 console.log('Error fetching employer credit tiers:', action.payload);
             });
-            // getEmployerCreditTransactions async thunk handlers
-            builder 
+        // getEmployerCreditTransactions async thunk handlers
+        builder
             .addCase(getEmployerCreditTransactions.pending, (state) => {
-                state.isLoading = true;
+                state.isEmployerTransactionLoading = true;
                 state.error = null;
             })
             .addCase(getEmployerCreditTransactions.fulfilled, (state, action) => {
-                state.isLoading = false;
+                state.isEmployerTransactionLoading = false;
                 // Assuming the API returns an array of transactions, you can store it in a separate property if needed
                 state.transactions = action.payload;
                 state.error = null;
             })
             .addCase(getEmployerCreditTransactions.rejected, (state, action) => {
-                state.isLoading = false;
+                state.isEmployerTransactionLoading = false;
                 state.error = action.payload as string;
                 console.log('Error fetching employer credit transactions:', action.payload);
             });

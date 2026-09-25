@@ -17,6 +17,7 @@ interface jobPostingsState {
     candidateWorkExperienceData: object | null; // Add this to store the candidate work experience data
     candidateEducationData: object | null; // Add this to store the candidate education data
     candidateVideoData: object | null; // Add this to store the candidate video data
+    isJobStatsLoading: boolean; // Add this to track the loading state of job stats API call
 
 }
 
@@ -34,6 +35,7 @@ const initialState: jobPostingsState = {
     candidateWorkExperienceData: null, // Initialize candidateWorkExperienceData as null
     candidateEducationData: null, // Initialize candidateEducationData as null
     candidateVideoData: null, // Initialize candidateVideoData as null
+    isJobStatsLoading: false, // Initialize isJobStatsLoading as false
 };
 //job posting stats API call
 export const getJobPostingStats = createAsyncThunk(
@@ -281,17 +283,17 @@ const jobPostingsSlice = createSlice({
         builder
             // getJobPostingStats async thunk handlers
             .addCase(getJobPostingStats.pending, (state) => {
-                state.isLoading = true;
+                state.isJobStatsLoading = true;
                 state.error = null;
 
             })
             .addCase(getJobPostingStats.fulfilled, (state, action) => {
-                state.isLoading = false;
+                state.isJobStatsLoading = false;
                 state.data = action.payload; // Assuming the API returns an object with job posting stats
                 state.error = null;
             })
             .addCase(getJobPostingStats.rejected, (state, action) => {
-                state.isLoading = false;
+                state.isJobStatsLoading = false;
                 state.error = action.payload as string;
                 console.log('Error fetching job posting stats:', action.payload);
             })

@@ -9,6 +9,7 @@ import * as AsyncStore from "../../../AsyncStore";
 import { getApplicationsList } from '../../../Redux/slices/employerApplicationsSlice'
 import { ArrowDownToLine, Briefcase, Calendar, ChevronDown, Clock3, Download, Eye, FileText, Layers, Mail, Search, User, UserRound, Users } from 'lucide-react-native'
 import { updateApplicationStatus } from '../../../Redux/slices/jobPostings'
+import JobsSkeleton from '../Jobs/JobsSkeleton'
 
 
 const ApplicationsScreen = () => {
@@ -103,7 +104,7 @@ const ApplicationsScreen = () => {
       console.error('Failed to update application status', error)
     }
   }
-
+const loading = selector?.isApplicationsStatsLoading;
   return (
     <SafeAreaView style={styles.container}>
       {/* Sticky Header */}
@@ -116,11 +117,13 @@ const ApplicationsScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {isLoading ? (
+      {/* {isLoading ? (
         <View style={styles.loaderContainer}>
           <ActivityIndicator size="large" color="#165DFC" />
         </View>
-      ) : (
+      ) : ( */}
+        {loading?<JobsSkeleton/>
+        :
         <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Header Section */}
           <View style={styles.headerRow}>
@@ -309,8 +312,8 @@ const ApplicationsScreen = () => {
               </TouchableOpacity>
             </View>
           )}
-        </ScrollView>
-      )}
+        </ScrollView>}
+      {/* )} */}
     </SafeAreaView>
   )
 }

@@ -8,6 +8,7 @@ import * as AsyncStore from "../../../AsyncStore";
 import { useDispatch, useSelector } from 'react-redux'
 import { getEmployerCredits, getEmployerCreditTiers, getEmployerCreditTransactions } from '../../../Redux/slices/employerCreditsSlice'
 import { Check, CreditCard, DollarSign, Gift, History, IndianRupee, Info, Package, Sparkles, Star, TrendingUp, Zap } from 'lucide-react-native'
+import CreditsSkeleton from './CreditsSkeleton'
 
 const CreditsScreen = () => {
   const [userId, setUserId] = useState(null);
@@ -29,8 +30,8 @@ const CreditsScreen = () => {
         const parsedUserData = JSON.parse(userLoggedInData);
         const userId = parsedUserData?.id || null;
         const response = await dispatch(getEmployerCredits(userId) as any);
-         const tierResponse = await dispatch(getEmployerCreditTiers() as any);
-         const transactionResponse = await dispatch(getEmployerCreditTransactions(userId) as any);
+        const tierResponse = await dispatch(getEmployerCreditTiers() as any);
+        const transactionResponse = await dispatch(getEmployerCreditTransactions(userId) as any);
       }
       if (userId) {
         setUserId(userId);
@@ -52,7 +53,6 @@ const CreditsScreen = () => {
   };
   const standardPlanPrice = 0;
   const proPlanPrice = 0;
-  console.log("transactions", selector?.transactions);
   const transactions = Array.isArray(selector?.transactions)
     ? selector.transactions
     : Array.isArray(selector?.transactions?.transactions)
@@ -90,6 +90,11 @@ const CreditsScreen = () => {
     if (!type) return 'Job Post'
     return type.replace(/_usage$/, '').replace(/_/g, ' ')
   }
+  const creditsLoading = !(
+    selector?.isemployerCreditsLoading === false &&
+    selector?.isEmployerTierLoading === false
+  );
+  const transactionsLoading = selector?.isEmployerTransactionLoading === true;
   return (
     <SafeAreaView style={styles.container}>
       {/* Sticky Header */}
@@ -105,8 +110,8 @@ const CreditsScreen = () => {
       <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Header Section */}
         <View style={styles.headerContainer}>
-          <View style={styles.headerTitleRow}> 
-            <CreditCard color={'#005FFF'} size={30}/>
+          <View style={styles.headerTitleRow}>
+            <CreditCard color={'#005FFF'} size={30} />
             <View>
               <Text style={styles.headerTitle}>Credit</Text>
               <Text style={styles.headerTitleSecond}>Management</Text>
@@ -140,7 +145,7 @@ const CreditsScreen = () => {
           {/* Benefits List */}
           <View style={styles.benefitsContainer}>
             <View style={styles.benefitRow}>
-                <Check color="#00C853" size={20} />
+              <Check color="#00C853" size={20} />
               <Text style={styles.benefitText}>All plans completely FREE until March 31, 2027</Text>
             </View>
             <View style={styles.benefitRow}>
@@ -197,7 +202,7 @@ const CreditsScreen = () => {
             {/* Used */}
             <View style={styles.creditStatItem}>
               <View style={styles.creditStatIconContainer}>
-               <TrendingUp color="#FF9500" size={20} />
+                <TrendingUp color="#FF9500" size={20} />
               </View>
               <Text style={styles.creditStatItemLabel}>Used</Text>
               <Text style={styles.creditStatItemValue}>{credits?.credits_used}</Text>
@@ -219,7 +224,7 @@ const CreditsScreen = () => {
               </View>
               <Text style={styles.creditStatItemLabel}>Remaining</Text>
               <Text style={styles.creditStatItemValue}>
-                {credits?.total_credits_purchased > 0 
+                {credits?.total_credits_purchased > 0
                   ? Math.round((credits?.credits_available / credits?.total_credits_purchased) * 100)
                   : 0
                 }%
@@ -227,266 +232,270 @@ const CreditsScreen = () => {
             </View>
           </View>
         </View>
+        {
+          creditsLoading ? <CreditsSkeleton /> : <View style={styles.content}>
+            {tiers && tiers.length > 0 && (
+              <View style={styles.planSectionContainer}>
+                <Text style={styles.planSectionTitle}>Choose Your Plan</Text>
+                <Text style={styles.planSectionSubtitle}>
+                  Claim your credits now – All plans free during our launch period
+                </Text>
 
-        {/* Choose Your Plan Section */}
-        {tiers && tiers.length > 0 && (
-          <View style={styles.planSectionContainer}>
-            <Text style={styles.planSectionTitle}>Choose Your Plan</Text>
-            <Text style={styles.planSectionSubtitle}>
-              Claim your credits now – All plans free during our launch period
-            </Text>
+                {tiers.map((tier: any, index: number) => {
+                  const isFreeTier = tier.tier === 'free';
+                  const isStandardTier = tier.tier === 'standard';
+                  const isProTier = tier.tier === 'pro';
 
-            {tiers.map((tier: any, index: number) => {
-              const isFreeTier = tier.tier === 'free';
-              const isStandardTier = tier.tier === 'standard';
-              const isProTier = tier.tier === 'pro';
+                  const getPlanCardStyle = () => {
+                    if (isFreeTier) return styles.planCard;
+                    if (isStandardTier) return styles.standardPlanCard;
+                    if (isProTier) return styles.proPlanCard;
+                    return styles.planCard;
+                  };
 
-              const getPlanCardStyle = () => {
-                if (isFreeTier) return styles.planCard;
-                if (isStandardTier) return styles.standardPlanCard;
-                if (isProTier) return styles.proPlanCard;
-                return styles.planCard;
-              };
+                  const getBadgeStyle = () => {
+                    if (isFreeTier) return styles.autoAssignedBadge;
+                    if (isStandardTier) return styles.mostPopularBadge;
+                    if (isProTier) return styles.bestValueBadge;
+                  };
 
-              const getBadgeStyle = () => {
-                if (isFreeTier) return styles.autoAssignedBadge;
-                if (isStandardTier) return styles.mostPopularBadge;
-                if (isProTier) return styles.bestValueBadge;
-              };
+                  const getBadgeText = () => {
+                    if (isFreeTier) return 'Auto-Assigned';
+                    if (isStandardTier) return 'Most Popular';
+                    if (isProTier) return 'Best Value';
+                  };
 
-              const getBadgeText = () => {
-                if (isFreeTier) return 'Auto-Assigned';
-                if (isStandardTier) return 'Most Popular';
-                if (isProTier) return 'Best Value';
-              };
+                  const getCreditBoxStyle = () => {
+                    if (isFreeTier) return styles.creditBoxContainer;
+                    if (isStandardTier) return styles.standardCreditBoxContainer;
+                    if (isProTier) return styles.proCreditBoxContainer;
+                  };
 
-              const getCreditBoxStyle = () => {
-                if (isFreeTier) return styles.creditBoxContainer;
-                if (isStandardTier) return styles.standardCreditBoxContainer;
-                if (isProTier) return styles.proCreditBoxContainer;
-              };
+                  const getCreditNumberStyle = () => {
+                    if (isFreeTier) return styles.creditBoxNumber;
+                    if (isStandardTier) return styles.standardCreditBoxNumber;
+                    if (isProTier) return styles.proCreditBoxNumber;
+                  };
 
-              const getCreditNumberStyle = () => {
-                if (isFreeTier) return styles.creditBoxNumber;
-                if (isStandardTier) return styles.standardCreditBoxNumber;
-                if (isProTier) return styles.proCreditBoxNumber;
-              };
+                  const getPriceSymbolStyle = () => {
+                    if (isFreeTier) return styles.priceSymbol;
+                    if (isStandardTier) return styles.standardPriceSymbol;
+                    if (isProTier) return styles.proPriceSymbol;
+                  };
 
-              const getPriceSymbolStyle = () => {
-                if (isFreeTier) return styles.priceSymbol;
-                if (isStandardTier) return styles.standardPriceSymbol;
-                if (isProTier) return styles.proPriceSymbol;
-              };
+                  const getPriceAmountStyle = () => {
+                    if (isFreeTier) return styles.priceAmount;
+                    if (isStandardTier) return styles.standardPriceAmount;
+                    if (isProTier) return styles.proPriceAmount;
+                  };
 
-              const getPriceAmountStyle = () => {
-                if (isFreeTier) return styles.priceAmount;
-                if (isStandardTier) return styles.standardPriceAmount;
-                if (isProTier) return styles.proPriceAmount;
-              };
+                  const getCheckIconColor = () => {
+                    if (isFreeTier) return '#333';
+                    if (isStandardTier) return '#00C853';
+                    if (isProTier) return '#165DFC';
+                  };
 
-              const getCheckIconColor = () => {
-                if (isFreeTier) return '#333';
-                if (isStandardTier) return '#00C853';
-                if (isProTier) return '#165DFC';
-              };
+                  const getButtonStyle = () => {
+                    if (isFreeTier) return null;
+                    if (isStandardTier) return styles.getStartedButton;
+                    if (isProTier) return styles.proGetStartedButton;
+                  };
 
-              const getButtonStyle = () => {
-                if (isFreeTier) return null;
-                if (isStandardTier) return styles.getStartedButton;
-                if (isProTier) return styles.proGetStartedButton;
-              };
+                  const getPerfectForBoxStyle = () => {
+                    if (isFreeTier) return styles.perfectForBox;
+                    if (isStandardTier) return styles.standardPerfectForBox;
+                    if (isProTier) return styles.proPerfectForBox;
+                  };
 
-              const getPerfectForBoxStyle = () => {
-                if (isFreeTier) return styles.perfectForBox;
-                if (isStandardTier) return styles.standardPerfectForBox;
-                if (isProTier) return styles.proPerfectForBox;
-              };
+                  const getPerfectForTextStyle = () => {
+                    if (isFreeTier) return styles.perfectForText;
+                    if (isStandardTier) return styles.standardPerfectForText;
+                    if (isProTier) return styles.proPerfectForText;
+                  };
 
-              const getPerfectForTextStyle = () => {
-                if (isFreeTier) return styles.perfectForText;
-                if (isStandardTier) return styles.standardPerfectForText;
-                if (isProTier) return styles.proPerfectForText;
-              };
+                  const getPerfectForText = () => {
+                    if (isFreeTier) return 'Perfect for trying out the platform';
+                    if (isStandardTier) return 'Perfect for getting started';
+                    if (isProTier) return 'Best for active hiring teams';
+                  };
 
-              const getPerfectForText = () => {
-                if (isFreeTier) return 'Perfect for trying out the platform';
-                if (isStandardTier) return 'Perfect for getting started';
-                if (isProTier) return 'Best for active hiring teams';
-              };
+                  const getPerfectForIcon = () => {
+                    if (isFreeTier) return 'star';
+                    if (isStandardTier) return 'star';
+                    if (isProTier) return 'fire';
+                  };
 
-              const getPerfectForIcon = () => {
-                if (isFreeTier) return 'star';
-                if (isStandardTier) return 'star';
-                if (isProTier) return 'fire';
-              };
-
-              return (
-                <View key={index} style={getPlanCardStyle()}>
-                  {/* Badge */}
-                  {!isFreeTier && (
-                    <View style={isStandardTier ? styles.mostPopularBadgeContainer : styles.bestValueBadgeContainer}>
-                      <View style={getBadgeStyle()}>
-                        <Zap color="#FFF" size={15}/>
-                        <Text style={isStandardTier ? styles.mostPopularBadgeText : styles.bestValueBadgeText}>
-                          {getBadgeText()}
-                        </Text>
-                      </View>
-                    </View>
-                  )}
-
-                  {isFreeTier && (
-                    <View style={styles.planBadgeContainer}>
-                      <View style={styles.autoAssignedBadge}>
-                        <Star color="#fff" size={14} />
-                        <Text style={styles.autoAssignedBadgeText}>Auto-Assigned</Text>
-                      </View>
-                    </View>
-                  )}
-
-                  {/* Plan Title */}
-                  <Text style={isFreeTier ? styles.planTitle : isStandardTier ? styles.standardPlanTitle : styles.proPlanTitle}>
-                    {tier.tier.charAt(0).toUpperCase() + tier.tier.slice(1)} Plan
-                  </Text>
-
-                  {/* Free/Promo Badge */}
-                  <View style={isFreeTier ? styles.includedBadgeContainer : isStandardTier ? styles.standardFreeBadgeContainer : styles.proFreeBadgeContainer}>
-                    <Gift color="#fff" size={16} />
-                    <Text style={isFreeTier ? styles.includedBadgeText : isStandardTier ? styles.standardFreeBadgeText : styles.proFreeBadgeText}>
-                      {isFreeTier ? 'Included' : 'FREE until March 31, 2027'}
-                    </Text>
-                  </View>
-
-                  {/* Price */}
-                  {!isFreeTier && tier.price > 0 && (
-                    <View style={isStandardTier ? styles.standardPriceContainer : styles.proPriceContainer}>
-                      <Text style={isStandardTier ? styles.strikethroughPrice : styles.proStrikethroughPrice}>
-                        {tier.price_formatted}
-                      </Text>
-                    </View>
-                  )}
-
-                  <View style={isFreeTier ? styles.priceContainer : isStandardTier ? styles.standardMainPriceContainer : styles.proMainPriceContainer}>
-                    <IndianRupee color="#000" size={25} />
-                    {/* <Text style={getPriceAmountStyle()}>{priceFormat(tier?.price_formatted)}</Text> */}
-                    <Text style={getPriceAmountStyle()}>{standardPlanPrice}</Text>
-
-                  </View>
-                  <Text style={isFreeTier ? styles.priceSubtitle : isStandardTier ? styles.standardPriceSubtitle : styles.proPriceSubtitle}>
-                    {isFreeTier ? 'Auto-assigned on signup' : 'No payment required • Launch Offer'}
-                  </Text>
-
-                  {!isFreeTier && (
-                    <View style={isStandardTier ? styles.regularPriceBox : styles.proRegularPriceBox}>
-                      <Text style={isStandardTier ? styles.regularPriceText : styles.proRegularPriceText}>
-                        Regular price {tier.price_formatted} from April 1, 2027
-                      </Text>
-                    </View>
-                  )}
-
-                  {/* Credit Box */}
-                  <View style={getCreditBoxStyle()}>
-                    <Text style={getCreditNumberStyle()}>{tier.credits}</Text>
-                    <Text style={isFreeTier ? styles.creditBoxLabel : isStandardTier ? styles.standardCreditBoxLabel : styles.proCreditBoxLabel}>
-                      {tier.credits} Credit{tier.credits > 1 ? 's' : ''} Included
-                    </Text>
-                    {!isFreeTier && (
-                      <Text style={isStandardTier ? styles.standardCreditBoxSubtitle : styles.proCreditBoxSubtitle}>
-                        (Worth {tier.price_formatted} after launch)
-                      </Text>
-                    )}
-                  </View>
-
-                  {/* Benefits List */}
-                  <View style={isFreeTier ? styles.benefitsListContainer : isStandardTier ? styles.standardBenefitsListContainer : styles.proBenefitsListContainer}>
-                    <View style={isFreeTier ? styles.benefitListItem : isStandardTier ? styles.standardBenefitListItem : styles.proBenefitListItem}>
-                      <Check color={getCheckIconColor()}/>
-                      <Text style={isFreeTier ? styles.benefitListText : isStandardTier ? styles.standardBenefitListText : styles.proBenefitListText}>
-                        Post {tier.credits} job listing{tier.credits > 1 ? 's' : ''}
-                      </Text>
-                    </View>
-                    <View style={isFreeTier ? styles.benefitListItem : isStandardTier ? styles.standardBenefitListItem : styles.proBenefitListItem}>
-                      <Check color={getCheckIconColor()}/>
-                      <View style={styles.benefitListTextWrapper}>
-                        <Text style={isFreeTier ? styles.benefitListText : isStandardTier ? styles.standardBenefitListText : styles.proBenefitListText}>
-                          <Text style={styles.benefitBold}>30-day visibility</Text>
-                          <Text style={styles.benefitNormal}> per posting</Text>
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={isFreeTier ? styles.benefitListItem : isStandardTier ? styles.standardBenefitListItem : styles.proBenefitListItem}>
-                      <Check color={getCheckIconColor()}/>
-                      <View style={styles.benefitListTextWrapper}>
-                        <Text style={isFreeTier ? styles.benefitListText : isStandardTier ? styles.standardBenefitListText : styles.proBenefitListText}>
-                          Access to <Text style={styles.benefitBold}>qualified candidates</Text>
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={isFreeTier ? styles.benefitListItem : isStandardTier ? styles.standardBenefitListItem : styles.proBenefitListItem}>
-                      <Check color={getCheckIconColor()}/>
-                      <View style={styles.benefitListTextWrapper}>
-                        <Text style={isFreeTier ? styles.benefitListText : isStandardTier ? styles.standardBenefitListText : styles.proBenefitListText}>
-                          <Text style={styles.benefitBold}>Application tracking</Text>
-                          <Text style={styles.benefitNormal}> dashboard</Text>
-                        </Text>
-                      </View>
-                    </View>
-                    {!isFreeTier && (
-                      <View style={isStandardTier ? styles.standardBenefitListItem : styles.proBenefitListItem}>
-                        <Check color={getCheckIconColor()} />
-                        <View style={styles.benefitListTextWrapper}>
-                          <Text style={isStandardTier ? styles.standardBenefitListText : styles.proBenefitListText}>
-                            <Text style={styles.benefitBold}>Candidate analytics</Text>
-                            <Text style={styles.benefitNormal}> & insights</Text>
-                          </Text>
-                        </View>
-                      </View>
-                    )}
-                    {isProTier && (
-                      <>
-                        <View style={styles.proBenefitListItem}>
-                          <Check color={getCheckIconColor()} />
-                          <View style={styles.benefitListTextWrapper}>
-                            <Text style={styles.proBenefitListText}>
-                              <Text style={styles.benefitBold}>Best Value:</Text>
-                              <Text style={styles.benefitNormal}> Save ₹665</Text>
+                  return (
+                    <View key={index} style={getPlanCardStyle()}>
+                      {/* Badge */}
+                      {!isFreeTier && (
+                        <View style={isStandardTier ? styles.mostPopularBadgeContainer : styles.bestValueBadgeContainer}>
+                          <View style={getBadgeStyle()}>
+                            <Zap color="#FFF" size={15} />
+                            <Text style={isStandardTier ? styles.mostPopularBadgeText : styles.bestValueBadgeText}>
+                              {getBadgeText()}
                             </Text>
                           </View>
                         </View>
-                        <View style={styles.proBenefitListItem}>
-                          <Check color={getCheckIconColor()} />
-                          <Text style={styles.proBenefitListText}>Premium Support</Text>
+                      )}
+
+                      {isFreeTier && (
+                        <View style={styles.planBadgeContainer}>
+                          <View style={styles.autoAssignedBadge}>
+                            <Star color="#fff" size={14} />
+                            <Text style={styles.autoAssignedBadgeText}>Auto-Assigned</Text>
+                          </View>
                         </View>
-                      </>
-                    )}
-                  </View>
+                      )}
 
-                  {/* Call to Action */}
-                  {isFreeTier && (
-                    <View style={styles.includedAccountBox}>
-                      <Check color="#666" />
-                      <Text style={styles.includedAccountText}>Already included in your account</Text>
-                    </View>
-                  )}
-
-                  {!isFreeTier && (
-                    <View style={getButtonStyle()}>
-                      <Sparkles size={18} color={'#ffffff'} />
-                      <Text style={isStandardTier ? styles.getStartedButtonText : styles.proGetStartedButtonText}>
-                        Get Started Free
+                      {/* Plan Title */}
+                      <Text style={isFreeTier ? styles.planTitle : isStandardTier ? styles.standardPlanTitle : styles.proPlanTitle}>
+                        {tier.tier.charAt(0).toUpperCase() + tier.tier.slice(1)} Plan
                       </Text>
-                    </View>
-                  )}
 
-                  {/* Perfect For */}
-                  <View style={getPerfectForBoxStyle()}>
-                    <Sparkles size={18} color={isProTier ? '#FF3B30' : '#FFA500'} />
-                    <Text style={getPerfectForTextStyle()}>{getPerfectForText()}</Text>
-                  </View>
-                </View>
-              );
-            })}
+                      {/* Free/Promo Badge */}
+                      <View style={isFreeTier ? styles.includedBadgeContainer : isStandardTier ? styles.standardFreeBadgeContainer : styles.proFreeBadgeContainer}>
+                        <Gift color="#fff" size={16} />
+                        <Text style={isFreeTier ? styles.includedBadgeText : isStandardTier ? styles.standardFreeBadgeText : styles.proFreeBadgeText}>
+                          {isFreeTier ? 'Included' : 'FREE until March 31, 2027'}
+                        </Text>
+                      </View>
+
+                      {/* Price */}
+                      {!isFreeTier && tier.price > 0 && (
+                        <View style={isStandardTier ? styles.standardPriceContainer : styles.proPriceContainer}>
+                          <Text style={isStandardTier ? styles.strikethroughPrice : styles.proStrikethroughPrice}>
+                            {tier.price_formatted}
+                          </Text>
+                        </View>
+                      )}
+
+                      <View style={isFreeTier ? styles.priceContainer : isStandardTier ? styles.standardMainPriceContainer : styles.proMainPriceContainer}>
+                        <IndianRupee color="#000" size={25} />
+                        {/* <Text style={getPriceAmountStyle()}>{priceFormat(tier?.price_formatted)}</Text> */}
+                        <Text style={getPriceAmountStyle()}>{standardPlanPrice}</Text>
+
+                      </View>
+                      <Text style={isFreeTier ? styles.priceSubtitle : isStandardTier ? styles.standardPriceSubtitle : styles.proPriceSubtitle}>
+                        {isFreeTier ? 'Auto-assigned on signup' : 'No payment required • Launch Offer'}
+                      </Text>
+
+                      {!isFreeTier && (
+                        <View style={isStandardTier ? styles.regularPriceBox : styles.proRegularPriceBox}>
+                          <Text style={isStandardTier ? styles.regularPriceText : styles.proRegularPriceText}>
+                            Regular price {tier.price_formatted} from April 1, 2027
+                          </Text>
+                        </View>
+                      )}
+
+                      {/* Credit Box */}
+                      <View style={getCreditBoxStyle()}>
+                        <Text style={getCreditNumberStyle()}>{tier.credits}</Text>
+                        <Text style={isFreeTier ? styles.creditBoxLabel : isStandardTier ? styles.standardCreditBoxLabel : styles.proCreditBoxLabel}>
+                          {tier.credits} Credit{tier.credits > 1 ? 's' : ''} Included
+                        </Text>
+                        {!isFreeTier && (
+                          <Text style={isStandardTier ? styles.standardCreditBoxSubtitle : styles.proCreditBoxSubtitle}>
+                            (Worth {tier.price_formatted} after launch)
+                          </Text>
+                        )}
+                      </View>
+
+                      {/* Benefits List */}
+                      <View style={isFreeTier ? styles.benefitsListContainer : isStandardTier ? styles.standardBenefitsListContainer : styles.proBenefitsListContainer}>
+                        <View style={isFreeTier ? styles.benefitListItem : isStandardTier ? styles.standardBenefitListItem : styles.proBenefitListItem}>
+                          <Check color={getCheckIconColor()} />
+                          <Text style={isFreeTier ? styles.benefitListText : isStandardTier ? styles.standardBenefitListText : styles.proBenefitListText}>
+                            Post {tier.credits} job listing{tier.credits > 1 ? 's' : ''}
+                          </Text>
+                        </View>
+                        <View style={isFreeTier ? styles.benefitListItem : isStandardTier ? styles.standardBenefitListItem : styles.proBenefitListItem}>
+                          <Check color={getCheckIconColor()} />
+                          <View style={styles.benefitListTextWrapper}>
+                            <Text style={isFreeTier ? styles.benefitListText : isStandardTier ? styles.standardBenefitListText : styles.proBenefitListText}>
+                              <Text style={styles.benefitBold}>30-day visibility</Text>
+                              <Text style={styles.benefitNormal}> per posting</Text>
+                            </Text>
+                          </View>
+                        </View>
+                        <View style={isFreeTier ? styles.benefitListItem : isStandardTier ? styles.standardBenefitListItem : styles.proBenefitListItem}>
+                          <Check color={getCheckIconColor()} />
+                          <View style={styles.benefitListTextWrapper}>
+                            <Text style={isFreeTier ? styles.benefitListText : isStandardTier ? styles.standardBenefitListText : styles.proBenefitListText}>
+                              Access to <Text style={styles.benefitBold}>qualified candidates</Text>
+                            </Text>
+                          </View>
+                        </View>
+                        <View style={isFreeTier ? styles.benefitListItem : isStandardTier ? styles.standardBenefitListItem : styles.proBenefitListItem}>
+                          <Check color={getCheckIconColor()} />
+                          <View style={styles.benefitListTextWrapper}>
+                            <Text style={isFreeTier ? styles.benefitListText : isStandardTier ? styles.standardBenefitListText : styles.proBenefitListText}>
+                              <Text style={styles.benefitBold}>Application tracking</Text>
+                              <Text style={styles.benefitNormal}> dashboard</Text>
+                            </Text>
+                          </View>
+                        </View>
+                        {!isFreeTier && (
+                          <View style={isStandardTier ? styles.standardBenefitListItem : styles.proBenefitListItem}>
+                            <Check color={getCheckIconColor()} />
+                            <View style={styles.benefitListTextWrapper}>
+                              <Text style={isStandardTier ? styles.standardBenefitListText : styles.proBenefitListText}>
+                                <Text style={styles.benefitBold}>Candidate analytics</Text>
+                                <Text style={styles.benefitNormal}> & insights</Text>
+                              </Text>
+                            </View>
+                          </View>
+                        )}
+                        {isProTier && (
+                          <>
+                            <View style={styles.proBenefitListItem}>
+                              <Check color={getCheckIconColor()} />
+                              <View style={styles.benefitListTextWrapper}>
+                                <Text style={styles.proBenefitListText}>
+                                  <Text style={styles.benefitBold}>Best Value:</Text>
+                                  <Text style={styles.benefitNormal}> Save ₹665</Text>
+                                </Text>
+                              </View>
+                            </View>
+                            <View style={styles.proBenefitListItem}>
+                              <Check color={getCheckIconColor()} />
+                              <Text style={styles.proBenefitListText}>Premium Support</Text>
+                            </View>
+                          </>
+                        )}
+                      </View>
+
+                      {/* Call to Action */}
+                      {isFreeTier && (
+                        <View style={styles.includedAccountBox}>
+                          <Check color="#666" />
+                          <Text style={styles.includedAccountText}>Already included in your account</Text>
+                        </View>
+                      )}
+
+                      {!isFreeTier && (
+                        <View style={getButtonStyle()}>
+                          <Sparkles size={18} color={'#ffffff'} />
+                          <Text style={isStandardTier ? styles.getStartedButtonText : styles.proGetStartedButtonText}>
+                            Get Started Free
+                          </Text>
+                        </View>
+                      )}
+
+                      {/* Perfect For */}
+                      <View style={getPerfectForBoxStyle()}>
+                        <Sparkles size={18} color={isProTier ? '#FF3B30' : '#FFA500'} />
+                        <Text style={getPerfectForTextStyle()}>{getPerfectForText()}</Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
           </View>
-        )}
+        }
+        {/* Choose Your Plan Section */}
+
 
         {/* Transaction History Section */}
         <View style={styles.transactionHistoryContainer}>
@@ -499,53 +508,58 @@ const CreditsScreen = () => {
               <Text style={styles.refreshButtonText}>Refresh</Text>
             </TouchableOpacity>
           </View>
+          {(
+            transactionsLoading ? <CreditsSkeleton transactions /> :
+              (
+                transactions?.length === 0 ? (
+                  <View style={styles.transactionEmptyState}>
+                    <History size={56} color="#E0E0E0" />
+                    <Text style={styles.transactionEmptyTitle}>No transactions yet</Text>
+                    <Text style={styles.transactionEmptySubtitle}>Your credit purchases and usage will appear here</Text>
+                  </View>
+                ) : (
+                  <View style={styles.transactionsList}>
+                    {transactions.map((transaction: any, index: number) => {
+                      const transactionDate = transaction?.created_at || transaction?.transaction_date || transaction?.date
+                      const credits = transaction?.credits_changed
+                      const creditValue = Number(credits)
+                      const creditsDisplay = credits === null || credits === undefined || credits === ''
+                        ? '-'
+                        : String(credits).startsWith('-')
+                          ? String(credits)
+                          : `+${credits}`
+                      const creditColor = creditValue < 0
+                        ? '#FF1F2D'
+                        : creditValue > 0
+                          ? '#00A63E'
+                          : '#13294B'
+                      const amount = transaction?.amount ?? transaction?.amount_paid ?? transaction?.price ?? '-'
+                      const balance = transaction?.credits_after
 
-          {transactions.length === 0 ? (
-            <View style={styles.transactionEmptyState}>
-              <History size={56} color="#E0E0E0" />
-              <Text style={styles.transactionEmptyTitle}>No transactions yet</Text>
-              <Text style={styles.transactionEmptySubtitle}>Your credit purchases and usage will appear here</Text>
-            </View>
-          ) : (
-            <View style={styles.transactionsList}>
-              {transactions.map((transaction: any, index: number) => {
-                const transactionDate = transaction?.created_at || transaction?.transaction_date || transaction?.date
-                const credits = transaction?.credits_changed
-                const creditValue = Number(credits)
-                const creditsDisplay = credits === null || credits === undefined || credits === ''
-                  ? '-'
-                  : String(credits).startsWith('-')
-                    ? String(credits)
-                    : `+${credits}`
-                const creditColor = creditValue < 0
-                  ? '#FF1F2D'
-                  : creditValue > 0
-                    ? '#00A63E'
-                    : '#13294B'
-                const amount = transaction?.amount ?? transaction?.amount_paid ?? transaction?.price ?? '-'
-                const balance = transaction?.credits_after 
-
-                return (
-                  <View key={transaction?.id || index} style={styles.transactionCard}>
-                    <View style={styles.transactionDetails}>
-                      <Text style={styles.transactionDescription}>{formatTransactionNote(transaction?.admin_notes)}</Text>
-                      <Text style={styles.transactionJobTitle}>{transaction?.job?.title || transaction?.job_title || transaction?.description || 'Job Post'}</Text>
-                      <Text style={styles.transactionDate}>{formatTransactionDate(transactionDate)},</Text>
-                      <Text style={styles.transactionTime}>{formatTransactionTime(transactionDate)}</Text>
-                      <View style={[styles.transactionTypeBadge, creditValue > 0 && styles.positiveTransactionTypeBadge]}>
-                        <Text style={[styles.transactionTypeText, creditValue > 0 && styles.positiveTransactionTypeText]}>{formatTransactionType(transaction?.transaction_type)}</Text>
-                      </View>
-                    </View>
-                    <View style={styles.transactionSummary}>
-                      <View style={styles.transactionSummaryRow}><Text style={styles.transactionSummaryLabel}>CREDITS</Text><Text style={[styles.transactionCredits, { color: creditColor }]}>{creditsDisplay}</Text></View>
-                      <View style={styles.transactionSummaryRow}><Text style={styles.transactionSummaryLabel}>AMOUNT</Text><Text style={styles.transactionSummaryValue}>{amount}</Text></View>
-                      <View style={styles.transactionSummaryRow}><Text style={styles.transactionSummaryLabel}>BALANCE</Text><Text style={styles.transactionSummaryValue}>{balance}</Text></View>
-                    </View>
+                      return (
+                        <View key={transaction?.id || index} style={styles.transactionCard}>
+                          <View style={styles.transactionDetails}>
+                            <Text style={styles.transactionDescription}>{formatTransactionNote(transaction?.admin_notes)}</Text>
+                            <Text style={styles.transactionJobTitle}>{transaction?.job?.title || transaction?.job_title || transaction?.description || 'Job Post'}</Text>
+                            <Text style={styles.transactionDate}>{formatTransactionDate(transactionDate)},</Text>
+                            <Text style={styles.transactionTime}>{formatTransactionTime(transactionDate)}</Text>
+                            <View style={[styles.transactionTypeBadge, creditValue > 0 && styles.positiveTransactionTypeBadge]}>
+                              <Text style={[styles.transactionTypeText, creditValue > 0 && styles.positiveTransactionTypeText]}>{formatTransactionType(transaction?.transaction_type)}</Text>
+                            </View>
+                          </View>
+                          <View style={styles.transactionSummary}>
+                            <View style={styles.transactionSummaryRow}><Text style={styles.transactionSummaryLabel}>CREDITS</Text><Text style={[styles.transactionCredits, { color: creditColor }]}>{creditsDisplay}</Text></View>
+                            <View style={styles.transactionSummaryRow}><Text style={styles.transactionSummaryLabel}>AMOUNT</Text><Text style={styles.transactionSummaryValue}>{amount}</Text></View>
+                            <View style={styles.transactionSummaryRow}><Text style={styles.transactionSummaryLabel}>BALANCE</Text><Text style={styles.transactionSummaryValue}>{balance}</Text></View>
+                          </View>
+                        </View>
+                      )
+                    })}
                   </View>
                 )
-              })}
-            </View>
+              )
           )}
+
         </View>
 
         {/* How Credits Work Section */}
@@ -804,6 +818,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 18,
     marginBottom: 24,
+  },
+  content: {
+    flex: 1
   },
   yourCreditsHeader: {
     flexDirection: 'row',

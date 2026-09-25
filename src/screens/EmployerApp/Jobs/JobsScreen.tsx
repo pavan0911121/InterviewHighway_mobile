@@ -9,6 +9,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import * as AsyncStore from "../../../AsyncStore";
 import { deleteJobPosting, duplicateJobDetails, editJobDetails, getJobPostingStats, postCreateJob, publishJob, viewJobDetails } from '../../../Redux/slices/jobPostings'
 import { Briefcase, CheckCircle, CircleX, Clock, Currency, DollarSign, EllipsisVertical, Eye, FileText, MapPin, PauseCircle, Plus, Search, Users, X, ChevronRight, Home, ChevronLeft } from 'lucide-react-native'
+import JobsSkeleton from './JobsSkeleton'
 
 
 
@@ -309,6 +310,7 @@ const JobsScreen = () => {
       console.error("Error saving changes:", error);
     }
   }
+  const loader = selector?.isJobStatsLoading;
   return (
     <SafeAreaView style={styles.container}>
       {/* Sticky Header */}
@@ -321,12 +323,13 @@ const JobsScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {isLoading ? (
+      {/* {isLoading ? (
         <View style={styles.loaderContainer}>
           <ActivityIndicator size="large" color="#165DFC" />
         </View>
-      ) : (
-        <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      ) : ( */}
+       {
+        loader? <JobsSkeleton/> :  <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Header Section */}
           <View style={styles.headerContainer}>
             <Text style={styles.title}>Job Postings</Text>
@@ -546,7 +549,8 @@ const JobsScreen = () => {
             )}
           </View>
         </ScrollView>
-      )}
+       }
+      {/* )} */}
 
       {/* Create Job Modal */}
       <Modal

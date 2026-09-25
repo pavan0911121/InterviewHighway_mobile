@@ -8,12 +8,14 @@ interface profileState {
     isLoading: boolean;
     error: string | null;
     total: number
+    isEmployerProfileLoading: boolean;
    
 }
 
 const initialState: profileState = {
     courses: null,
     isLoading: false,
+    isEmployerProfileLoading: false,
     error: null,
     total: 0
 };
@@ -69,17 +71,17 @@ const employerProfileSlice = createSlice({
         builder
             // getEmployerProfile async thunk handlers
             .addCase(getEmployerProfile.pending, (state) => {
-                state.isLoading = true;
+                state.isEmployerProfileLoading = true;
                 state.error = null;
 
             })
             .addCase(getEmployerProfile.fulfilled, (state, action) => {
-                state.isLoading = false;
+                state.isEmployerProfileLoading = false;
                 state.courses = action.payload; // Assuming the API returns an array of courses
                 state.error = null;
             })
             .addCase(getEmployerProfile.rejected, (state, action) => {
-                state.isLoading = false;
+                state.isEmployerProfileLoading = false;
                 state.error = action.payload as string;
                 console.log('Error fetching employer profile:', action.payload);
             })

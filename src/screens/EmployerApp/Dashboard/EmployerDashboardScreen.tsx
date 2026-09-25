@@ -7,10 +7,11 @@ import * as AsyncStore from "../../../AsyncStore";
 import { useDispatch, useSelector } from 'react-redux'
 import { getEmployerDashboardStats } from '../../../Redux/slices/employerDashboardSlice'
 import { Briefcase, CircleCheckBig, Clock4, Users } from 'lucide-react-native'
+import EmployerDashboardSkeleton from './EmployerDashboardSkeleton'
 
 const EmployerDashboardScreen = () => {
   const navigation = useNavigation()
-const dispatch = useDispatch();
+  const dispatch = useDispatch();
   const selector = useSelector((state: any) => state.employerDashboard);
 
   useEffect(() => {
@@ -21,13 +22,13 @@ const dispatch = useDispatch();
   const [userId, setUserId] = useState(null);
   const LocalStorageaData = async () => {
     try {
-     const userLoggedInData = await AsyncStore.getData(AsyncStore?.Keys?.USER_DATA);
-     if(userLoggedInData){
-      const parsedUserData = JSON.parse(userLoggedInData);
-      const userId = parsedUserData?.id || null;
-      const response = await dispatch(getEmployerDashboardStats(userId) as any);
-        
-     }
+      const userLoggedInData = await AsyncStore.getData(AsyncStore?.Keys?.USER_DATA);
+      if (userLoggedInData) {
+        const parsedUserData = JSON.parse(userLoggedInData);
+        const userId = parsedUserData?.id || null;
+        const response = await dispatch(getEmployerDashboardStats(userId) as any);
+
+      }
       if (userId) {
         setUserId(userId);
       }
@@ -35,16 +36,16 @@ const dispatch = useDispatch();
       console.log("Error fetching user data from AsyncStorage:", error);
     }
   }
-  
+
   // Sample data - replace with API data later
   // const [companyData] = useState(selector[0]?.data)
   const dashboardStats = selector.data;
-  
+  const loader = selector?.isLoading;
   return (
     <SafeAreaView style={styles.container}>
       {/* Sticky Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.menuButton}
           onPress={() => (navigation.getParent() as DrawerNavigationProp<any>)?.openDrawer()}
         >
@@ -53,70 +54,74 @@ const dispatch = useDispatch();
       </View>
 
       {/* Main Content */}
-      <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Welcome Section */}
-        <View style={styles.welcomeSection}>
-          <Text style={styles.welcomeTitle}>
-            Welcome back, {dashboardStats?.companyName}
-          </Text>
-          <Text style={styles.welcomeSubtitle}>
-            Here's an overview of your recruitment activities
-          </Text>
-        </View>
+      {loader ?
+        <EmployerDashboardSkeleton />
+        :
 
-        {/* Statistics Cards */}
-        <View style={styles.cardsContainer}>
-          {/* Total Jobs Card */}
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.cardLabel}>Total Jobs</Text>
-              <View style={[styles.cardIcon, styles.iconBlue]}>
-                <Briefcase color={'#005FFF'} size={15}/>
-              </View>
-            </View>
-            <Text style={styles.cardValue}>{dashboardStats?.totalJobs}</Text>
-            <Text style={styles.cardSubtext}>{dashboardStats?.activeJobs} active</Text>
+        <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Welcome Section */}
+          <View style={styles.welcomeSection}>
+            <Text style={styles.welcomeTitle}>
+              Welcome back, {dashboardStats?.companyName}
+            </Text>
+            <Text style={styles.welcomeSubtitle}>
+              Here's an overview of your recruitment activities
+            </Text>
           </View>
 
-          {/* Total Applications Card */}
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.cardLabel}>Total Applications</Text>
-              <View style={[styles.cardIcon, styles.iconPurple]}>
-                 <Users color={'#A800FF'} size={15}/>
+          {/* Statistics Cards */}
+          <View style={styles.cardsContainer}>
+            {/* Total Jobs Card */}
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardLabel}>Total Jobs</Text>
+                <View style={[styles.cardIcon, styles.iconBlue]}>
+                  <Briefcase color={'#005FFF'} size={15} />
+                </View>
               </View>
+              <Text style={styles.cardValue}>{dashboardStats?.totalJobs}</Text>
+              <Text style={styles.cardSubtext}>{dashboardStats?.activeJobs} active</Text>
             </View>
-            <Text style={styles.cardValue}>{dashboardStats?.totalApplications}</Text>
-            <Text style={styles.cardSubtext}>{dashboardStats?.pendingApplications} pending review</Text>
+
+            {/* Total Applications Card */}
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardLabel}>Total Applications</Text>
+                <View style={[styles.cardIcon, styles.iconPurple]}>
+                  <Users color={'#A800FF'} size={15} />
+                </View>
+              </View>
+              <Text style={styles.cardValue}>{dashboardStats?.totalApplications}</Text>
+              <Text style={styles.cardSubtext}>{dashboardStats?.pendingApplications} pending review</Text>
+            </View>
+
+            {/* Shortlisted Card */}
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardLabel}>Shortlisted</Text>
+                <View style={[styles.cardIcon, styles.iconYellow]}>
+                  <Clock4 color={'#DC8400'} size={15} />
+                </View>
+              </View>
+              <Text style={styles.cardValue}>{dashboardStats?.shortlistedCount}</Text>
+              <Text style={styles.cardSubtext}>Candidates in pipeline</Text>
+            </View>
+
+            {/* Hired Card */}
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardLabel}>Hired</Text>
+                <View style={[styles.cardIcon, styles.iconGreen]}>
+                  <CircleCheckBig color={'#00A746'} size={15} />
+                </View>
+              </View>
+              <Text style={styles.cardValue}>{dashboardStats?.hiredCount}</Text>
+              <Text style={styles.cardSubtext}>{dashboardStats?.conversionRate}% conversion rate</Text>
+            </View>
           </View>
 
-          {/* Shortlisted Card */}
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.cardLabel}>Shortlisted</Text>
-              <View style={[styles.cardIcon, styles.iconYellow]}>
-                 <Clock4 color={'#DC8400'} size={15}/>
-              </View>
-            </View>
-            <Text style={styles.cardValue}>{dashboardStats?.shortlistedCount}</Text>
-            <Text style={styles.cardSubtext}>Candidates in pipeline</Text>
-          </View>
-
-          {/* Hired Card */}
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.cardLabel}>Hired</Text>
-              <View style={[styles.cardIcon, styles.iconGreen]}>
-                  <CircleCheckBig color={'#00A746'} size={15}/>
-              </View>
-            </View>
-            <Text style={styles.cardValue}>{dashboardStats?.hiredCount}</Text>
-            <Text style={styles.cardSubtext}>{dashboardStats?.conversionRate}% conversion rate</Text>
-          </View>
-        </View>
-
-        {/* No Applications Yet Section */}
-        {/* <View style={styles.emptyStateCard}>
+          {/* No Applications Yet Section */}
+          {/* <View style={styles.emptyStateCard}>
           <View style={styles.emptyStateIconContainer}>
             <Users color={'#98A1AE'}/>
           </View>
@@ -128,7 +133,8 @@ const dispatch = useDispatch();
             <Text style={styles.postJobButtonText}>Post a Job</Text>
           </TouchableOpacity>
         </View> */}
-      </ScrollView>
+        </ScrollView>
+      }
     </SafeAreaView>
   )
 }
@@ -139,7 +145,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    
+
   },
   header: {
     flexDirection: 'row',

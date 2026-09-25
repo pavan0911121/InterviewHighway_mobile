@@ -11,6 +11,7 @@ import { getEmployerTimeline } from '../../../Redux/slices/employerAnalyticsSlic
 import * as AsyncStore from "../../../AsyncStore";
 import { getEmployerAnalytics } from '../../../Redux/slices/employerAnalyticsSlice'
 import { Briefcase, ChartColumn, RefreshCcw, TrendingUp, UserCheck, Users } from 'lucide-react-native'
+import EmployerDashboardSkeleton from '../Dashboard/EmployerDashboardSkeleton'
 
 const AnalyticsScreen = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('30 Days')
@@ -47,7 +48,11 @@ const AnalyticsScreen = () => {
   const handleRefresh = () => {
     // Handle refresh logic
   }
-  
+  const loader = !(
+    selector?.isemployerAnalyticsLoading === false &&
+    selector?.isemployerTimelineLoading === false &&
+    selector?.isemployerJobPerformanceLoading === false
+  );
   return (
     <SafeAreaView style={styles.container}>
       {/* Sticky Header */}
@@ -59,224 +64,230 @@ const AnalyticsScreen = () => {
           <Text style={styles.menuIcon}>☰</Text>
         </TouchableOpacity>
       </View>
-      {isLoading ? (
+      {/* {isLoading ? (
         <View style={styles.loaderContainer}>
           <ActivityIndicator size="large" color="#165DFC" />
         </View>
-      ) : (
-        <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {/* Header Section */}
-          <View style={styles.headerRow}>
-            <View style={styles.headerContent}>
-              <Text style={styles.title}>Analytics</Text>
-              <Text style={styles.titleSecond}>Dashboard</Text>
-              <Text style={styles.subtitle}>Comprehensive insights for Test Company Ltd 1dev</Text>
-            </View>
-            <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
-              <RefreshCcw size={15} color="#000" />
-              <Text style={styles.refreshButtonText}>Refresh</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Metrics Cards */}
-          <View style={styles.metricsContainer}>
-            {/* Total Jobs Card */}
-            <View style={styles.metricCard}>
-              <View style={styles.metricHeader}>
-                <Text style={styles.metricLabel}>Total Jobs</Text>
-                <View style={[styles.metricIcon, styles.blueIcon]}>
-                  <Briefcase size={15} color="#165DFC" />
-                </View>
+      ) : ( */}
+      {
+        loader ?
+          <EmployerDashboardSkeleton />
+          :
+          <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            {/* Header Section */}
+            <View style={styles.headerRow}>
+              <View style={styles.headerContent}>
+                <Text style={styles.title}>Analytics</Text>
+                <Text style={styles.titleSecond}>Dashboard</Text>
+                <Text style={styles.subtitle}>Comprehensive insights for Test Company Ltd 1dev</Text>
               </View>
-              <Text style={[styles.metricNumber, styles.blueNumber]}>{analytics?.totalJobs}</Text>
-              <Text style={styles.metricSubtitle}>{analytics?.activeJobs} active</Text>
-            </View>
-
-            {/* Total Applications Card */}
-            <View style={styles.metricCard}>
-              <View style={styles.metricHeader}>
-                <Text style={styles.metricLabel}>Total {'\n'}Applications</Text>
-                <View style={[styles.metricIcon, styles.purpleIcon]}>
-                  <Users size={15} color="#9C27B0" />
-                </View>
-              </View>
-              <Text style={[styles.metricNumber, styles.purpleNumber]}>{analytics?.totalApplications}</Text>
-              <Text style={styles.metricSubtitle}>{analytics?.pendingApplications} pending review</Text>
-            </View>
-
-            {/* Hired Candidates Card */}
-            <View style={styles.metricCard}>
-              <View style={styles.metricHeader}>
-                <Text style={styles.metricLabel}>Hired {'\n'}Candidates</Text>
-                <View style={[styles.metricIcon, styles.greenIcon]}>
-                  <UserCheck size={15} color="#00C853" />
-                </View>
-              </View>
-              <Text style={[styles.metricNumber, styles.greenNumber]}>{analytics?.hiredCount}</Text>
-              <Text style={styles.metricSubtitle}>{analytics?.shortlistedCount} shortlisted</Text>
-            </View>
-            {/* Conversion Rate Card */}
-            <View style={styles.metricCard}>
-              <View style={styles.metricHeader}>
-                <Text style={styles.metricLabel}>Conversion {'\n'}Rate</Text>
-                <View style={[styles.metricIcon, styles.orangeIcon]}>
-                  <TrendingUp size={15} color="#FF9500" />
-                </View>
-              </View>
-              <Text style={styles.conversionRate}>{analytics?.conversionRate}%</Text>
-              <Text style={styles.conversionSubtitle}>Applications to hires</Text>
-            </View>
-          </View>
-
-          {/* Applications Timeline Card */}
-          <View style={styles.timelineCard}>
-            <View style={styles.timelineTitleSection}>
-              <View>
-                <Text style={styles.timelineTitle}>Applications</Text>
-                <Text style={styles.timelineTitleSecond}>Timeline</Text>
-                <Text style={styles.timelineDescription}>Track application trends over time</Text>
-              </View>
-            </View>
-
-            {/* Time Period Selector */}
-            <View style={styles.timePeriodContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.timePeriodButton,
-                  selectedPeriod === '7 Days' && styles.timePeriodButtonActive,
-                ]}
-                onPress={() => setSelectedPeriod('7 Days')}
-              >
-                <Text
-                  style={[
-                    styles.timePeriodText,
-                    selectedPeriod === '7 Days' && styles.timePeriodTextActive,
-                  ]}
-                >
-                  7 Days
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.timePeriodButton,
-                  selectedPeriod === '30 Days' && styles.timePeriodButtonActive,
-                ]}
-                onPress={() => setSelectedPeriod('30 Days')}
-              >
-                <Text
-                  style={[
-                    styles.timePeriodText,
-                    selectedPeriod === '30 Days' && styles.timePeriodTextActive,
-                  ]}
-                >
-                  30 Days
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.timePeriodButton,
-                  selectedPeriod === '90 Days' && styles.timePeriodButtonActive,
-                ]}
-                onPress={() => setSelectedPeriod('90 Days')}
-              >
-                <Text
-                  style={[
-                    styles.timePeriodText,
-                    selectedPeriod === '90 Days' && styles.timePeriodTextActive,
-                  ]}
-                >
-                  90 Days
-                </Text>
+              <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
+                <RefreshCcw size={15} color="#000" />
+                <Text style={styles.refreshButtonText}>Refresh</Text>
               </TouchableOpacity>
             </View>
 
-            {/* Chart Placeholder */}
-            <View style={styles.chartPlaceholder}>
-              <ChartColumn size={56} color="#A9BDCC" />
-              <Text style={styles.chartPlaceholderText}>Timeline Chart will appear here</Text>
-              <Text style={styles.chartPlaceholderSubtext}>{timelineData?.length || 0} data points loaded</Text>
-            </View>
-          </View>
-
-          {/* Jobs Performance Card */}
-          <View style={styles.performanceCard}>
-            <Text style={styles.performanceTitle}>Jobs Performance</Text>
-            <Text style={styles.performanceSubtitle}>Application breakdown by job posting</Text>
-            <View style={styles.performanceChartPlaceholder}>
-              <ChartColumn size={42} color="#8996A7" strokeWidth={1.8} />
-              <Text style={styles.performanceChartText}>Performance Chart will appear here</Text>
-              <Text style={styles.performanceChartSubtext}>{jobPerformanceData?.length || 0} jobs loaded</Text>
-            </View>
-          </View>
-
-          {/* Application Status Distribution Card */}
-          <View style={styles.performanceCard}>
-            <Text style={styles.performanceTitle}>Application Status Distribution</Text>
-            <Text style={styles.performanceSubtitle}>Breakdown of application statuses</Text>
-            <View style={styles.performanceChartPlaceholder}>
-              <ChartColumn size={42} color="#8996A7" strokeWidth={1.8} />
-              <Text style={styles.performanceChartText}>Status Distribution Chart will appear here</Text>
-            </View>
-          </View>
-
-          {/* Status Summary Card */}
-          <View style={styles.statusSummaryCard}>
-            <Text style={styles.statusSummaryTitle}>Status Summary</Text>
-            <Text style={styles.statusSummarySubtitle}>Current application status breakdown</Text>
-
-            {/* Status Items */}
-            <View style={styles.statusItemsContainer}>
-              {/* Pending */}
-              <View style={styles.statusRow}>
-                <View style={styles.statusDot}>
-                  <View style={[styles.statusDotCircle, styles.pendingDot]} />
-                  <Text style={styles.statusLabel}>Pending</Text>
+            {/* Metrics Cards */}
+            <View style={styles.metricsContainer}>
+              {/* Total Jobs Card */}
+              <View style={styles.metricCard}>
+                <View style={styles.metricHeader}>
+                  <Text style={styles.metricLabel}>Total Jobs</Text>
+                  <View style={[styles.metricIcon, styles.blueIcon]}>
+                    <Briefcase size={15} color="#165DFC" />
+                  </View>
                 </View>
-                <Text style={styles.statusValue}>{statusData?.pendingApplications}</Text>
+                <Text style={[styles.metricNumber, styles.blueNumber]}>{analytics?.totalJobs}</Text>
+                <Text style={styles.metricSubtitle}>{analytics?.activeJobs} active</Text>
               </View>
 
-              {/* Shortlisted */}
-              <View style={styles.statusRow}>
-                <View style={styles.statusDot}>
-                  <View style={[styles.statusDotCircle, styles.shortlistedDot]} />
-                  <Text style={styles.statusLabel}>Shortlisted</Text>
+              {/* Total Applications Card */}
+              <View style={styles.metricCard}>
+                <View style={styles.metricHeader}>
+                  <Text style={styles.metricLabel}>Total {'\n'}Applications</Text>
+                  <View style={[styles.metricIcon, styles.purpleIcon]}>
+                    <Users size={15} color="#9C27B0" />
+                  </View>
                 </View>
-                <Text style={styles.statusValue}>{statusData?.shortlistedCount}</Text>
+                <Text style={[styles.metricNumber, styles.purpleNumber]}>{analytics?.totalApplications}</Text>
+                <Text style={styles.metricSubtitle}>{analytics?.pendingApplications} pending review</Text>
               </View>
 
-              {/* Hired */}
-              <View style={styles.statusRow}>
-                <View style={styles.statusDot}>
-                  <View style={[styles.statusDotCircle, styles.hiredDot]} />
-                  <Text style={styles.statusLabel}>Hired</Text>
+              {/* Hired Candidates Card */}
+              <View style={styles.metricCard}>
+                <View style={styles.metricHeader}>
+                  <Text style={styles.metricLabel}>Hired {'\n'}Candidates</Text>
+                  <View style={[styles.metricIcon, styles.greenIcon]}>
+                    <UserCheck size={15} color="#00C853" />
+                  </View>
                 </View>
-                <Text style={styles.statusValue}>{statusData?.hiredCount}</Text>
+                <Text style={[styles.metricNumber, styles.greenNumber]}>{analytics?.hiredCount}</Text>
+                <Text style={styles.metricSubtitle}>{analytics?.shortlistedCount} shortlisted</Text>
               </View>
-
-              {/* Rejected */}
-              <View style={styles.statusRow}>
-                <View style={styles.statusDot}>
-                  <View style={[styles.statusDotCircle, styles.rejectedDot]} />
-                  <Text style={styles.statusLabel}>Rejected</Text>
+              {/* Conversion Rate Card */}
+              <View style={styles.metricCard}>
+                <View style={styles.metricHeader}>
+                  <Text style={styles.metricLabel}>Conversion {'\n'}Rate</Text>
+                  <View style={[styles.metricIcon, styles.orangeIcon]}>
+                    <TrendingUp size={15} color="#FF9500" />
+                  </View>
                 </View>
-                <Text style={styles.statusValue}>{statusData?.rejectedCount}</Text>
+                <Text style={styles.conversionRate}>{analytics?.conversionRate}%</Text>
+                <Text style={styles.conversionSubtitle}>Applications to hires</Text>
               </View>
             </View>
 
-            {/* Divider */}
-            <View style={styles.statusDivider} />
+            {/* Applications Timeline Card */}
+            <View style={styles.timelineCard}>
+              <View style={styles.timelineTitleSection}>
+                <View>
+                  <Text style={styles.timelineTitle}>Applications</Text>
+                  <Text style={styles.timelineTitleSecond}>Timeline</Text>
+                  <Text style={styles.timelineDescription}>Track application trends over time</Text>
+                </View>
+              </View>
 
-            {/* Total Applications */}
-            <View style={styles.totalApplicationsRow}>
-              <Text style={styles.totalApplicationsLabel}>Total Applications</Text>
-              <Text style={styles.totalApplicationsValue}>{statusData?.totalApplications}</Text>
+              {/* Time Period Selector */}
+              <View style={styles.timePeriodContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.timePeriodButton,
+                    selectedPeriod === '7 Days' && styles.timePeriodButtonActive,
+                  ]}
+                  onPress={() => setSelectedPeriod('7 Days')}
+                >
+                  <Text
+                    style={[
+                      styles.timePeriodText,
+                      selectedPeriod === '7 Days' && styles.timePeriodTextActive,
+                    ]}
+                  >
+                    7 Days
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.timePeriodButton,
+                    selectedPeriod === '30 Days' && styles.timePeriodButtonActive,
+                  ]}
+                  onPress={() => setSelectedPeriod('30 Days')}
+                >
+                  <Text
+                    style={[
+                      styles.timePeriodText,
+                      selectedPeriod === '30 Days' && styles.timePeriodTextActive,
+                    ]}
+                  >
+                    30 Days
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.timePeriodButton,
+                    selectedPeriod === '90 Days' && styles.timePeriodButtonActive,
+                  ]}
+                  onPress={() => setSelectedPeriod('90 Days')}
+                >
+                  <Text
+                    style={[
+                      styles.timePeriodText,
+                      selectedPeriod === '90 Days' && styles.timePeriodTextActive,
+                    ]}
+                  >
+                    90 Days
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Chart Placeholder */}
+              <View style={styles.chartPlaceholder}>
+                <ChartColumn size={56} color="#A9BDCC" />
+                <Text style={styles.chartPlaceholderText}>Timeline Chart will appear here</Text>
+                <Text style={styles.chartPlaceholderSubtext}>{timelineData?.length || 0} data points loaded</Text>
+              </View>
             </View>
-          </View>
+
+            {/* Jobs Performance Card */}
+            <View style={styles.performanceCard}>
+              <Text style={styles.performanceTitle}>Jobs Performance</Text>
+              <Text style={styles.performanceSubtitle}>Application breakdown by job posting</Text>
+              <View style={styles.performanceChartPlaceholder}>
+                <ChartColumn size={42} color="#8996A7" strokeWidth={1.8} />
+                <Text style={styles.performanceChartText}>Performance Chart will appear here</Text>
+                <Text style={styles.performanceChartSubtext}>{jobPerformanceData?.length || 0} jobs loaded</Text>
+              </View>
+            </View>
+
+            {/* Application Status Distribution Card */}
+            <View style={styles.performanceCard}>
+              <Text style={styles.performanceTitle}>Application Status Distribution</Text>
+              <Text style={styles.performanceSubtitle}>Breakdown of application statuses</Text>
+              <View style={styles.performanceChartPlaceholder}>
+                <ChartColumn size={42} color="#8996A7" strokeWidth={1.8} />
+                <Text style={styles.performanceChartText}>Status Distribution Chart will appear here</Text>
+              </View>
+            </View>
+
+            {/* Status Summary Card */}
+            <View style={styles.statusSummaryCard}>
+              <Text style={styles.statusSummaryTitle}>Status Summary</Text>
+              <Text style={styles.statusSummarySubtitle}>Current application status breakdown</Text>
+
+              {/* Status Items */}
+              <View style={styles.statusItemsContainer}>
+                {/* Pending */}
+                <View style={styles.statusRow}>
+                  <View style={styles.statusDot}>
+                    <View style={[styles.statusDotCircle, styles.pendingDot]} />
+                    <Text style={styles.statusLabel}>Pending</Text>
+                  </View>
+                  <Text style={styles.statusValue}>{statusData?.pendingApplications}</Text>
+                </View>
+
+                {/* Shortlisted */}
+                <View style={styles.statusRow}>
+                  <View style={styles.statusDot}>
+                    <View style={[styles.statusDotCircle, styles.shortlistedDot]} />
+                    <Text style={styles.statusLabel}>Shortlisted</Text>
+                  </View>
+                  <Text style={styles.statusValue}>{statusData?.shortlistedCount}</Text>
+                </View>
+
+                {/* Hired */}
+                <View style={styles.statusRow}>
+                  <View style={styles.statusDot}>
+                    <View style={[styles.statusDotCircle, styles.hiredDot]} />
+                    <Text style={styles.statusLabel}>Hired</Text>
+                  </View>
+                  <Text style={styles.statusValue}>{statusData?.hiredCount}</Text>
+                </View>
+
+                {/* Rejected */}
+                <View style={styles.statusRow}>
+                  <View style={styles.statusDot}>
+                    <View style={[styles.statusDotCircle, styles.rejectedDot]} />
+                    <Text style={styles.statusLabel}>Rejected</Text>
+                  </View>
+                  <Text style={styles.statusValue}>{statusData?.rejectedCount}</Text>
+                </View>
+              </View>
+
+              {/* Divider */}
+              <View style={styles.statusDivider} />
+
+              {/* Total Applications */}
+              <View style={styles.totalApplicationsRow}>
+                <Text style={styles.totalApplicationsLabel}>Total Applications</Text>
+                <Text style={styles.totalApplicationsValue}>{statusData?.totalApplications}</Text>
+              </View>
+            </View>
 
 
-        </ScrollView>)}
+          </ScrollView>
+      }
+      {/* )} */}
 
     </SafeAreaView>
   )
