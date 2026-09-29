@@ -179,6 +179,13 @@ export default function HomeTabScreen({ navigation }: Props) {
     return str ? str.replace(/_/g, " ") : "";
   }
 
+  function getCompanyInitial(job: any) {
+    const companyName = typeof job?.company === 'string'
+      ? job.company
+      : job?.company?.name || job?.companies?.name;
+    return typeof companyName === 'string' ? companyName.trim().charAt(0).toUpperCase() : '';
+  }
+
   const handleApplyFilters = (filters: Filters) => {
     setAppliedFilters(filters);
   };
@@ -347,7 +354,7 @@ export default function HomeTabScreen({ navigation }: Props) {
                     filteredJobs?.map((job: any, index: number) => (
                       <TouchableOpacity key={`${job?.id}-${index}`} style={styles.jobCard} onPress={() => handleGetJobDetails(job?.id)}>
                         <View style={styles.jobCompanyLogo}>
-                          <Text style={styles.companyInitials}>{job?.company}</Text>
+                          <Text style={styles.companyInitials}>{getCompanyInitial(job)}</Text>
                         </View>
                         <View style={styles.jobDetails}>
                           <Text style={styles.jobTitle}>{job?.title}</Text>
@@ -376,7 +383,7 @@ export default function HomeTabScreen({ navigation }: Props) {
                     appliedJobs?.map((job: any, index: number) => (
                       <TouchableOpacity key={`${job?.id}-${index}`} style={styles.jobCard} onPress={() => handleOpenWithdrawApplicationModal(job)}>
                         <View style={styles.jobCompanyLogo}>
-                          <Text style={styles.companyInitials}>{job?.company}</Text>
+                          <Text style={styles.companyInitials}>{getCompanyInitial(job?.job)}</Text>
                         </View>
                         <View style={styles.jobDetails}>
                           <Text style={styles.jobTitle}>{job?.job?.title}</Text>
@@ -405,7 +412,7 @@ export default function HomeTabScreen({ navigation }: Props) {
                     savedJobs?.map((job: any, index: number) => (
                       <TouchableOpacity key={`${job?.id}-${index}`} style={styles.jobCard} onPress={() => handleGetJobDetails(job?.job?.id)}>
                         <View style={styles.jobCompanyLogo}>
-                          <Text style={styles.companyInitials}>{job?.company}</Text>
+                          <Text style={styles.companyInitials}>{getCompanyInitial(job?.job)}</Text>
                         </View>
                         <View style={styles.jobDetails}>
                           <Text style={styles.jobTitle}>{job?.job?.title}</Text>

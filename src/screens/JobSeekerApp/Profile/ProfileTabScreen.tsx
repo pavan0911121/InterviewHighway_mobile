@@ -2231,7 +2231,7 @@ export default function ProfileTabScreen({ navigation }: Props) {
                           <TouchableOpacity style={styles.userSkillActionButton}>
                             {item?.is_primary ? <Star fill={'#F59E0B'} color={'#F59E0B'} size={18} /> : <StarOff color={'#9CA3AF'} size={18} />}
                           </TouchableOpacity>
-                          <TouchableOpacity style={styles.userSkillActionButton}>
+                          <TouchableOpacity style={styles.userSkillActionButton} onPress={()=>Linking.openURL(item?.file_url)}>
                             <Download color={'#165DFC'} size={18} />
                           </TouchableOpacity>
                           <TouchableOpacity style={styles.userSkillActionButton} onPress={() => handleDeleteResume(item?.id)}>

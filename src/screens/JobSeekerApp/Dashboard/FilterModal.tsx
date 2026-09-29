@@ -274,40 +274,6 @@ export default function FilterModal({ visible, onClose, onApply, selectedLocatio
               )}
             </View>
 
-            {/* Function Section */}
-            <View style={styles.filterSection}>
-              <TouchableOpacity
-                style={styles.sectionHeader}
-                onPress={() =>
-                  setExpandedSection(
-                    expandedSection === 'function' ? '' : 'function'
-                  )
-                }
-              >
-                <Text style={styles.sectionTitle}>Function</Text>
-                <Text style={styles.expandIcon}>
-                  {expandedSection === 'function' ? '▼' : '▶'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Industry Section */}
-            <View style={styles.filterSection}>
-              <TouchableOpacity
-                style={styles.sectionHeader}
-                onPress={() =>
-                  setExpandedSection(
-                    expandedSection === 'industry' ? '' : 'industry'
-                  )
-                }
-              >
-                <Text style={styles.sectionTitle}>Industry</Text>
-                <Text style={styles.expandIcon}>
-                  {expandedSection === 'industry' ? '▼' : '▶'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
             {/* Job Type Section */}
             <View style={styles.filterSection}>
               <TouchableOpacity

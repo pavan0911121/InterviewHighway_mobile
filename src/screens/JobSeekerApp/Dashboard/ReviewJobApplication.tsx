@@ -8,7 +8,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { ArrowLeft, BriefcaseBusiness, Check, FileText, Pencil, User } from 'lucide-react-native/icons';
+import { ArrowLeft, BriefcaseBusiness, Check, FileText, Mail, Pencil, User } from 'lucide-react-native/icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as AsyncStore from "../../../AsyncStore";
 import { useDispatch } from 'react-redux';
@@ -33,6 +33,7 @@ const ReviewJobApplication = ({ onBack, onSubmit, onBrowseMoreJobs, applicationD
   const [isSubmitting, setIsSubmitting] = useState(false);
     const submissionInProgress = useRef(false);
   const [successData, setSuccessData] = useState<any>(null);
+    const coverLetter = typeof applicationData?.coverLetter === 'string' ? applicationData.coverLetter.trim() : '';
 
     const handleSubmitJobApplication = async () => {
                 if (submissionInProgress.current) {
@@ -46,6 +47,7 @@ const ReviewJobApplication = ({ onBack, onSubmit, onBrowseMoreJobs, applicationD
             const formData = new FormData();
             formData.append('jobId', applicationData?.jobId);
             formData.append('userId', resultId);
+            formData.append('coverLetter', coverLetter);
 
             const response = await dispatch(applyJob(formData) as any);
             if (applyJob.fulfilled.match(response)) {
@@ -150,6 +152,20 @@ const ReviewJobApplication = ({ onBack, onSubmit, onBrowseMoreJobs, applicationD
                            
                         </View>
                     </View>
+
+                    {!!coverLetter && (
+                        <View style={styles.coverLetterCard}>
+                            <View style={styles.coverLetterHeader}>
+                                <View style={styles.headingIcon}>
+                                    <Mail size={20} color="#0757E8" />
+                                </View>
+                                <Text style={styles.sectionTitle}>Cover Letter</Text>
+                            </View>
+                            <View style={styles.coverLetterBody}>
+                                <Text style={styles.coverLetterText}>{coverLetter}</Text>
+                            </View>
+                        </View>
+                    )}
                 </ScrollView>
 
                 <View style={styles.footer}>
@@ -233,6 +249,10 @@ const styles = StyleSheet.create({
     detailLabel: { color: '#344054', fontSize: 12, letterSpacing: 0.4, fontFamily: 'Geist-VariableFont_wght' },
     detailValue: { color: '#101828', fontSize: 15, lineHeight: 20, marginTop: 9, fontWeight: '600', fontFamily: 'Geist-VariableFont_wght' },
     documentsSection: { marginHorizontal: 24 },
+    coverLetterCard: { marginHorizontal: 24, marginTop: 20, padding: 16, borderRadius: 11, borderWidth: 1, borderColor: '#D9DEE6', backgroundColor: '#F8F9FB' },
+    coverLetterHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
+    coverLetterBody: { borderRadius: 10, borderWidth: 1, borderColor: '#E5E7EB', backgroundColor: '#FFFFFF', padding: 14 },
+    coverLetterText: { color: '#344054', fontSize: 13, lineHeight: 20, fontFamily: 'Geist-VariableFont_wght' },
     documentRow: { minHeight: 68, borderRadius: 11, borderWidth: 1, borderColor: '#D9DEE6', backgroundColor: '#F8F9FB', padding: 10, flexDirection: 'row', alignItems: 'center' },
     documentInfo: { display: 'flex', flexDirection: 'column', justifyContent: 'center' },
     pdfIcon: { width: 34, height: 34, borderRadius: 17, backgroundColor: '#DCEBFF', alignItems: 'center', justifyContent: 'center', marginRight: 10 },

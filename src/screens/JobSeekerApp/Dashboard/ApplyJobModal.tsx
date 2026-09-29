@@ -194,7 +194,7 @@ export default function ApplyJobModal({ visible, onClose, job, onSubmit, onBrows
             return;
         }
         if (!selectedResumeId) {
-            Alert.alert('Missing information', 'Please select a resume to apply with.');
+            Alert.alert('Missing information', 'Please add resume to apply this job.');
             return;
         }
         if (!agreedToTerms) {

@@ -1,13 +1,11 @@
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, Pressable, Image } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
-import { Funnel } from 'lucide-react-native/icons';
-import FilterModal from '../Dashboard/FilterModal';
 import { getCourses, getEnrollmentCourses } from '../../../Redux/slices/coursesSlice';
 import { useDispatch, useSelector } from 'react-redux';
-import { Search, BookOpen, Play, GraduationCap } from 'lucide-react-native';
+import { Search, BookOpen, Play, GraduationCap, ChevronDown } from 'lucide-react-native';
 import * as AsyncStore from "../../../AsyncStore";
 import CoursesSkeleton from './CoursesSkeleton';
 
@@ -19,7 +17,10 @@ type CourseStackParams = {
 
 const CoursesScreen = () => {
   const navigation = useNavigation<NavigationProp<CourseStackParams>>();
-  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All Categories');
+  const [selectedLevel, setSelectedLevel] = useState('All Levels');
+  const [openCourseFilter, setOpenCourseFilter] = useState<'category' | 'level' | null>(null);
   const dispatch = useDispatch();
   const selector = useSelector((state: any) => state.courses);
 
@@ -38,7 +39,7 @@ const CoursesScreen = () => {
     try {
       // Make API call to fetch courses
       await dispatch(getCourses() as any);
-      
+
     } catch (error) {
       console.log('Error fetching courses:', error);
     }
@@ -51,9 +52,32 @@ const CoursesScreen = () => {
   ];
 
   const courses = selector?.courses
-  const handleApplyFilters = (filters: any) => {
-    // You can dispatch an action here to filter jobs based on the selected filters
-  };
+  const courseCategories: string[] = Array.from(new Set<string>(
+    (courses || [])
+      .map((course: any) => typeof course?.category === 'string' ? course.category.trim() : '')
+      .filter((category: string) => category.length > 0),
+  )).sort();
+  const courseLevels: string[] = Array.from(new Set<string>(
+    (courses || [])
+      .map((course: any) => typeof course?.level === 'string' ? course.level.trim() : '')
+      .filter((level: string) => level.length > 0),
+  )).sort();
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+  const filteredCourses = (courses || []).filter((course: any) => {
+    const matchesSearch = !normalizedSearchQuery || [
+      course?.title,
+      course?.category,
+      course?.level,
+      course?.instructor_name,
+      course?.slug,
+    ].some((value) => value?.toLowerCase().includes(normalizedSearchQuery));
+    const matchesCategory = selectedCategory === 'All Categories'
+      || course?.category?.toLowerCase() === selectedCategory.toLowerCase();
+    const matchesLevel = selectedLevel === 'All Levels'
+      || course?.level?.toLowerCase() === selectedLevel.toLowerCase();
+
+    return matchesSearch && matchesCategory && matchesLevel;
+  });
   const isCourseEnrolled = (courseId: string) =>
     selector?.enrolledCourse?.some((enrollment: any) => enrollment?.course?.id === courseId) || false;
 
@@ -73,7 +97,7 @@ const CoursesScreen = () => {
 
   const enrolledCourses = selector?.enrolledCourse || [];
   const loader = selector?.isCoursesLoading;
-  
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Sticky Header */}
@@ -178,64 +202,164 @@ const CoursesScreen = () => {
           </View>
         </View>
 
-       {
-        loader ? (
-          <CoursesSkeleton courses={true} />
-        ) : (
-          <View>
-             {/* Stats Grid */}
-        <View style={styles.statsGrid}>
-          {stats.map((stat, index) => (
-            <View key={index} style={styles.statCard}>
-              <Text style={[styles.statNumber, { color: stat.color }]}>
-                {stat.number}
-              </Text>
-              <Text style={styles.statLabel}>{stat.label}</Text>
-            </View>
-          ))}
-        </View>
+        {
+          loader ? (
+            <CoursesSkeleton courses={true} />
+          ) : (
+            <View>
+              {/* Stats Grid */}
+              <View style={styles.statsGrid}>
+                {stats.map((stat, index) => (
+                  <View key={index} style={styles.statCard}>
+                    <Text style={[styles.statNumber, { color: stat.color }]}>
+                      {stat.number}
+                    </Text>
+                    <Text style={styles.statLabel}>{stat.label}</Text>
+                  </View>
+                ))}
+              </View>
 
-        {/* Courses List */}
-        <View style={styles.coursesContainer}>
-          {courses && courses?.map((course: any) => (
-            <View key={course?.id} style={styles.courseCard}>
-              <View style={styles.courseHeader}>
-                <View>
-                  <Text style={styles.courseTitle}>{course?.title}</Text>
-                  <Text style={styles.courseInstructor}>{course?.instructor_name}</Text>
-                  <Text style={styles.courseCode}>{course?.slug}</Text>
+              {openCourseFilter !== null && (
+                <Pressable
+                  style={styles.courseFilterBackdrop}
+                  onPress={() => setOpenCourseFilter(null)}
+                  accessible={false}
+                />
+              )}
+
+              <View style={styles.courseFilters}>
+                {openCourseFilter !== null && (
+                  <Pressable
+                    style={styles.courseFilterPanelDismissArea}
+                    onPress={() => setOpenCourseFilter(null)}
+                    accessible={false}
+                  />
+                )}
+                <View style={styles.courseSearchInput}>
+                  <Search size={16} color="#9CA3AF" />
+                  <TextInput
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    placeholder="Search courses..."
+                    placeholderTextColor="#797979"
+                    style={styles.courseSearchText}
+                    accessibilityLabel="Search courses"
+                    onFocus={() => setOpenCourseFilter(null)}
+                  />
+                </View>
+
+                <View style={styles.courseFilterControl}>
+                  <TouchableOpacity
+                    style={styles.courseFilterButton}
+                    onPress={() => setOpenCourseFilter(openCourseFilter === 'category' ? null : 'category')}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Category filter: ${selectedCategory}`}
+                  >
+                    <Text style={styles.courseFilterButtonText}>{selectedCategory}</Text>
+                    <ChevronDown size={14} color="#797979" />
+                  </TouchableOpacity>
+                  {openCourseFilter === 'category' && (
+                    <ScrollView
+                      style={styles.courseFilterOptions}
+                      nestedScrollEnabled
+                      keyboardShouldPersistTaps="handled"
+                      showsVerticalScrollIndicator={false}
+                    >
+                      {['All Categories', ...courseCategories].map((category) => (
+                        <TouchableOpacity
+                          key={category}
+                          style={styles.courseFilterOption}
+                          onPress={() => {
+                            setSelectedCategory(category);
+                            setOpenCourseFilter(null);
+                          }}
+                        >
+                          <Text style={styles.courseFilterOptionText}>{category}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  )}
+                </View>
+
+                <View style={styles.courseFilterControl}>
+                  <TouchableOpacity
+                    style={[styles.courseFilterButton, styles.courseLevelFilterButton]}
+                    onPress={() => setOpenCourseFilter(openCourseFilter === 'level' ? null : 'level')}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Level filter: ${selectedLevel}`}
+                  >
+                    <Text style={styles.courseFilterButtonText}>{selectedLevel}</Text>
+                    <ChevronDown size={14} color="#797979" />
+                  </TouchableOpacity>
+                  {openCourseFilter === 'level' && (
+                    <ScrollView
+                      style={styles.courseFilterOptions}
+                      nestedScrollEnabled
+                      keyboardShouldPersistTaps="handled"
+                      showsVerticalScrollIndicator={false}
+                    >
+                      {['All Levels', ...courseLevels].map((level) => (
+                        <TouchableOpacity
+                          key={level}
+                          style={styles.courseFilterOption}
+                          onPress={() => {
+                            setSelectedLevel(level);
+                            setOpenCourseFilter(null);
+                          }}
+                        >
+                          <Text style={styles.courseFilterOptionText}>{level}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  )}
                 </View>
               </View>
 
-              <View style={styles.courseMeta}>
-                <View style={styles.levelBadge}>
-                  <Text style={styles.levelText}>{course?.level}</Text>
-                </View>
-              </View>
+              {/* Courses List */}
+              <View style={styles.coursesContainer}>
+                {filteredCourses.length > 0 ? filteredCourses.map((course: any) => (
+                  <View key={course?.id} style={styles.courseCard}>
+                    <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+                      <View>
+                        <Image
+                          source={{ uri: course?.thumbnail_url }}
+                          style={styles.companyLogo}
+                        />
+                      </View>
+                      <View><View style={styles.courseHeader}>
+                        <View>
+                          <Text style={styles.courseTitle}>{course?.title}</Text>
+                          <Text style={styles.courseInstructor}>{course?.instructor_name}</Text>
+                          <Text style={styles.courseCode}>{course?.slug}</Text>
+                        </View>
+                      </View>
 
-              <View style={styles.courseFooter}>
-                <Text style={styles.courseId}>{course?.currency}{course?.price}</Text>
-                <TouchableOpacity
-                  style={styles.viewButton}
-                  onPress={() => navigation.navigate('CourseDetails', { courseData: course, isEnrolled: isCourseEnrolled(course?.id) })}
-                >
-                  <Text style={styles.viewButtonIcon}>▶</Text>
-                  <Text style={styles.viewButtonText}>View Course</Text>
-                </TouchableOpacity>
+                        <View style={styles.courseMeta}>
+                          <View style={styles.levelBadge}>
+                            <Text style={styles.levelText}>{course?.level}</Text>
+                          </View>
+                        </View></View>
+                    </View>
+
+                    <View style={styles.courseFooter}>
+                      <Text style={styles.courseId}>{course?.currency}{course?.price}</Text>
+                      <TouchableOpacity
+                        style={styles.viewButton}
+                        onPress={() => navigation.navigate('CourseDetails', { courseData: course, isEnrolled: isCourseEnrolled(course?.id) })}
+                      >
+                        <Text style={styles.viewButtonIcon}>▶</Text>
+                        <Text style={styles.viewButtonText}>View Course</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )) : (
+                  <Text style={styles.noCoursesText}>No courses match your filters.</Text>
+                )}
               </View>
             </View>
-          ))}
-        </View>
-          </View>
-        )
-       }
+          )
+        }
       </ScrollView>
-      {/* Filter Modal */}
-      <FilterModal
-        visible={showFilterModal}
-        onClose={() => setShowFilterModal(false)}
-        onApply={handleApplyFilters}
-      />
     </SafeAreaView>
   );
 };
@@ -379,6 +503,104 @@ const styles = StyleSheet.create({
     fontFamily: 'Geist-VariableFont_wght',
     textAlign: 'center',
   },
+  courseFilters: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E1E4E8',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    gap: 10,
+    shadowColor: '#111827',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
+    zIndex: 3,
+  },
+  courseFilterBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 1,
+  },
+  courseFilterPanelDismissArea: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 0,
+  },
+  courseSearchInput: {
+    height: 36,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: '#EAEBEE',
+    borderRadius: 8,
+    zIndex: 1,
+  },
+  courseSearchText: {
+    flex: 1,
+    height: '100%',
+    padding: 0,
+    color: '#363535',
+    fontSize: 13,
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  courseFilterControl: {
+    alignSelf: 'flex-start',
+    zIndex: 1,
+  },
+  courseFilterButton: {
+    minHeight: 34,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: '#EAEBEE',
+    borderRadius: 7,
+  },
+  courseLevelFilterButton: {
+    borderColor: '#9BB8FF',
+  },
+  courseFilterButtonText: {
+    color: '#363535',
+    fontSize: 12,
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  courseFilterOptions: {
+    width: 220,
+    maxHeight: 180,
+    marginTop: 6,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#EAEBEE',
+    borderRadius: 8,
+    elevation: 5,
+    shadowColor: '#111827',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    zIndex: 5,
+  },
+  courseFilterOption: {
+    minHeight: 36,
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    backgroundColor: '#FFFFFF',
+  },
+  courseFilterOptionText: {
+    color: '#363535',
+    fontSize: 13,
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  noCoursesText: {
+    paddingVertical: 20,
+    color: '#797979',
+    textAlign: 'center',
+    fontSize: 14,
+    fontFamily: 'Geist-VariableFont_wght',
+  },
   coursesContainer: {
     marginBottom: 20,
   },
@@ -389,6 +611,12 @@ const styles = StyleSheet.create({
     borderColor: '#EAEBEE',
     padding: 16,
     marginBottom: 12,
+  },
+  companyLogo: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+    marginRight: 5,
   },
   courseHeader: {
     marginBottom: 12,

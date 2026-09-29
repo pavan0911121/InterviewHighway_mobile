@@ -84,7 +84,7 @@ const CourseDetails: React.FC<{ route: any }> = ({ route }) => {
       })
     }
   };
-  const chapterData = selector?.chapterData?.[0];
+  const chapterData = selector?.chapterData;
   const loader = selector?.isCourseDetailsLoading;
   const createOrderLoader = selector?.isCreateOrderLoading;
   return (
@@ -145,13 +145,21 @@ const CourseDetails: React.FC<{ route: any }> = ({ route }) => {
 
             {/* Modules */}
             <View style={styles.card}>
-              <Text style={styles.cardTitle}>There are {courseDetails?.total_chapters || 1} modules in this course</Text>
+              <Text style={styles.cardTitle}>There are {chapterData?.length || courseDetails?.total_chapters || 1} modules in this course</Text>
 
-              <View style={styles.moduleBox}>
-                <Text style={styles.moduleTitle}>Module {courseDetails?.total_chapters || 1}: {chapterData?.title}</Text>
-                <Text style={styles.moduleSub}>{chapterData?.subtitle}</Text>
-                <Text style={styles.moduleMeta}>lessons {chapterData?.chapter_order}· <Lock size={13} color={'#999'} /> Enrollment required</Text>
-              </View>
+              {chapterData?.map((chapter: any, index: number) => (
+                <View key={chapter?.id ?? chapter?.chapter_order ?? index} style={styles.moduleBox}>
+                  <Text style={styles.moduleTitle}>Module {chapter?.chapter_order || index + 1}: {chapter?.title}</Text>
+                  {isEnrolled ?
+                    <Text style={styles.moduleMeta}>{chapter?.chapter_order} lessons</Text>
+                    :
+                    <View>
+                      <Text style={styles.moduleSub}>{chapter?.subtitle}</Text>
+                      <Text style={styles.moduleMeta}>lessons {chapter?.chapter_order} · <Lock size={13} color={'#999'} /> Enrollment required</Text>
+                    </View>
+                  }
+                </View>
+              ))}
             </View>
 
             {/* Instructor Card */}
