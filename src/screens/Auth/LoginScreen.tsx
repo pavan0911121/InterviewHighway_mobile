@@ -131,7 +131,8 @@ const LoginScreen: React.FC = () => {
         if (errorMessage === 'Email not confirmed') {
           setLoginError('Please check your email and click the verification link before signing in.');
         } else {
-          setLoginError(errorMessage);
+          // setLoginError(errorMessage);
+          setLoginError('Invalid login credentials')
         }
       }
     } catch (error) {

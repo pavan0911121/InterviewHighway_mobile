@@ -62,7 +62,9 @@ export const PROFILE_ENDPOINTS = {
   profilePhoto: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/profiles/user/${userId}/photo`,
   ProfilePhotoVerification: (userId: string) =>
-    `${API_BASE_URL}/rest/v1/users?select=verification_status%2Cverification_notes%2Cverification_requested_at%2Cverification_completed_at%2Cverification_completed_by%2Cprofile_last_modified&id=eq.${userId}`
+    `${API_BASE_URL}/rest/v1/users?select=verification_status%2Cverification_notes%2Cverification_requested_at%2Cverification_completed_at%2Cverification_completed_by%2Cprofile_last_modified&id=eq.${userId}`,
+  changePassword: () =>
+    `${API_BASE_URL}/auth/v1/user`,
 };
 
 // =====================
@@ -210,6 +212,9 @@ export const EMPLOYER_ENDPOINTS = {
   //Employer checking the candidate profile details
   employerCheckCandidateDetails: (candidateId: string) =>
     `${API_BASE_URL}/rest/v1/profiles?select=*&user_id=eq.${candidateId}`,
+  //add notes to candidate profile
+  employerAddNotesToCandidateProfile: (candidateId: string) =>
+    `${RAILWAY_API_BASE_URL}/api/employer/applications/${candidateId}/notes`,
 
   //candidateSKill
   employerCheckCandidateSkills: (candidateId: string) =>

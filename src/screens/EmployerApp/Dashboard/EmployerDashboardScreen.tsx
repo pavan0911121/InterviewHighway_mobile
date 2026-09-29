@@ -1,4 +1,4 @@
-import { StyleSheet, Text, TouchableOpacity, View, ScrollView } from 'react-native'
+import { StyleSheet, Text, TouchableOpacity, View, ScrollView,RefreshControl } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
@@ -13,6 +13,7 @@ const EmployerDashboardScreen = () => {
   const navigation = useNavigation()
   const dispatch = useDispatch();
   const selector = useSelector((state: any) => state.employerDashboard);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     LocalStorageaData();
@@ -41,6 +42,18 @@ const EmployerDashboardScreen = () => {
   // const [companyData] = useState(selector[0]?.data)
   const dashboardStats = selector.data;
   const loader = selector?.isLoading;
+
+  const onRefresh = async () => {
+    try {
+      setRefreshing(true);
+      await LocalStorageaData();
+    } catch (error) {
+      console.log('Refresh error:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Sticky Header */}
@@ -58,7 +71,12 @@ const EmployerDashboardScreen = () => {
         <EmployerDashboardSkeleton />
         :
 
-        <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+          />}
+          style={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Welcome Section */}
           <View style={styles.welcomeSection}>
             <Text style={styles.welcomeTitle}>

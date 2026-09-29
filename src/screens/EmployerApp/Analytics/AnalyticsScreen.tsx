@@ -1,5 +1,6 @@
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native'
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, ActivityIndicator, RefreshControl } from 'react-native'
 import React, { useEffect, useState } from 'react'
+
 import { getEmployerJobPerformance } from '../../../Redux/slices/employerAnalyticsSlice'
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -17,6 +18,7 @@ const AnalyticsScreen = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('30 Days')
   const navigation = useNavigation()
   const dispatch = useDispatch();
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     LocalStorageaData();
@@ -45,8 +47,15 @@ const AnalyticsScreen = () => {
   const jobPerformanceData = selector?.jobPerformanceData
   const statusData = selector?.data
 
-  const handleRefresh = () => {
-    // Handle refresh logic
+  const handleRefresh = async () => {
+    try {
+      setRefreshing(true);
+      await LocalStorageaData();
+    } catch (error) {
+      console.log('Refresh error:', error);
+    } finally {
+      setRefreshing(false);
+    }
   }
   const loader = !(
     selector?.isEmployerAnalyticsLoading === false &&
@@ -74,7 +83,12 @@ const AnalyticsScreen = () => {
         loader ?
           <EmployerDashboardSkeleton />
           :
-          <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <ScrollView refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+            />}
+            style={styles.scrollContent} showsVerticalScrollIndicator={false}>
             {/* Header Section */}
             <View style={styles.headerRow}>
               <View style={styles.headerContent}>

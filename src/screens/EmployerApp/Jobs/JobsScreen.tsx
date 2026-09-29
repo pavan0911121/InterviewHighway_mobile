@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, TextInput, FlatList, ActivityIndicator, Modal, Alert } from 'react-native'
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, TextInput, RefreshControl, ActivityIndicator, Modal, Alert, KeyboardAvoidingView, Platform } from 'react-native'
 import React, { useEffect, useState, useMemo } from 'react'
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
 import { Picker } from '@react-native-picker/picker'
@@ -8,7 +8,7 @@ import { DrawerNavigationProp } from '@react-navigation/drawer'
 import { useDispatch, useSelector } from 'react-redux'
 import * as AsyncStore from "../../../AsyncStore";
 import { deleteJobPosting, duplicateJobDetails, editJobDetails, getJobPostingStats, postCreateJob, publishJob, viewJobDetails } from '../../../Redux/slices/jobPostings'
-import { Briefcase, CheckCircle, CircleX, Clock, Currency, DollarSign, EllipsisVertical, Eye, FileText, MapPin, PauseCircle, Plus, Search, Users, X, ChevronRight, Home, ChevronLeft } from 'lucide-react-native'
+import { Briefcase, CheckCircle, CircleX, Clock, Currency, DollarSign, EllipsisVertical, Eye, FileText, MapPin, PauseCircle, Plus, Search, Users, X, ChevronRight, Home, ChevronLeft, Calendar, BookOpen } from 'lucide-react-native'
 import JobsSkeleton from './JobsSkeleton'
 
 
@@ -24,6 +24,7 @@ const JobsScreen = () => {
   const [jobMenuVisible, setJobMenuVisible] = useState(false);
   const [isEditingJob, setIsEditingJob] = useState(false);
   const [isViewingDetailsOnly, setIsViewingDetailsOnly] = useState(false);
+  const [showCreationStatus, setShowCreationStatus] = useState(false);
   const [jobFormData, setJobFormData] = useState({
     // Step 1
     title: '',
@@ -46,6 +47,7 @@ const JobsScreen = () => {
     status: 'draft',
     userId: null as string | null
   });
+  const [refreshing, setRefreshing] = useState(false);
   const navigation = useNavigation()
   const dispatch = useDispatch();
 
@@ -93,6 +95,17 @@ const JobsScreen = () => {
       console.log("Error fetching user data from AsyncStorage:", error);
     }
   }
+  const onRefresh = async () => {
+    try {
+      setRefreshing(true);
+      await LocalStorageaData();
+
+    } catch (error) {
+      console.log('Refresh error:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const handleCreateNewJob = () => {
     // Reset form data to empty for new job creation
@@ -117,6 +130,7 @@ const JobsScreen = () => {
     setCurrentStep(1);
     setIsEditingJob(false);
     setIsViewingDetailsOnly(false);
+    setShowCreationStatus(false);
     setModalVisible(true);
   };
 
@@ -160,7 +174,10 @@ const JobsScreen = () => {
             setModalVisible(true);
           }
         } else if (option === 'Duplicate Job') {
-          const response = await dispatch(duplicateJobDetails({ userId, jobId: selectedJobForMenu?.id }) as any);
+          const payload = {
+            userId: userId,
+          }
+          const response = await dispatch(duplicateJobDetails({ userId, jobId: selectedJobForMenu?.id, payload }) as any);
           const jobData = response?.payload?.job || selector?.jobData;
 
           if (jobData) {
@@ -188,12 +205,12 @@ const JobsScreen = () => {
             LocalStorageaData(); // Refresh job stats after duplicating a job
           }
         }
-        else if (option === 'Publish Job'|| option === 'Pause Job'|| option === 'Resume Job'||option === 'Close Job') {
+        else if (option === 'Publish Job' || option === 'Pause Job' || option === 'Resume Job' || option === 'Close Job') {
           const body = { status: option === 'Pause Job' ? 'paused' : option === 'Close Job' ? 'closed' : 'active', userId: userId };
-          const response = await dispatch(publishJob({  jobId: selectedJobForMenu?.id, body:body }) as any);
+          const response = await dispatch(publishJob({ jobId: selectedJobForMenu?.id, body: body }) as any);
           setJobMenuVisible(false);
           LocalStorageaData(); // Refresh job stats after publishing, pausing, or resuming a job
-        }else if (option === 'Delete Job') {
+        } else if (option === 'Delete Job') {
           const response = await dispatch(deleteJobPosting({ userId, jobId: selectedJobForMenu?.id }) as any);
           setJobMenuVisible(false);
           LocalStorageaData(); // Refresh job stats after deleting a job
@@ -284,12 +301,16 @@ const JobsScreen = () => {
     }
     setCurrentStep(currentStep + 1);
   };
-  const handleSaveDraft = () => {
-    // Validate required fields for steps 1 and 2
+  const handleSaveDraft = async () => {
     try {
-      const body = jobFormData
-      dispatch(postCreateJob(body) as any);
-      setModalVisible(false) // Debugging line to check the state of jobFormData
+      setShowCreationStatus(true);
+      const result = await dispatch(postCreateJob(jobFormData) as any);
+      const message: string = result?.payload?.message || '';
+      if (postCreateJob.rejected.match(result) && message.includes('You need at least 1 credit to post a job')) {
+        return;
+      }
+      setShowCreationStatus(false);
+      setModalVisible(false);
       LocalStorageaData();
     } catch (error) {
       console.error("Error saving draft:", error);
@@ -311,6 +332,8 @@ const JobsScreen = () => {
     }
   }
   const loader = selector?.isJobStatsLoading;
+  const jobCreationStatus = selector?.jobCreationStatus;
+  const isCreatingJob = showCreationStatus && selector?.isLoading;
   return (
     <SafeAreaView style={styles.container}>
       {/* Sticky Header */}
@@ -328,8 +351,13 @@ const JobsScreen = () => {
           <ActivityIndicator size="large" color="#165DFC" />
         </View>
       ) : ( */}
-       {
-        loader? <JobsSkeleton/> :  <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      {
+        loader ? <JobsSkeleton /> : <ScrollView refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+          />}
+          style={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Header Section */}
           <View style={styles.headerContainer}>
             <Text style={styles.title}>Job Postings</Text>
@@ -549,7 +577,7 @@ const JobsScreen = () => {
             )}
           </View>
         </ScrollView>
-       }
+      }
       {/* )} */}
 
       {/* Create Job Modal */}
@@ -557,9 +585,15 @@ const JobsScreen = () => {
         visible={modalVisible}
         transparent={true}
         animationType="slide"
-        onRequestClose={() => setModalVisible(false)}
+        onRequestClose={() => {
+          setModalVisible(false);
+          setShowCreationStatus(false);
+        }}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
           <View style={styles.modalContainer}>
             {/* Modal Header */}
             <View style={styles.modalHeader}>
@@ -570,6 +604,7 @@ const JobsScreen = () => {
               <TouchableOpacity onPress={() => {
                 setModalVisible(false);
                 setIsViewingDetailsOnly(false);
+                setShowCreationStatus(false);
               }}>
                 <X color={'#000'} size={24} />
               </TouchableOpacity>
@@ -589,7 +624,11 @@ const JobsScreen = () => {
             </View>
 
             {/* Modal Content */}
-            <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+            <ScrollView
+              style={styles.modalContent}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
               {currentStep === 1 && (
                 <View>
                   {/* Section Icon and Title */}
@@ -676,12 +715,13 @@ const JobsScreen = () => {
                         onValueChange={(value) => setJobFormData({ ...jobFormData, employment_type: value || jobFormData.employment_type })}
                         style={styles.picker}
                         itemStyle={styles.pickerItem}
+                        dropdownIconColor="#000000"
                       >
-                        <Picker.Item label="Select employment type" value="" />
-                        <Picker.Item label="Fulltime" value="fulltime" />
-                        <Picker.Item label="Parttime" value="parttime" />
-                        <Picker.Item label="Contract" value="contract" />
-                        <Picker.Item label="Internship" value="internship" />
+                        <Picker.Item label="Select employment type" value="" color="#000000" style={styles.pickerOption} />
+                        <Picker.Item label="Fulltime" value="fulltime" color="#000000" style={styles.pickerOption} />
+                        <Picker.Item label="Parttime" value="parttime" color="#000000" style={styles.pickerOption} />
+                        <Picker.Item label="Contract" value="contract" color="#000000" style={styles.pickerOption} />
+                        <Picker.Item label="Internship" value="internship" color="#000000" style={styles.pickerOption} />
                       </Picker>
                     </View>
                   </View>
@@ -697,12 +737,13 @@ const JobsScreen = () => {
                         onValueChange={(value) => setJobFormData({ ...jobFormData, experience_level: value || jobFormData.experience_level })}
                         style={styles.picker}
                         itemStyle={styles.pickerItem}
+                        dropdownIconColor="#000000"
                       >
-                        <Picker.Item label="Select experience level" value="" />
-                        <Picker.Item label="Entry level (0-2 years)" value="Entry level (0-2 years)" />
-                        <Picker.Item label="Mid level (3-5 years)" value="Mid level (3-5 years)" />
-                        <Picker.Item label="Senior level (6-10 years)" value="Senior level (6-10 years)" />
-                        <Picker.Item label="Lead/Principal (10+ years)" value="Lead/Principal (10+ years)" />
+                        <Picker.Item label="Select experience level" value="" color="#000000" style={styles.pickerOption} />
+                        <Picker.Item label="Entry level (0-2 years)" value="Entry level (0-2 years)" color="#000000" style={styles.pickerOption} />
+                        <Picker.Item label="Mid level (3-5 years)" value="Mid level (3-5 years)" color="#000000" style={styles.pickerOption} />
+                        <Picker.Item label="Senior level (6-10 years)" value="Senior level (6-10 years)" color="#000000" style={styles.pickerOption} />
+                        <Picker.Item label="Lead/Principal (10+ years)" value="Lead/Principal (10+ years)" color="#000000" style={styles.pickerOption} />
                       </Picker>
                     </View>
                   </View>
@@ -846,11 +887,12 @@ const JobsScreen = () => {
                         onValueChange={(value) => setJobFormData({ ...jobFormData, currency: value })}
                         style={styles.picker}
                         itemStyle={styles.pickerItem}
+                        dropdownIconColor="#000000"
                       >
-                        <Picker.Item label="INR (₹) - Indian Rupee" value="INR" />
-                        <Picker.Item label="USD ($) - US Dollar" value="USD" />
-                        <Picker.Item label="EUR (€) - Euro" value="EUR" />
-                        <Picker.Item label="GBP (£) - British Pound" value="GBP" />
+                        <Picker.Item label="INR (₹) - Indian Rupee" value="INR" color="#000000" style={styles.pickerOption} />
+                        <Picker.Item label="USD ($) - US Dollar" value="USD" color="#000000" style={styles.pickerOption} />
+                        <Picker.Item label="EUR (€) - Euro" value="EUR" color="#000000" style={styles.pickerOption} />
+                        <Picker.Item label="GBP (£) - British Pound" value="GBP" color="#000000" style={styles.pickerOption} />
                       </Picker>
                     </View>
                     <Text style={styles.helperText}>Default: INR (Indian Rupee)</Text>
@@ -892,7 +934,7 @@ const JobsScreen = () => {
                           setJobFormData({ ...jobFormData, application_deadline: text })
                         }
                       />
-                      <MaterialCommunityIcons name="calendar" size={20} color="#999" style={styles.calendarIcon} />
+                      <Calendar size={20} color="#999" style={styles.calendarIcon} />
                     </View>
                     <Text style={styles.helperText}>Last date to accept applications for this position</Text>
                   </View>
@@ -915,7 +957,7 @@ const JobsScreen = () => {
                   {/* Required Courses Info */}
                   <View style={styles.infoBox}>
                     <View style={styles.infoIconContainer}>
-                      <Text style={styles.infoIcon}>📚</Text>
+                      <BookOpen color={'#165DFC'} size={24} />
                     </View>
                     <View style={styles.infoContent}>
                       <Text style={styles.infoTitle}>Required Courses (Coming Soon)</Text>
@@ -966,9 +1008,9 @@ const JobsScreen = () => {
                   <View style={styles.previewSection}>
                     <View style={styles.previewSectionHeader}>
                       <Text style={styles.previewSectionTitle}>Basic Information</Text>
-                      <TouchableOpacity>
+                      {/* <TouchableOpacity>
                         <MaterialCommunityIcons name="pencil" size={18} color="#165DFC" />
-                      </TouchableOpacity>
+                      </TouchableOpacity> */}
                     </View>
                     <View style={styles.previewRow}>
                       <Text style={styles.previewLabel}>Job Title:</Text>
@@ -995,9 +1037,9 @@ const JobsScreen = () => {
                   <View style={styles.previewSection}>
                     <View style={styles.previewSectionHeader}>
                       <Text style={styles.previewSectionTitle}>Job Details</Text>
-                      <TouchableOpacity>
+                      {/* <TouchableOpacity>
                         <MaterialCommunityIcons name="pencil" size={18} color="#165DFC" />
-                      </TouchableOpacity>
+                      </TouchableOpacity> */}
                     </View>
                     {jobFormData.description && (
                       <View style={styles.previewRow}>
@@ -1023,9 +1065,9 @@ const JobsScreen = () => {
                   <View style={styles.previewSection}>
                     <View style={styles.previewSectionHeader}>
                       <Text style={styles.previewSectionTitle}>Compensation & Benefits</Text>
-                      <TouchableOpacity>
+                      {/* <TouchableOpacity>
                         <MaterialCommunityIcons name="pencil" size={18} color="#165DFC" />
-                      </TouchableOpacity>
+                      </TouchableOpacity> */}
                     </View>
                     <View style={styles.previewRow}>
                       <Text style={styles.previewLabel}>Salary Range:</Text>
@@ -1049,9 +1091,9 @@ const JobsScreen = () => {
                   <View style={styles.previewSection}>
                     <View style={styles.previewSectionHeader}>
                       <Text style={styles.previewSectionTitle}>Additional Settings</Text>
-                      <TouchableOpacity>
+                      {/* <TouchableOpacity>
                         <MaterialCommunityIcons name="pencil" size={18} color="#165DFC" />
-                      </TouchableOpacity>
+                      </TouchableOpacity> */}
                     </View>
                     <View style={styles.previewRow}>
                       <Text style={styles.previewLabel}>Video Introduction:</Text>
@@ -1066,9 +1108,9 @@ const JobsScreen = () => {
                   {/* Ready to Save */}
                   <View style={styles.readyBox}>
                     <View style={styles.readyCheckIcon}>
-                      <CheckCircle color={'#00C853'} size={20} />
+                      <CheckCircle color={'#165DFC'} size={20} />
                     </View>
-                    <View>
+                    <View style={styles.readyContent}>
                       <Text style={styles.readyTitle}>Ready to save your job posting?</Text>
                       <Text style={styles.readyText}>Your job will be saved as a draft and you can publish it later from the jobs list.</Text>
                     </View>
@@ -1076,6 +1118,19 @@ const JobsScreen = () => {
                 </View>
               )}
             </ScrollView>
+
+            {/* Job Creation Status */}
+            {showCreationStatus && (isCreatingJob ? (
+              <View style={styles.statusIndicator}>
+                <ActivityIndicator size="small" color="#165DFC" />
+                <Text style={styles.statusIndicatorText}>Saving job...</Text>
+              </View>
+            ) : jobCreationStatus && jobCreationStatus !== 'success' ? (
+              <View style={[styles.statusIndicator, styles.statusIndicatorError]}>
+                <CircleX color={'#FF3B30'} size={18} />
+                <Text style={[styles.statusIndicatorText, styles.statusIndicatorErrorText]}>{jobCreationStatus}</Text>
+              </View>
+            ) : null)}
 
             {/* Modal Footer - Buttons */}
             <View style={styles.modalFooter}>
@@ -1116,7 +1171,8 @@ const JobsScreen = () => {
                     </TouchableOpacity>
                   ) : (
                     <TouchableOpacity
-                      style={[styles.saveButton, { marginLeft: 'auto' }]}
+                      style={[styles.saveButton, { marginLeft: 'auto' }, isCreatingJob && styles.nextButtonDisabled]}
+                      disabled={!!isCreatingJob}
                       onPress={() => {
                         isEditingJob ? handleSaveChanges() :
                           handleSaveDraft()
@@ -1130,7 +1186,7 @@ const JobsScreen = () => {
               )}
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Job Menu Bottom Sheet */}
@@ -1735,9 +1791,15 @@ const styles = StyleSheet.create({
   picker: {
     width: '100%',
     backgroundColor: '#fff',
+    color: '#000000',
   },
   pickerItem: {
     fontSize: 14,
+    color: '#000000',
+  },
+  pickerOption: {
+    color: '#000000',
+    backgroundColor: '#FFFFFF',
   },
   modalFooter: {
     flexDirection: 'row',
@@ -1746,6 +1808,31 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderTopWidth: 1,
     borderTopColor: '#E5E5E5',
+  },
+  statusIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginHorizontal: 20,
+    marginBottom: 12,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: '#F0F5FF',
+    borderWidth: 1,
+    borderColor: '#D5E5FF',
+  },
+  statusIndicatorError: {
+    backgroundColor: '#FEE2E2',
+    borderColor: '#FECACA',
+  },
+  statusIndicatorText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#165DFC',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  statusIndicatorErrorText: {
+    color: '#FF3B30',
   },
   cancelButton: {
     flex: 1,
@@ -1829,7 +1916,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Geist-VariableFont_wght',
   },
   calendarIcon: {
-    paddingRight: 12,
+    marginRight: 12,
   },
   infoBox: {
     flexDirection: 'row',
@@ -1897,7 +1984,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   draftStatus: {
-    color: '#00C853',
+    color: '#000000',
   },
   previewSection: {
     backgroundColor: '#fff',
@@ -1951,6 +2038,9 @@ const styles = StyleSheet.create({
   readyCheckIcon: {
     marginRight: 12,
     justifyContent: 'center',
+  },
+  readyContent: {
+    flex: 1,
   },
   readyTitle: {
     fontSize: 14,

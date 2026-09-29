@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Image, ActivityIndicator, Linking, TextInput, Alert } from 'react-native'
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Image, ActivityIndicator, Linking, TextInput, Alert, RefreshControl } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
 import { Picker } from '@react-native-picker/picker'
@@ -31,6 +31,18 @@ const CompanyProfileScreen = () => {
     company_size: '',
     location: '',
   })
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    try {
+      setRefreshing(true);
+      await LocalStorageaData();
+    } catch (error) {
+      console.log('Refresh error:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     LocalStorageaData();
@@ -124,7 +136,13 @@ const CompanyProfileScreen = () => {
         </View>
       ) : ( */}
       {loader ? <CompanyProfileSkeleton /> :
-        <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+            />}
+          style={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Header Section */}
           <View style={styles.headerContainer}>
             <View style={{ width: '70%' }}>
@@ -147,7 +165,7 @@ const CompanyProfileScreen = () => {
                 activeOpacity={isEditing ? 0.7 : 1}
               >
                 <Image
-                  source={{ uri: selectedLogo?.uri || 'https://reybgptehrkxuqtjwbqp.supabase.co/storage/v1/object/public/companies/company-logos/fe99cd44-52c4-40d5-9415-de482efc0c6c-1773225303366.jpeg' }}
+                  source={{ uri: companyData?.logo_url }}
                   style={styles.companyLogo}
                 />
                 {isEditing && (

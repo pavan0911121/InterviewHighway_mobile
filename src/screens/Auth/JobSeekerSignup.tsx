@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Image, Linking } from 'react-native'
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Image, Linking, Alert, KeyboardAvoidingView, Platform } from 'react-native'
 import React, { useEffect, useState, useMemo } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react-native'
@@ -76,6 +76,7 @@ const JobSeekerSignup = ({ navigation }: any) => {
       uppercase: /[A-Z]/.test(password),
       lowercase: /[a-z]/.test(password),
       number: /[0-9]/.test(password),
+      specialCharacter: /[^A-Za-z0-9\s]/.test(password),
     }
   }, [password])
 
@@ -185,6 +186,11 @@ const JobSeekerSignup = ({ navigation }: any) => {
       return
     }
 
+    if (!Object.values(passwordValidation).every(Boolean)) {
+      Alert.alert('Invalid password', 'Password must meet all listed requirements.')
+      return
+    }
+
     setIsCreatingAccount(true)
     const payload = {
       firstName: firstName,
@@ -271,7 +277,15 @@ const JobSeekerSignup = ({ navigation }: any) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
         {/* Back Button */}
         <TouchableOpacity style={styles.backButton} onPress={() => navigation?.goBack()}>
           <ArrowLeft size={30} color="#000000" />
@@ -582,6 +596,20 @@ const JobSeekerSignup = ({ navigation }: any) => {
                     </View>
                     <Text style={styles.requirementText}>One number</Text>
                   </View>
+
+                  <View style={styles.requirementItem}>
+                    <View
+                      style={[
+                        styles.requirementCheckbox,
+                        passwordValidation.specialCharacter && styles.requirementCheckboxValid,
+                      ]}
+                    >
+                      {passwordValidation.specialCharacter && (
+                        <Text style={styles.requirementCheckmark}>✓</Text>
+                      )}
+                    </View>
+                    <Text style={styles.requirementText}>One special character</Text>
+                  </View>
                 </View>
               </View>
 
@@ -674,7 +702,8 @@ const JobSeekerSignup = ({ navigation }: any) => {
             <Text style={styles.signUpLink}>Sign Up</Text>
           </TouchableOpacity>
         </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   )
 }
@@ -685,6 +714,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ECF4FE',
+  },
+  flex: {
+    flex: 1,
   },
   backButton: {
     marginBottom: 16,

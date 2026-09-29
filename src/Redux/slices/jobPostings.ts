@@ -18,6 +18,7 @@ interface jobPostingsState {
     candidateEducationData: object | null; // Add this to store the candidate education data
     candidateVideoData: object | null; // Add this to store the candidate video data
     isJobStatsLoading: boolean; // Add this to track the loading state of job stats API call
+    candidateNotesData: object | null; // Add this to store the candidate notes data
 
 }
 
@@ -36,6 +37,7 @@ const initialState: jobPostingsState = {
     candidateEducationData: null, // Initialize candidateEducationData as null
     candidateVideoData: null, // Initialize candidateVideoData as null
     isJobStatsLoading: false, // Initialize isJobStatsLoading as false
+    candidateNotesData: null, // Initialize candidateNotesData as null
 };
 //job posting stats API call
 export const getJobPostingStats = createAsyncThunk(
@@ -137,9 +139,9 @@ export const editJobDetails = createAsyncThunk(
 //Duplicate jobDetails API call
 export const duplicateJobDetails = createAsyncThunk(
     "jobPostings/duplicateJobDetails",
-    async ({ userId, jobId }: { userId: string; jobId: string }, { rejectWithValue }) => {
+    async ({ userId, jobId, payload }: { userId: string; jobId: string; payload: any }, { rejectWithValue }) => {
         try {
-            const response = await client.put(EMPLOYER_ENDPOINTS.duplicateJob(userId, jobId), {});
+            const response = await client.put(EMPLOYER_ENDPOINTS.duplicateJob(userId, jobId), payload);
             return response.data || response;
         } catch (error: any) {
             console.log('Error fetching job details:', error);
@@ -262,6 +264,22 @@ export const checkCandidateVideo = createAsyncThunk(
         }
     }
 );
+// add notes to candidate profile API call
+export const addNotesToCandidateProfile = createAsyncThunk(
+    "jobPostings/addNotesToCandidateProfile",
+    async ({ userId, candidateId, notes }: { userId: string; candidateId: string; notes: string }, { rejectWithValue }) => {
+        try {
+            const response = await client.put(EMPLOYER_ENDPOINTS.employerAddNotesToCandidateProfile(candidateId), { userId, notes });
+            return response.data || response;
+        } catch (error: any) {
+            console.log('Error adding notes to candidate profile:', error);
+            return rejectWithValue({
+                message: error?.message || 'Failed to add notes to candidate profile',
+                code: error?.code || 'ERROR',
+            });
+        }
+    }
+);
 
 
 
@@ -301,6 +319,7 @@ const jobPostingsSlice = createSlice({
             .addCase(postCreateJob.pending, (state) => {
                 state.isLoading = true;
                 state.error = null;
+                state.jobCreationStatus = null;
             })
             .addCase(postCreateJob.fulfilled, (state, action) => {
                 state.isLoading = false;
@@ -311,7 +330,8 @@ const jobPostingsSlice = createSlice({
             .addCase(postCreateJob.rejected, (state, action) => {
                 state.isLoading = false;
                 state.error = action.payload as string;
-                state.jobCreationStatus = 'error';
+                const errorMessage = (action.payload as { message?: string } | undefined)?.message;
+                state.jobCreationStatus = errorMessage ?? null;
                 console.log('Error creating job:', action.payload);
             })
             // viewJobDetails async thunk handlers
@@ -476,6 +496,20 @@ const jobPostingsSlice = createSlice({
                 state.error = null;
             })
             .addCase(checkCandidateVideo.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.payload as string;
+            })
+            //add notes to candidate profile async thunk handlers
+            .addCase(addNotesToCandidateProfile.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(addNotesToCandidateProfile.fulfilled, (state, action) => {
+                state.isLoading = false;
+                state.candidateNotesData = action.payload;
+                state.error = null;
+            })
+            .addCase(addNotesToCandidateProfile.rejected, (state, action) => {
                 state.isLoading = false;
                 state.error = action.payload as string;
             });

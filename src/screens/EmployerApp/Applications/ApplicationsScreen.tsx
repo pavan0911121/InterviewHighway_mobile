@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, TouchableOpacity, Pressable, ScrollView, TextInput, ActivityIndicator, Linking } from 'react-native'
+import { StyleSheet, Text, View, TouchableOpacity, Pressable, ScrollView, RefreshControl, TextInput, ActivityIndicator, Linking, Modal } from 'react-native'
 import React, { useEffect, useState, useMemo } from 'react'
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -7,18 +7,45 @@ import { DrawerNavigationProp } from '@react-navigation/drawer'
 import { useDispatch, useSelector } from 'react-redux'
 import * as AsyncStore from "../../../AsyncStore";
 import { getApplicationsList } from '../../../Redux/slices/employerApplicationsSlice'
-import { ArrowDownToLine, Briefcase, Calendar, ChevronDown, Clock3, Download, Eye, FileText, Layers, Mail, Search, User, UserRound, Users } from 'lucide-react-native'
-import { updateApplicationStatus } from '../../../Redux/slices/jobPostings'
+import { ArrowDownToLine, Briefcase, Calendar, Check, CheckCircle2, ChevronDown, CircleX, Clock3, Download, Eye, FileText, Layers, Mail, Search, StickyNote, User, UserRound, UserRoundPlus, Users, X } from 'lucide-react-native'
+import { addNotesToCandidateProfile, getJobPostingStats, updateApplicationStatus } from '../../../Redux/slices/jobPostings'
 import JobsSkeleton from '../Jobs/JobsSkeleton'
 
+const ApplicationStatusBadge = ({ status }: { status?: string }) => {
+  const normalizedStatus = status?.toLowerCase()
+  const config = normalizedStatus === 'reviewing'
+    ? { label: 'Under Review', color: '#155EEF', icon: <Eye size={11} color="#155EEF" />, badgeStyle: styles.reviewingBadge }
+    : normalizedStatus === 'shortlisted'
+      ? { label: 'Shortlisted', color: '#A020F0', icon: <UserRoundPlus size={11} color="#A020F0" />, badgeStyle: styles.shortlistedBadge }
+      : normalizedStatus === 'hired'
+        ? { label: 'Hired', color: '#00A63E', icon: <CheckCircle2 size={11} color="#00A63E" />, badgeStyle: styles.hiredBadge }
+        : normalizedStatus === 'rejected'
+          ? { label: 'Rejected', color: '#E11D48', icon: <CircleX size={11} color="#E11D48" />, badgeStyle: styles.rejectedBadge }
+          : { label: 'Pending Review', color: '#6B7280', icon: <Clock3 size={11} color="#6B7280" />, badgeStyle: styles.pendingBadge }
+
+  return (
+    <View style={[styles.statusBadge, config.badgeStyle]}>
+      {config.icon}
+      <Text style={[styles.statusBadgeText, { color: config.color }]}>{config.label}</Text>
+    </View>
+  )
+}
 
 const ApplicationsScreen = () => {
   const navigation = useNavigation()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedJob, setSelectedJob] = useState('All Jobs')
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null)
+  const [jobFilterOpen, setJobFilterOpen] = useState(false)
   const [selectedSort, setSelectedSort] = useState('Newest First')
+  const [sortFilterOpen, setSortFilterOpen] = useState(false)
   const [openStatusId, setOpenStatusId] = useState<string | number | null>(null)
   const [statusOverrides, setStatusOverrides] = useState<Record<string, string>>({})
+  const [notesModalVisible, setNotesModalVisible] = useState(false)
+  const [selectedApplication, setSelectedApplication] = useState<any>(null)
+  const [notesContent, setNotesContent] = useState('')
+  const [isSavingNotes, setIsSavingNotes] = useState(false)
+  const [refreshing, setRefreshing] = useState(false);
   const dispatch = useDispatch();
   useEffect(() => {
     LocalStorageaData();
@@ -32,16 +59,54 @@ const ApplicationsScreen = () => {
         const parsedUserData = JSON.parse(userLoggedInData);
         const userId = parsedUserData?.id || null;
         const response = await dispatch(getApplicationsList(userId) as any);
-
+        const jobs= await dispatch (getJobPostingStats(userId) as any);
       }
     } catch (error) {
       console.log("Error fetching user data from AsyncStorage:", error);
     }
   }
+
+  const onRefresh = async () => {
+    try {
+      setRefreshing(true);
+      await LocalStorageaData();
+    } catch (error) {
+      console.log('Refresh error:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
   const selector = useSelector((state: any) => state.employerApplications);
   const selectorData = selector?.data?.applications // Assuming the API returns an object with an "applications" array
   const isLoading = selector?.loading;
-  
+  const jobPostingSelector = useSelector((state: any) => state.jobPostings);
+  const jobsdata = jobPostingSelector?.data?.jobs // Assuming the API returns an object with a "job_postings_stats" array
+  const filteredApplications = useMemo(() => {
+    if (!Array.isArray(selectorData)) return []
+
+    const query = searchQuery.trim().toLowerCase()
+    return selectorData.filter((application: any) => {
+      const applicationJobId = application?.job_id ?? application?.job?.id
+      const matchesJob = !selectedJobId || String(applicationJobId) === selectedJobId
+      const matchesSearch = !query || [
+        application?.candidate?.name,
+        application?.candidate?.email,
+      ].some((value) => String(value || '').toLowerCase().includes(query))
+      return matchesJob && matchesSearch
+    }).sort((left: any, right: any) => {
+      const leftAppliedAt = Date.parse(left?.applied_at || '')
+      const rightAppliedAt = Date.parse(right?.applied_at || '')
+      const leftHasDate = Number.isFinite(leftAppliedAt)
+      const rightHasDate = Number.isFinite(rightAppliedAt)
+
+      if (!leftHasDate) return rightHasDate ? 1 : 0
+      if (!rightHasDate) return -1
+      return selectedSort === 'Oldest First'
+        ? leftAppliedAt - rightAppliedAt
+        : rightAppliedAt - leftAppliedAt
+    })
+  }, [searchQuery, selectedJobId, selectedSort, selectorData])
+
   // Calculate application stats from selectorData using useMemo
   const applicationStats = useMemo(() => {
     if (!selectorData || !Array.isArray(selectorData)) {
@@ -104,7 +169,42 @@ const ApplicationsScreen = () => {
       console.error('Failed to update application status', error)
     }
   }
-const loading = selector?.isApplicationsStatsLoading;
+
+  const handleOpenNotes = (application: any) => {
+    const existingNotes = typeof application?.notes === 'string'
+      ? application.notes
+      : application?.notes?.notes || ''
+    setSelectedApplication(application)
+    setNotesContent(existingNotes)
+    setNotesModalVisible(true)
+  }
+
+  const handleSaveNotes = async () => {
+    const applicationId = selectedApplication?.id
+    const notes = notesContent.trim()
+    if (!applicationId || !notes) return
+
+    setIsSavingNotes(true)
+    try {
+      const userLoggedInData = await AsyncStore.getData(AsyncStore.Keys.USER_DATA)
+      if (!userLoggedInData) throw new Error('User session is unavailable')
+      const userId = JSON.parse(userLoggedInData)?.id
+      if (!userId) throw new Error('User ID is unavailable')
+
+      await (dispatch as any)(addNotesToCandidateProfile({
+        userId: String(userId),
+        candidateId: String(applicationId),
+        notes,
+      })).unwrap()
+      await (dispatch as any)(getApplicationsList(userId)).unwrap()
+      setNotesModalVisible(false)
+    } catch (error) {
+      console.error('Failed to save application notes', error)
+    } finally {
+      setIsSavingNotes(false)
+    }
+  }
+  const loading = selector?.isApplicationsStatsLoading;
   return (
     <SafeAreaView style={styles.container}>
       {/* Sticky Header */}
@@ -122,9 +222,14 @@ const loading = selector?.isApplicationsStatsLoading;
           <ActivityIndicator size="large" color="#165DFC" />
         </View>
       ) : ( */}
-        {loading?<JobsSkeleton/>
+      {loading ? <JobsSkeleton />
         :
-        <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+          />}
+          style={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Header Section */}
           <View style={styles.headerRow}>
             <View>
@@ -219,25 +324,90 @@ const loading = selector?.isApplicationsStatsLoading;
           {/* Filter Dropdowns */}
           <View style={styles.filterRow}>
             {/* All Jobs Dropdown */}
-            <TouchableOpacity style={styles.filterButton}>
-              <Briefcase color={'#666'} size={20} />
-              <Text style={styles.filterText}>{selectedJob}</Text>
-              <ChevronDown color={'#999'} size={20} />
-            </TouchableOpacity>
+            <View style={styles.jobFilterWrapper}>
+              <Pressable
+                style={styles.filterButton}
+                onPress={() => {
+                  setJobFilterOpen((isOpen) => !isOpen)
+                  setSortFilterOpen(false)
+                }}
+              >
+                <Briefcase color="#666" size={20} />
+                <Text style={styles.filterText} numberOfLines={1}>{selectedJob}</Text>
+                <ChevronDown color="#999" size={20} />
+              </Pressable>
+              {jobFilterOpen && (
+                <View style={styles.jobFilterMenu}>
+                  <Pressable
+                    style={[styles.jobFilterOption, !selectedJobId && styles.jobFilterOptionSelected]}
+                    onPress={() => {
+                      setSelectedJob('All Jobs')
+                      setSelectedJobId(null)
+                      setJobFilterOpen(false)
+                    }}
+                  >
+                    <Text style={styles.jobFilterOptionText}>All Jobs</Text>
+                  </Pressable>
+                  <ScrollView style={styles.jobFilterOptions} nestedScrollEnabled>
+                    {(Array.isArray(jobsdata) ? jobsdata : []).map((job: any) => (
+                      <Pressable
+                        key={String(job.id)}
+                        style={[styles.jobFilterOption, selectedJobId === String(job.id) && styles.jobFilterOptionSelected]}
+                        onPress={() => {
+                          setSelectedJob(job.title || job.job_title || 'Untitled job')
+                          setSelectedJobId(String(job.id))
+                          setJobFilterOpen(false)
+                        }}
+                      >
+                        <Text style={styles.jobFilterOptionText} numberOfLines={1}>{job.title || job.job_title || 'Untitled job'}</Text>
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+            </View>
 
             {/* Sort Dropdown */}
-            <TouchableOpacity style={styles.filterButton}>
-              <Calendar color={'#666'} size={20} />
-              <Text style={styles.filterText}>{selectedSort}</Text>
-              <ChevronDown color={'#999'} size={20} />
-            </TouchableOpacity>
+            <View style={styles.sortFilterWrapper}>
+              <Pressable
+                style={styles.filterButton}
+                onPress={() => {
+                  setSortFilterOpen((isOpen) => !isOpen)
+                  setJobFilterOpen(false)
+                }}
+              >
+                <Calendar color="#666" size={20} />
+                <Text style={styles.filterText}>{selectedSort}</Text>
+                <ChevronDown color="#999" size={20} />
+              </Pressable>
+              {sortFilterOpen && (
+                <View style={styles.sortFilterMenu}>
+                  {['Newest First', 'Oldest First'].map((sortOption) => (
+                    <Pressable
+                      key={sortOption}
+                      style={styles.sortFilterOption}
+                      onPress={() => {
+                        setSelectedSort(sortOption)
+                        setSortFilterOpen(false)
+                      }}
+                    >
+                      <Text style={styles.jobFilterOptionText}>{sortOption}</Text>
+                      {selectedSort === sortOption && <Check size={15} color="#374151" />}
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+            </View>
           </View>
 
           {/* Empty State */}
-          {selector?.data?.applications?.length > 0 ? (
+          {filteredApplications.length > 0 ? (
             <View>
-              {selector?.data?.applications?.map((application: any) => (
-                <View style={styles.applicationsListContainer} key={application.id}>
+              {filteredApplications.map((application: any) => (
+                <View style={[styles.applicationsListContainer, openStatusId === application.id && styles.applicationCardMenuOpen]} key={application.id}>
+                  {openStatusId === application.id && (
+                    <Pressable style={styles.cardDropdownDismissOverlay} onPress={() => setOpenStatusId(null)} />
+                  )}
                   <View style={styles.applicationCard}>
                     <View style={styles.avatarContainer}>
                       <Text style={styles.avatarText}>{application?.candidate?.name?.[0] || 'T'}</Text>
@@ -248,35 +418,38 @@ const loading = selector?.isApplicationsStatsLoading;
                           <Text style={styles.candidateName}>{application?.candidate?.name}</Text>
                           {application?.viewed_by_employer === false && <Text style={styles.newBadge}>New</Text>}
                         </View>
-                        <View style={styles.statusMenuContainer}>
-                          <Pressable style={styles.statusButton} onPress={() => setOpenStatusId(openStatusId === application.id ? null : application.id)}>
-                            <Text style={styles.statusButtonText}>
-                              {statusOptions.find((option) => option.value === (statusOverrides[String(application.id)] || application.status))?.label || application.status}
-                            </Text>
-                            <ChevronDown size={14} color="#111827" />
-                          </Pressable>
-                          {openStatusId === application.id && (
-                            <View style={styles.statusMenu}>
-                              <Text style={styles.statusMenuTitle}>Change Status</Text>
-                              {statusOptions.map((option) => (
-                                <Pressable key={option.value} style={styles.statusOption} onPress={() => handleUpdateStatus(application, option.value)}>
-                                  {option.icon}
-                                  <Text style={styles.statusOptionText}>{option.label}</Text>
-                                </Pressable>
-                              ))}
-                            </View>
-                          )}
-                        </View>
                       </View>
-                      <View style={styles.statusRow}>
-                        <View style={styles.statusItem}>
-                          <Clock3 size={14} color="#111827" />
-                          <Text style={styles.statusText}>{application?.status}</Text>
-                        </View>
-                      </View>
+                      <ApplicationStatusBadge status={statusOverrides[String(application.id)] || application.status} />
                       <View style={styles.emailRow}>
                         <Mail size={16} color="#6B7280" />
                         <Text style={styles.emailText} numberOfLines={1}>{application?.candidate?.email}</Text>
+                      </View>
+                      {!!application?.notes && (
+                        <View style={styles.savedNotesCard}>
+                          <View style={styles.savedNotesHeading}>
+                            <StickyNote size={13} color="#A16207" />
+                            <Text style={styles.savedNotesLabel}>Your Notes:</Text>
+                          </View>
+                          <Text style={styles.savedNotesText}>
+                            {typeof application.notes === 'string' ? application.notes : application.notes?.notes}
+                          </Text>
+                        </View>
+                      )}
+                      <View style={styles.statusMenuContainer}>
+                        <Pressable style={styles.statusButton} onPress={() => setOpenStatusId(openStatusId === application.id ? null : application.id)}>
+                          <Text style={styles.statusButtonText}>Change Status</Text>
+                          <ChevronDown size={14} color="#111827" />
+                        </Pressable>
+                        {openStatusId === application.id && (
+                          <View style={styles.statusMenu}>
+                            {statusOptions.map((option) => (
+                              <Pressable key={option.value} style={styles.statusOption} onPress={() => handleUpdateStatus(application, option.value)}>
+                                {option.icon}
+                                <Text style={styles.statusOptionText}>{option.label}</Text>
+                              </Pressable>
+                            ))}
+                          </View>
+                        )}
                       </View>
                       <View style={styles.applicationActionRow}>
                         <View style={styles.metaInfo}>
@@ -285,12 +458,19 @@ const loading = selector?.isApplicationsStatsLoading;
                         </View>
                         <View style={styles.actionButtonsRow}>
                           <Pressable style={styles.primaryActionButton} onPress={() => handleViewProfile(application)}>
-                            <UserRound color="#FFFFFF" size={15} />
+                            <UserRound color="#000000" size={15} />
                             <Text style={styles.primaryActionText}>View Profile</Text>
                           </Pressable>
-                          <Pressable style={styles.secondaryActionButton}>
-                            <Download size={15} color="#374151" />
-                            <Text style={styles.secondaryActionText}>Resume</Text>
+                          {
+                            application?.resume_url &&
+                            <Pressable style={styles.secondaryActionButton} onPress={() => Linking.openURL(application?.resume_url)}>
+                              <Download size={15} color="#374151" />
+                              <Text style={styles.secondaryActionText}>Resume</Text>
+                            </Pressable>
+                          }
+                          <Pressable style={styles.secondaryActionButton} onPress={() => handleOpenNotes(application)}>
+                            <StickyNote size={15} color="#374151" />
+                            <Text style={styles.secondaryActionText}>{application?.notes ? 'Edit Notes' : 'Add Notes'}</Text>
                           </Pressable>
                         </View>
                       </View>
@@ -302,9 +482,13 @@ const loading = selector?.isApplicationsStatsLoading;
           ) : (
             <View style={styles.emptyStateContainer}>
               <Users color={'#E0E0E0'} size={48} />
-              <Text style={styles.emptyStateTitle}>No applications yet</Text>
+              <Text style={styles.emptyStateTitle}>
+                {searchQuery.trim() || selectedJobId ? 'No matching applications' : 'No applications yet'}
+              </Text>
               <Text style={styles.emptyStateDescription}>
-                Applications will appear here once candidates start applying to your jobs
+                {searchQuery.trim() || selectedJobId
+                  ? 'Try changing your search or selected job'
+                  : 'Applications will appear here once candidates start applying to your jobs'}
               </Text>
               <TouchableOpacity style={styles.viewJobsButton}>
                 <Briefcase color={'#fff'} size={20} />
@@ -312,7 +496,58 @@ const loading = selector?.isApplicationsStatsLoading;
               </TouchableOpacity>
             </View>
           )}
+          {(openStatusId !== null || jobFilterOpen || sortFilterOpen) && (
+            <Pressable
+              style={styles.dropdownDismissOverlay}
+              onPress={() => {
+                setOpenStatusId(null)
+                setJobFilterOpen(false)
+                setSortFilterOpen(false)
+              }}
+            />
+          )}
         </ScrollView>}
+      <Modal
+        visible={notesModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => !isSavingNotes && setNotesModalVisible(false)}
+      >
+        <View style={styles.notesModalOverlay}>
+          <View style={styles.notesModal}>
+            <View style={styles.notesModalHeading}>
+              <StickyNote size={16} color="#A16207" />
+              <Text style={styles.notesModalTitle}>{selectedApplication?.notes ? 'Edit Notes' : 'Add Notes'}</Text>
+            </View>
+            <TextInput
+              value={notesContent}
+              onChangeText={setNotesContent}
+              style={styles.notesInput}
+              placeholder="Enter your notes"
+              placeholderTextColor="#8A6D1D"
+              multiline
+              textAlignVertical="top"
+              editable={!isSavingNotes}
+            />
+            <View style={styles.notesModalActions}>
+              <Pressable
+                style={styles.notesCancelButton}
+                onPress={() => setNotesModalVisible(false)}
+                disabled={isSavingNotes}
+              >
+                <Text style={styles.notesCancelText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.notesSaveButton, isSavingNotes && styles.notesSaveButtonDisabled]}
+                onPress={handleSaveNotes}
+                disabled={isSavingNotes || !notesContent.trim()}
+              >
+                {isSavingNotes ? <ActivityIndicator size="small" color="#FFFFFF" /> : <Text style={styles.notesSaveText}>Save Notes</Text>}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
       {/* )} */}
     </SafeAreaView>
   )
@@ -494,6 +729,15 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     gap: 12,
   },
+  jobFilterWrapper: { flex: 1, position: 'relative', zIndex: 20, elevation: 20 },
+  sortFilterWrapper: { flex: 1, position: 'relative', zIndex: 20, elevation: 20 },
+  jobFilterMenu: { position: 'absolute', top: 52, left: 0, right: 0, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#D9DDE4', borderRadius: 8, shadowColor: '#000000', shadowOpacity: 0.16, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 21, zIndex: 21, overflow: 'hidden' },
+  sortFilterMenu: { position: 'absolute', top: 52, left: 0, right: 0, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#D9DDE4', borderRadius: 8, shadowColor: '#000000', shadowOpacity: 0.16, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 21, zIndex: 21, overflow: 'hidden' },
+  sortFilterOption: { minHeight: 30, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 10, borderBottomWidth: 1, borderBottomColor: '#F0F1F3' },
+  jobFilterOptions: { maxHeight: 220 },
+  jobFilterOption: { minHeight: 42, justifyContent: 'center', paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: '#F0F1F3' },
+  jobFilterOptionSelected: { backgroundColor: '#EFF6FF' },
+  jobFilterOptionText: { color: '#111827', fontSize: 13, fontFamily: 'Geist-VariableFont_wght' },
   filterButton: {
     flex: 1,
     flexDirection: 'row',
@@ -512,6 +756,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Geist-VariableFont_wght',
   },
   applicationsListContainer: {
+    position: 'relative',
     backgroundColor: '#F4F8FC',
     borderRadius: 18,
     padding: 18,
@@ -519,6 +764,9 @@ const styles = StyleSheet.create({
     borderColor: '#B4D7FD',
     marginBottom: 24,
   },
+  applicationCardMenuOpen: { zIndex: 11, elevation: 11 },
+  cardDropdownDismissOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 10 },
+  dropdownDismissOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 10 },
   applicationCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -544,6 +792,7 @@ const styles = StyleSheet.create({
   },
   applicationMainContent: {
     flex: 1,
+    position: 'relative',
   },
   cardHeaderRow: {
     flexDirection: 'row',
@@ -577,11 +826,13 @@ const styles = StyleSheet.create({
   },
   statusMenuContainer: {
     position: 'relative',
-    zIndex: 10,
+    width: '50%',
+    zIndex: 20,
+    elevation: 20,
   },
   statusButton: {
-    minWidth: 112,
-    height: 32,
+    width: '100%',
+    height: 30,
     borderWidth: 1,
     borderColor: '#CBD2DB',
     borderRadius: 5,
@@ -589,7 +840,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 7,
+    paddingHorizontal: 6,
   },
   statusButtonText: {
     color: '#111827',
@@ -598,9 +849,9 @@ const styles = StyleSheet.create({
   },
   statusMenu: {
     position: 'absolute',
-    top: 37,
-    right: 0,
-    width: 178,
+    top: 34,
+    left: 0,
+    width: '100%',
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#D9DDE4',
@@ -609,8 +860,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.16,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
-    elevation: 6,
-    zIndex: 20,
+    elevation: 21,
+    zIndex: 21,
   },
   statusMenuTitle: {
     color: '#111827',
@@ -645,26 +896,13 @@ const styles = StyleSheet.create({
     color: '#111827',
     fontFamily: 'Geist-VariableFont_wght',
   },
-  statusRow: {
-    marginBottom: 12,
-  },
-  statusItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F3F4F6',
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    alignSelf: 'flex-start',
-    gap: 6,
-  },
-  statusText: {
-    fontSize: 12,
-    color: '#374151',
-    fontFamily: 'Geist-VariableFont_wght',
-    fontWeight: '500',
-    textTransform: 'capitalize',
-  },
+  statusBadge: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: 12, paddingHorizontal: 6, paddingVertical: 2, marginVertical: 10 },
+  statusBadgeText: { fontSize: 10, fontFamily: 'Geist-VariableFont_wght' },
+  pendingBadge: { backgroundColor: '#FFFFFF', borderColor: '#CBD2DB' },
+  reviewingBadge: { backgroundColor: '#EFF6FF', borderColor: '#93C5FD' },
+  shortlistedBadge: { backgroundColor: '#FAF5FF', borderColor: '#D8B4FE' },
+  hiredBadge: { backgroundColor: '#ECFDF3', borderColor: '#86EFAC' },
+  rejectedBadge: { backgroundColor: '#FFF1F2', borderColor: '#FDA4AF' },
   emailRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -677,6 +915,21 @@ const styles = StyleSheet.create({
     fontFamily: 'Geist-VariableFont_wght',
     flexShrink: 1,
   },
+  savedNotesCard: { marginTop: 10, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: '#FFFCE8', borderWidth: 1, borderColor: '#F5D64A', borderRadius: 8, marginBottom: 10 },
+  savedNotesHeading: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 5 },
+  savedNotesLabel: { color: '#111827', fontSize: 11, fontFamily: 'Geist-VariableFont_wght' },
+  savedNotesText: { color: '#111827', fontSize: 11, lineHeight: 16, fontFamily: 'Geist-VariableFont_wght', paddingLeft: 18 },
+  notesModalOverlay: { flex: 1, backgroundColor: 'rgba(17, 24, 39, 0.45)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  notesModal: { width: '100%', maxWidth: 420, padding: 16, backgroundColor: '#FFFCE8', borderWidth: 1, borderColor: '#F5D64A', borderRadius: 8 },
+  notesModalHeading: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 12 },
+  notesModalTitle: { color: '#111827', fontSize: 15, fontWeight: '600', fontFamily: 'Geist-VariableFont_wght' },
+  notesInput: { minHeight: 110, padding: 10, borderWidth: 1, borderColor: '#E8D879', borderRadius: 6, backgroundColor: '#FFFFFF', color: '#111827', fontSize: 13, fontFamily: 'Geist-VariableFont_wght' },
+  notesModalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 14 },
+  notesCancelButton: { minWidth: 80, height: 38, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#D6C76B', borderRadius: 6, backgroundColor: '#FFFFFF', paddingHorizontal: 12 },
+  notesCancelText: { color: '#374151', fontSize: 13, fontFamily: 'Geist-VariableFont_wght' },
+  notesSaveButton: { minWidth: 100, height: 38, justifyContent: 'center', alignItems: 'center', borderRadius: 6, backgroundColor: '#111827', paddingHorizontal: 12 },
+  notesSaveButtonDisabled: { opacity: 0.65 },
+  notesSaveText: { color: '#FFFFFF', fontSize: 13, fontWeight: '600', fontFamily: 'Geist-VariableFont_wght' },
   actionRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -696,6 +949,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     marginRight: 8,
+    marginVertical: 5,
   },
   metaText: {
     fontSize: 12,
@@ -703,22 +957,21 @@ const styles = StyleSheet.create({
     fontFamily: 'Geist-VariableFont_wght',
   },
   actionButtonsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
     gap: 10,
     flexWrap: 'wrap',
   },
   primaryActionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#111827',
+    backgroundColor: '#fff',
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 6,
   },
   primaryActionText: {
-    color: '#fff',
     fontSize: 12,
     fontWeight: '600',
     fontFamily: 'Geist-VariableFont_wght',

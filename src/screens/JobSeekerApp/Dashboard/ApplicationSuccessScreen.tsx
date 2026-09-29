@@ -1,6 +1,7 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import {
+    ArrowLeft,
     ArrowRight,
     Check,
     Clock3,
@@ -43,6 +44,11 @@ const ApplicationSuccessScreen = ({
     return (
         <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
             <ScrollView style={styles.scrollView} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+                <TouchableOpacity style={styles.backButton} activeOpacity={0.8} onPress={onGoToDashboard}>
+                    <ArrowLeft size={17} color="#000000" />
+                    <Text style={styles.backButtonText}>Back to Dashboard</Text>
+                </TouchableOpacity>
+
                 <View style={styles.successIconWrapper}>
                     <View style={styles.successIconOuter}>
                         <View style={styles.successIconInner}>
@@ -149,6 +155,20 @@ const styles = StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: '#F3F4F6' },
     scrollView: { flex: 1 },
     content: { flexGrow: 1, alignItems: 'center', paddingHorizontal: 20, paddingTop: 24, paddingBottom: 32 },
+    backButton: {
+        minHeight: 40,
+        alignSelf: 'flex-start',
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 7,
+        marginBottom: 12,
+    },
+    backButtonText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#000000',
+        fontFamily: 'Geist-VariableFont_wght',
+    },
     successIconWrapper: { marginBottom: 20 },
     successIconOuter: {
         width: 88,

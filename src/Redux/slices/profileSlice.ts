@@ -414,6 +414,22 @@ export const deleteResume = createAsyncThunk(
         }
     }
 );
+//change password API call
+export const changePassword = createAsyncThunk(
+    "profile/changePassword",
+    async ({ userId, payload }: { userId: string; payload: any }, { rejectWithValue }) => {
+        try {
+            const response = await client.put(PROFILE_ENDPOINTS.changePassword(), payload);
+            return response.data || response;
+        } catch (error: any) {
+            console.log('Error changing password:', error);
+            return rejectWithValue({
+                message: error?.message || 'Failed to change password',
+                code: error?.code || 'ERROR',
+            });
+        }
+    }
+);
 
 
 const profileSlice = createSlice({

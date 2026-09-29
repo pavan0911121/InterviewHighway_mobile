@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, RefreshControl } from 'react-native';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { JobSeekerBottomTabParamList } from '../../../types/navigation';
@@ -26,6 +26,7 @@ export default function HomeTabScreen({ navigation }: Props) {
   const [showWithdrawApplicationModal, setShowWithdrawApplicationModal] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState<Filters>(INITIAL_FILTERS);
   const selector = useSelector((state: any) => state.home);
   const dispatch = useDispatch();
@@ -213,6 +214,26 @@ export default function HomeTabScreen({ navigation }: Props) {
       throw error;
     }
   };
+  const handleRefresh = async (tab: string) => {
+    try {
+      setRefreshing(true);
+      if (tab === "RecommendedJobs") {
+        await dispatch(getRecommendedJobs() as any);
+      } else if (tab === "AppliedJobs") {
+        const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
+        if (userId) {
+          const resultId = userId.replace(/"/g, '');
+          await dispatch(getAppliedJobs(resultId) as any);
+        }
+      } else if (tab === "SavedJobs") {
+        await getSavedJobsData();
+      }
+    } catch (error) {
+      console.log('Refresh error:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
@@ -315,7 +336,13 @@ export default function HomeTabScreen({ navigation }: Props) {
             <View style={styles.content}>
               {/* Job Listings */}
               {activeTab === 'recommended' ? (
-                <ScrollView style={styles.jobsContainer} showsVerticalScrollIndicator={false}>
+                <ScrollView
+                  style={styles.jobsContainer}
+                  showsVerticalScrollIndicator={false}
+                  refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={() => handleRefresh("RecommendedJobs")} />
+                  }
+                >
                   {filteredJobs?.length > 0 ? (
                     filteredJobs?.map((job: any, index: number) => (
                       <TouchableOpacity key={`${job?.id}-${index}`} style={styles.jobCard} onPress={() => handleGetJobDetails(job?.id)}>
@@ -338,7 +365,13 @@ export default function HomeTabScreen({ navigation }: Props) {
                   )}
                 </ScrollView>
               ) : activeTab === 'applied' ? (
-                <ScrollView style={styles.jobsContainer} showsVerticalScrollIndicator={false}>
+                <ScrollView
+                  style={styles.jobsContainer}
+                  showsVerticalScrollIndicator={false}
+                  refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={()=>handleRefresh("AppliedJobs")} />
+                  }
+                >
                   {appliedJobs?.length > 0 ? (
                     appliedJobs?.map((job: any, index: number) => (
                       <TouchableOpacity key={`${job?.id}-${index}`} style={styles.jobCard} onPress={() => handleOpenWithdrawApplicationModal(job)}>
@@ -361,7 +394,13 @@ export default function HomeTabScreen({ navigation }: Props) {
                   )}
                 </ScrollView>
               ) : (
-                <ScrollView style={styles.jobsContainer} showsVerticalScrollIndicator={false}>
+                <ScrollView
+                  style={styles.jobsContainer}
+                  showsVerticalScrollIndicator={false}
+                  refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={() => handleRefresh("SavedJobs")} />
+                  }
+                >
                   {savedJobs?.length > 0 ? (
                     savedJobs?.map((job: any, index: number) => (
                       <TouchableOpacity key={`${job?.id}-${index}`} style={styles.jobCard} onPress={() => handleGetJobDetails(job?.job?.id)}>

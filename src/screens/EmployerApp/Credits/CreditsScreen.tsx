@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native'
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, RefreshControl } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -16,6 +16,18 @@ const CreditsScreen = () => {
   const navigation = useNavigation()
   const dispatch = useDispatch();
   const selector = useSelector((state: any) => state.employerCredits);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    try {
+      setRefreshing(true);
+      await LocalStorageaData();
+    } catch (error) {
+      console.log('Refresh error:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
 
   useEffect(() => {
@@ -107,7 +119,12 @@ const CreditsScreen = () => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+        />}
+        style={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Header Section */}
         <View style={styles.headerContainer}>
           <View style={styles.headerTitleRow}>

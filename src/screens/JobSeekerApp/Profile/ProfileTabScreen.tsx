@@ -5,13 +5,13 @@ import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { JobSeekerBottomTabParamList } from '../../../types/navigation';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Picker } from '@react-native-picker/picker';
-import { Award, BookText, BriefcaseBusiness, Building2, Calendar, Camera, CircleCheck, Clock, CodeXml, Download, ExternalLink, Eye, FileText, Globe, GraduationCap, HardDriveUpload, Hourglass, Info, Lightbulb, Link, MapPin, Save, Shield, SquarePen, Star, StarOff, Trash2, Upload, User, UserRound, UserRoundPen, Video as VideoIcon, VideoOff, X } from 'lucide-react-native';
+import { Award, BookText, BriefcaseBusiness, Building2, Calendar, Camera, CircleCheck, Clock, CodeXml, Download, ExternalLink, Eye, EyeOff, FileText, Globe, GraduationCap, HardDriveUpload, Hourglass, Info, Lightbulb, Link, Lock, MapPin, Save, Shield, SquarePen, Star, StarOff, Trash2, Upload, User, UserRound, UserRoundPen, Video as VideoIcon, VideoOff, X } from 'lucide-react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import UploadVideo from '../../components/UploadVideo';
 import DocumentPicker, { types } from 'react-native-document-picker';
 import { launchImageLibrary } from 'react-native-image-picker';
 import * as AsyncStore from "../../../AsyncStore";
-import { addEducation, addSkill, deleteEducation, deleteSkill, deleteWorkExperience, getAllSkills, getEducation, getPersonalData, getProfileData, getResumes, getUserSkills, getVideoData, getWorkExperience, updateBio, uploadResume, addWorkExperience, deleteResume, addUpdateProfilePhoto, deleteProfilePhoto, deleteVideo, updateSocialLinks } from '../../../Redux/slices/profileSlice';
+import { addEducation, addSkill, deleteEducation, deleteSkill, deleteWorkExperience, getAllSkills, getEducation, getPersonalData, getProfileData, getResumes, getUserSkills, getVideoData, getWorkExperience, updateBio, uploadResume, addWorkExperience, deleteResume, addUpdateProfilePhoto, deleteProfilePhoto, deleteVideo, updateSocialLinks, changePassword } from '../../../Redux/slices/profileSlice';
 import Video from 'react-native-video';
 import { RadialSlider } from 'react-native-radial-slider';
 import ProfileSkeleton from './ProfileSkeleton';
@@ -180,6 +180,15 @@ export default function ProfileTabScreen({ navigation }: Props) {
   const [resumeUploadSuccessMsg, setResumeUploadSuccessMsg] = useState('');
   const dispatch = useDispatch();
   const [displaySpeed, setDisplaySpeed] = useState(0);
+  const [manualUserLogin, setManualUserLogin] = useState(false);
+  const [isPasswordFormVisible, setIsPasswordFormVisible] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [speed, setSpeed] = useState(0);
   const isFocused = useIsFocused();
 
@@ -187,6 +196,7 @@ export default function ProfileTabScreen({ navigation }: Props) {
   const selector = useSelector((state: any) => state.profile);
   useEffect(() => {
     fetchProfileData('All');
+    userLoginData();
   }, []);
 
 
@@ -881,7 +891,54 @@ export default function ProfileTabScreen({ navigation }: Props) {
   //   selector?.isResumesLoading === false&&
   //   isFocused
   // );
-  const loader = false
+  const loader = false;
+  const userLoginData = async () => {
+    const userLoggedInData = await AsyncStore.getData(AsyncStore?.Keys?.USER_DATA);
+    const parsedUserData = userLoggedInData ? JSON.parse(userLoggedInData) : null;
+    if (parsedUserData?.app_metadata?.provider === 'google') {
+      setManualUserLogin(false)
+    } else {
+      setManualUserLogin(true)
+    }
+    console.log('userLoggedInData', parsedUserData?.app_metadata?.provider);
+  }
+  const passwordIsStrong = newPassword.length >= 8
+    && /[A-Z]/.test(newPassword)
+    && /[a-z]/.test(newPassword)
+    && /\d/.test(newPassword)
+    && /[^A-Za-z0-9]/.test(newPassword)
+    && newPassword !== currentPassword;
+  const canUpdatePassword = currentPassword.length > 0
+    && passwordIsStrong
+    && confirmNewPassword === newPassword;
+
+  const handleChangePassword = async () => {
+    if (!canUpdatePassword || isUpdatingPassword) {
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    try {
+      const storedUserId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
+      const userId = storedUserId?.replace(/"/g, '') || '';
+      const payload = {
+        password: newPassword,
+        code_challenge: null,
+        code_challenge_method: null,
+      };
+      await dispatch(changePassword({ userId, payload }) as any).unwrap();
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+      setIsPasswordFormVisible(false);
+      Alert.alert('Password updated', 'Your password has been changed successfully.');
+    } catch (error) {
+      const message = (error as any)?.message || 'Unable to change your password. Please try again.';
+      Alert.alert('Password update failed', message);
+    } finally {
+      setIsUpdatingPassword(false);
+    }
+  }
   return (
     <SafeAreaView style={styles.container}>
       {/* Sticky Header */}
@@ -901,1352 +958,1470 @@ export default function ProfileTabScreen({ navigation }: Props) {
           <ActivityIndicator size="large" color="#165DFC" />
         </View>
       ) : ( */}
-     {
-      loader?
-      <ProfileSkeleton/>:
-      <View>
-         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* Profile Avatar Section */}
-        <View style={styles.avatarSection}>
-          <View style={styles.avatarContainer}>
-            {userData?.profile_picture_url ? (
-              <>
-                <Image source={{ uri: userData.profile_picture_url }} style={styles.avatarImage} />
-                <TouchableOpacity style={styles.removePhotoIcon} onPress={handleDeleteProfilePhoto}>
-                  <X size={14} color="#ffff" />
+      {
+        loader ?
+          <ProfileSkeleton /> :
+          <View>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+              {/* Profile Avatar Section */}
+              <View style={styles.avatarSection}>
+                <View style={styles.avatarContainer}>
+                  {userData?.profile_picture_url ? (
+                    <>
+                      <Image source={{ uri: userData.profile_picture_url }} style={styles.avatarImage} />
+                      <TouchableOpacity style={styles.removePhotoIcon} onPress={handleDeleteProfilePhoto}>
+                        <X size={14} color="#ffff" />
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    <Text style={styles.avatarText}>{userData?.name?.charAt(0)?.toUpperCase() || 'U'}</Text>
+                  )}
+                  <TouchableOpacity style={styles.cameraIcon} onPress={handlePickProfilePhoto}>
+                    <Camera size={12} color="#ffff" />
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={styles.uploadDescription}>
+                  Click the camera icon or drag & drop an image to upload your profile photo
+                </Text>
+
+                <Text style={styles.supportedFormats}>
+                  Supported formats: JPG, PNG, GIF • Max size: 5MB
+                </Text>
+
+                <TouchableOpacity style={styles.noVideoButton}>
+                  <VideoOff size={12} color="#ffff" fill={'#fff'} />
+                  <Text style={styles.noVideoButtonText}>No Video</Text>
                 </TouchableOpacity>
-              </>
-            ) : (
-              <Text style={styles.avatarText}>{userData?.name?.charAt(0)?.toUpperCase() || 'U'}</Text>
-            )}
-            <TouchableOpacity style={styles.cameraIcon} onPress={handlePickProfilePhoto}>
-              <Camera size={12} color="#ffff" />
-            </TouchableOpacity>
-          </View>
+              </View>
 
-          <Text style={styles.uploadDescription}>
-            Click the camera icon or drag & drop an image to upload your profile photo
-          </Text>
+              {/* Profile Name */}
+              <Text style={styles.profileName}>{userData?.name}</Text>
 
-          <Text style={styles.supportedFormats}>
-            Supported formats: JPG, PNG, GIF • Max size: 5MB
-          </Text>
+              {/* Profile Title */}
+              <Text style={styles.profileTitle}>{userData?.current_role}</Text>
 
-          <TouchableOpacity style={styles.noVideoButton}>
-            <VideoOff size={12} color="#ffff" fill={'#fff'} />
-            <Text style={styles.noVideoButtonText}>No Video</Text>
-          </TouchableOpacity>
-        </View>
+              {/* Profile Stats */}
+              <View style={styles.statsContainer}>
+                <View style={styles.statRow}>
+                  <View style={styles.statItem}>
+                    <MapPin fill={'#165DFC'} color={'white'} />
+                    <Text style={styles.statText}>{userData?.location || 'Location not set'}</Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <BriefcaseBusiness fill={'#165DFC'} color={'white'} />
+                    <Text style={styles.statText}>{userData?.experience_level || '0 years experience'}</Text>
+                  </View>
+                </View>
 
-        {/* Profile Name */}
-        <Text style={styles.profileName}>{userData?.name}</Text>
+                <View style={styles.statRow}>
+                  <View style={styles.statItem}>
+                    <View style={styles.greenDot} />
+                    <Text style={styles.statText}>Open to work</Text>
+                  </View>
+                  {/* <View style={styles.statItem}>
+                    <Eye fill={'#165DFC'} color={'white'} />
+                    <Text style={styles.statText}>127 profile views</Text>
+                  </View> */}
+                </View>
+              </View>
 
-        {/* Profile Title */}
-        <Text style={styles.profileTitle}>{userData?.current_role}</Text>
-
-        {/* Profile Stats */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statRow}>
-            <View style={styles.statItem}>
-              <MapPin fill={'#165DFC'} color={'white'} />
-              <Text style={styles.statText}>{userData?.location || 'Location not set'}</Text>
-            </View>
-            <View style={styles.statItem}>
-              <BriefcaseBusiness fill={'#165DFC'} color={'white'} />
-              <Text style={styles.statText}>{userData?.experience_level || '0 years experience'}</Text>
-            </View>
-          </View>
-
-          <View style={styles.statRow}>
-            <View style={styles.statItem}>
-              <View style={styles.greenDot} />
-              <Text style={styles.statText}>Open to work</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Eye fill={'#165DFC'} color={'white'} />
-              <Text style={styles.statText}>127 profile views</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Profile Strength Gauge Section */}
-        <View style={styles.strengthSection}>
-          {/* <View style={styles.gaugeContainer}>
+              {/* Profile Strength Gauge Section */}
+              <View style={styles.strengthSection}>
+                {/* <View style={styles.gaugeContainer}>
               <View style={styles.gaugeOuter}>
                 <View style={styles.gaugeInner}>
                   <Text style={styles.gaugePercentage}>{userData?.profile_completion_percentage}%</Text>
                 </View>
               </View>
             </View> */}
-          <RadialSlider
-            variant={'radial-circle-slider'}
-            value={displaySpeed}
-            min={0}
-            max={200}
-            // onChange={setSpeed}
-            disabled={true}
-          />
+                <RadialSlider
+                  variant={'radial-circle-slider'}
+                  value={displaySpeed}
+                  min={0}
+                  max={200}
+                  // onChange={setSpeed}
+                  disabled={true}
+                />
 
 
-          <Text style={styles.strengthLabel}>Profile</Text>
-          <Text style={styles.strengthLabel}>Strength</Text>
+                <Text style={styles.strengthLabel}>Profile</Text>
+                <Text style={styles.strengthLabel}>Strength</Text>
 
-          <Text style={styles.strengthTitle}>Profile Strength</Text>
+                <Text style={styles.strengthTitle}>Profile Strength</Text>
 
-          <Text style={styles.strengthDescription}>
-            Add more details to boost visibility
-          </Text>
+                <Text style={styles.strengthDescription}>
+                  Add more details to boost visibility
+                </Text>
 
-          <TouchableOpacity style={styles.completeProfileButton}>
-            <Text style={styles.completeProfileButtonText}>Complete Profile</Text>
-          </TouchableOpacity>
-        </View>
+                <TouchableOpacity style={styles.completeProfileButton}>
+                  <Text style={styles.completeProfileButtonText}>Complete Profile</Text>
+                </TouchableOpacity>
+              </View>
 
-        {/* Video Introduction Section */}
-        <View style={styles.videoSection}>
-          <View style={styles.videoHeader}>
-            <View style={styles.videoHeaderIcon}>
-              <VideoIcon fill={'#165DFC'} color={'white'} />
-            </View>
-            <Text style={styles.videoHeaderTitle}>Video Introduction</Text>
-          </View>
-          <UploadVideo
-            buttonLabel={hasVideo ? 'Re-Upload' : 'Upload Video'}
-            modalTitle="Upload Video Introduction"
-            onVideoTitleChange={handleVideoTitleChange}
-            onUploadSuccess={handleVideoUploadSuccess}
-            hasVideo={hasVideo}
-          />
-          {hasVideo && !!videoUrl && (
-            <Video
-              source={{ uri: videoUrl }}
-              style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 8, marginBottom: 16 }}
-              controls
-              resizeMode="contain"
-              paused={isFullVideoModalVisible}
-            />
-          )}
-          {/* <TouchableOpacity style={styles.uploadVideoButton}>
+              {/* Video Introduction Section */}
+              <View style={styles.videoSection}>
+                <View style={styles.videoHeader}>
+                  <View style={styles.videoHeaderIcon}>
+                    <VideoIcon fill={'#165DFC'} color={'white'} />
+                  </View>
+                  <Text style={styles.videoHeaderTitle}>Video Introduction</Text>
+                </View>
+                <UploadVideo
+                  buttonLabel={hasVideo ? 'Re-Upload' : 'Upload Video'}
+                  modalTitle="Upload Video Introduction"
+                  onVideoTitleChange={handleVideoTitleChange}
+                  onUploadSuccess={handleVideoUploadSuccess}
+                  hasVideo={hasVideo}
+                />
+                {hasVideo && !!videoUrl && (
+                  <Video
+                    source={{ uri: videoUrl }}
+                    style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 8, marginBottom: 16 }}
+                    controls
+                    resizeMode="contain"
+                    paused={isFullVideoModalVisible}
+                  />
+                )}
+                {/* <TouchableOpacity style={styles.uploadVideoButton}>
               <HardDriveUpload fill={'#165DFC'} color={'#165DFC'} />
               <Text style={styles.uploadVideoText}>Upload Video</Text>
             </TouchableOpacity> */}
 
-          <View style={styles.videoUploadBox}>
-            <VideoIcon size={40} color="#6B7280" />
-            <Text style={styles.noVideoText}>{hasVideo ? 'Video uploaded' : 'No video uploaded yet'}</Text>
-            <Text style={styles.uploadVideoDescription}>{hasVideo ? 'Your video introduction is on file' : 'Upload a video introduction'}</Text>
-          </View>
-
-          <View style={styles.videoStatusContainer}>
-            <Text style={styles.videoStatusTitle}>Video Status</Text>
-            <View style={styles.statusBadge}>
-              <View style={[styles.statusDot, hasVideo && (videoData?.data?.status === "pending" ? { backgroundColor: '#F5A800' } : videoData?.data?.status === "rejected" ? { backgroundColor: '#EF4444' } : videoData?.data?.status === "approved" ? { backgroundColor: '#22C55E' } : {})]} />
-              <Text style={[styles.statusText, hasVideo && (videoData?.data?.status === "pending" ? { color: '#F5A800' } : videoData?.data?.status === "rejected" ? { color: '#EF4444' } : videoData?.data?.status === "approved" ? { color: '#22C55E' } : {})]}>{videoData?.data?.status || 'Not uploaded'} {videoData?.data?.status ? 'Review' : ''}</Text>
-            </View>
-          </View>
-
-          {hasVideo ? (
-            <View style={styles.videoUploadedContainer}>
-              {/* Review / Status Banner */}
-              <View style={styles.videoReviewBanner}>
-                <View style={styles.videoReviewIconCircle}>
-                  <Clock size={12} color="#FFFFFF" />
+                <View style={styles.videoUploadBox}>
+                  <VideoIcon size={40} color="#6B7280" />
+                  <Text style={styles.noVideoText}>{hasVideo ? 'Video uploaded' : 'No video uploaded yet'}</Text>
+                  <Text style={styles.uploadVideoDescription}>{hasVideo ? 'Your video introduction is on file' : 'Upload a video introduction'}</Text>
                 </View>
-                <View style={styles.videoReviewTextContainer}>
-                  <Text style={styles.videoReviewTitle}>
-                    Your video is being reviewed by our team. You'll be notified once it's approved.
-                  </Text>
-                </View>
-              </View>
 
-              {/* Video Info Card */}
-              <View style={styles.videoInfoCard}>
-                <Text style={styles.uploadedVideoTitle}>
-                  {videoData?.data?.title || videoData?.title || 'My intro'}
-                </Text>
-
-                <View style={styles.videoUploadedDateRow}>
-                  <Calendar size={16} color="#475569" />
-                  <Text style={styles.videoUploadedDateText}>
-                    Uploaded: {formatVideoUploadDate(videoData?.data?.created_at || videoData?.created_at || videoData?.data?.upload_date || videoData?.upload_date)}
-                  </Text>
-                </View>
-                {
-                  Platform.OS === 'ios' ? (
-                    <TouchableOpacity
-                      style={styles.viewFullSizeButton}
-                      onPress={() => setIsFullVideoModalVisible(true)}
-                      activeOpacity={0.8}
-                    >
-                      <ExternalLink size={18} color="#FFFFFF" />
-                      <Text style={styles.viewFullSizeButtonText}>View Full Size</Text>
-                    </TouchableOpacity>
-                  ) : null
-                }
-
-                <TouchableOpacity
-                  style={[styles.deleteVideoButton, isDeletingVideo && styles.deleteVideoButtonDisabled]}
-                  onPress={handleDeleteVideo}
-                  activeOpacity={0.8}
-                  disabled={isDeletingVideo}
-                >
-                  {isDeletingVideo ? (
-                    <ActivityIndicator size="small" color="#DC2626" />
-                  ) : (
-                    <>
-                      <Trash2 size={18} color="#DC2626" />
-                      <Text style={styles.deleteVideoButtonText}>Delete</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </View>
-          ) : (
-            <View style={styles.videoInfoBox}>
-              <Info fill={'#165DFC'} color={'white'} />
-              <Text style={styles.videoInfoText}>
-                Upload a video introduction to showcase your personality to employers.
-              </Text>
-            </View>
-          )}
-        </View>
-
-        {/* Personal Information Section */}
-        <View style={styles.personalInfoSection}>
-          <View style={styles.personalInfoHeader}>
-            <View style={styles.personalInfoIcon}>
-              <UserRound fill={'#165DFC'} color={'white'} />
-            </View>
-            <Text style={styles.personalInfoTitle}>Personal Information</Text>
-          </View>
-
-          {!isEditingPersonal && (
-            <TouchableOpacity style={styles.editButton} onPress={handleEditPersonalDetails}>
-              <SquarePen color={'#165DFC'} size={20} />
-              <Text style={styles.editButtonText}>Edit</Text>
-            </TouchableOpacity>
-          )}
-
-          <View style={styles.infoField}>
-            <Text style={styles.fieldLabel}>Full Name</Text>
-            {isEditingPersonal ? (
-              <TextInput
-                style={styles.fieldInput}
-                value={personalForm.name}
-                onChangeText={(text) => handlePersonalFieldChange('name', text)}
-                placeholder="Full Name"
-              />
-            ) : (
-              <Text style={styles.fieldValue}>{userData?.name || 'Not provided'}</Text>
-            )}
-          </View>
-
-          <View style={styles.infoField}>
-            <Text style={styles.fieldLabel}>Email</Text>
-            {isEditingPersonal ? (
-              <TextInput
-                style={styles.fieldInput}
-                value={personalForm.email}
-                onChangeText={(text) => handlePersonalFieldChange('email', text)}
-                placeholder="Email"
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-            ) : (
-              <Text style={styles.fieldValue}>{userData?.email || 'Not provided'}</Text>
-            )}
-          </View>
-
-          <View style={styles.infoField}>
-            <Text style={styles.fieldLabel}>Phone Number</Text>
-            {isEditingPersonal ? (
-              <TextInput
-                style={styles.fieldInput}
-                value={personalForm.phone}
-                onChangeText={(text) => handlePersonalFieldChange('phone', text)}
-                placeholder="Phone Number"
-                keyboardType="phone-pad"
-              />
-            ) : (
-              <Text style={styles.fieldValue}>{userData?.phone || 'Not provided'}</Text>
-            )}
-          </View>
-
-          <View style={styles.infoField}>
-            <Text style={styles.fieldLabel}>Location</Text>
-            {isEditingPersonal ? (
-              <TextInput
-                style={styles.fieldInput}
-                value={personalForm.location}
-                onChangeText={(text) => handlePersonalFieldChange('location', text)}
-                placeholder="Location"
-              />
-            ) : (
-              <Text style={styles.fieldValue}>{userData?.location || 'Not provided'}</Text>
-            )}
-          </View>
-          <View style={styles.infoField}>
-            <Text style={styles.fieldLabel}>Role</Text>
-            {isEditingPersonal ? (
-              <TextInput
-                style={styles.fieldInput}
-                value={personalForm.current_role}
-                onChangeText={(text) => handlePersonalFieldChange('current_role', text)}
-                placeholder="Role"
-              />
-            ) : (
-              <Text style={styles.fieldValue}>{userData?.current_role || 'Not provided'}</Text>
-            )}
-          </View>
-
-          {isEditingPersonal && (
-            <View style={styles.personalEditActions}>
-              <TouchableOpacity style={styles.cancelButton} onPress={handleCancelPersonalDetails}>
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.submitButton, isUpdatingPersonal && styles.submitButtonDisabled]}
-                onPress={handlePersonalDetailsUpdate}
-                disabled={isUpdatingPersonal}
-              >
-                {isUpdatingPersonal ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.submitButtonText}>Submit</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-
-        {/* About Me Section */}
-        <View style={styles.aboutMeSection}>
-          <View style={styles.aboutMeHeader}>
-            <View style={styles.aboutMeIcon}>
-              <FileText fill={'#9810FA'} color={'white'} />
-            </View>
-            <Text style={styles.aboutMeTitle}>About Me</Text>
-          </View>
-
-          {!isEditingBio && (
-            <TouchableOpacity style={styles.aboutEditButton} onPress={handleEditBio}>
-              <SquarePen color={'#9810FA'} size={20} />
-              <Text style={styles.editButtonText}>Edit</Text>
-            </TouchableOpacity>
-          )}
-
-          {isEditingBio ? (
-            <>
-              <TextInput
-                style={styles.bioTextArea}
-                value={bio}
-                onChangeText={(text) => setBio(text.slice(0, BIO_MAX_LENGTH))}
-                placeholder="Write 2-3 sentences highlighting your professional background and key strengths"
-                placeholderTextColor="#9CA3AF"
-                multiline
-                maxLength={BIO_MAX_LENGTH}
-              />
-              <View style={styles.bioModalFooterRow}>
-                <Text style={styles.bioHintText}>
-                  Write 2-3 sentences highlighting your{'\n'}professional background and key strengths
-                </Text>
-                <Text style={styles.bioCounterText}>{bio.length}/{BIO_MAX_LENGTH}</Text>
-              </View>
-              <View style={styles.modalActionsRow}>
-                <TouchableOpacity style={styles.modalCancelButton} onPress={handleCancelBio}>
-                  <Text style={styles.modalCancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.bioSaveButton, isSavingBio && styles.bioSaveButtonDisabled]}
-                  onPress={handleSaveBio}
-                  disabled={isSavingBio}
-                >
-                  {isSavingBio ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                  ) : (
-                    <>
-                      <Save color={'#FFFFFF'} size={16} />
-                      <Text style={styles.modalSaveButtonText}>Save Bio</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </>
-          ) : userData?.bio ? (
-            <Text style={[styles.fieldValue, { paddingVertical: 20 }]}>{userData?.bio}</Text>
-          ) : (
-            <View style={styles.bioBox}>
-              <UserRoundPen fill={'#D1D5DC'} color={'white'} size={45} />
-              <Text style={styles.noBioText}>No bio added yet</Text>
-              <Text style={styles.bioDescription}>
-                Add a professional bio to help employers understand your background and expertise
-              </Text>
-            </View>
-          )}
-
-          <View style={styles.proTipBox}>
-            <Lightbulb fill={'#FBBF24'} color={'white'} size={20} />
-            <Text style={styles.proTipText}>
-              A good bio includes your experience, skills, and career goals
-            </Text>
-          </View>
-        </View>
-
-        {/* Social Links Section */}
-        <View style={styles.socialLinksSection}>
-          <View style={styles.socialLinksHeader}>
-            <View style={styles.socialLinksIcon}>
-              <Link color={'#00A73F'} size={20} />
-            </View>
-            <Text style={styles.socialLinksTitle}>Social Links</Text>
-          </View>
-
-          {!isEditingSocialLinks && (
-            <TouchableOpacity style={styles.aboutEditButton} onPress={handleEditSocialLinks}>
-              <SquarePen color={'#00A63E'} size={20} />
-              <Text style={[styles.editButtonText, { color: '#00A63E' }]}>Edit</Text>
-            </TouchableOpacity>
-          )}
-
-          {isEditingSocialLinks ? (
-            <>
-              <Text style={styles.fieldLabel}>LinkedIn Profile</Text>
-              <TextInput
-                style={styles.socialInput}
-                value={linkedinDraft}
-                onChangeText={setLinkedinDraft}
-                placeholder="https://..."
-                placeholderTextColor="#9CA3AF"
-                autoCapitalize="none"
-              />
-              <Text style={styles.socialInputHint}>
-                Your LinkedIn profile helps employers learn more about your professional background
-              </Text>
-
-              <Text style={[styles.fieldLabel, styles.socialSecondFieldLabel]}>Personal Website/Portfolio</Text>
-              <TextInput
-                style={styles.socialInput}
-                value={websiteDraft}
-                onChangeText={setWebsiteDraft}
-                placeholder="https://..."
-                placeholderTextColor="#9CA3AF"
-                autoCapitalize="none"
-              />
-              <Text style={styles.socialInputHint}>
-                Share your portfolio, blog, or personal website to showcase your work
-              </Text>
-
-              <View style={styles.modalActionsRow}>
-                <TouchableOpacity style={styles.modalCancelButton} onPress={handleCancelSocialLinks}>
-                  <Text style={styles.modalCancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.socialSaveButton, isSavingSocialLinks && styles.socialSaveButtonDisabled]}
-                  onPress={handleSaveSocialLinks}
-                  disabled={isSavingSocialLinks}
-                >
-                  {isSavingSocialLinks ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                  ) : (
-                    <>
-                      <Save color={'#FFFFFF'} size={16} />
-                      <Text style={styles.modalSaveButtonText}>Save Links</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </>
-          ) : (
-            <>
-              <View style={styles.socialLinkItem}>
-                <View style={styles.linkedinIconBox}>
-                  <Text style={styles.linkedinIcon}>in</Text>
-                </View>
-                <View style={styles.socialLinkContent}>
-                  <Text style={styles.socialLinkLabel}>LinkedIn Profile</Text>
-                  <View style={styles.socialLinkValueContainer}>
-
-                    <Text style={styles.socialLinkValue}>{userData?.linkedin_url || 'Not provided'}</Text>
-                    <ExternalLink size={20} color={'#0050F4'} onPress={() => Linking.openURL(userData?.linkedin_url || '')} />
+                <View style={styles.videoStatusContainer}>
+                  <Text style={styles.videoStatusTitle}>Video Status</Text>
+                  <View style={styles.statusBadge}>
+                    <View style={[styles.statusDot, hasVideo && (videoData?.data?.status === "pending" ? { backgroundColor: '#F5A800' } : videoData?.data?.status === "rejected" ? { backgroundColor: '#EF4444' } : videoData?.data?.status === "approved" ? { backgroundColor: '#22C55E' } : {})]} />
+                    <Text style={[styles.statusText, hasVideo && (videoData?.data?.status === "pending" ? { color: '#F5A800' } : videoData?.data?.status === "rejected" ? { color: '#EF4444' } : videoData?.data?.status === "approved" ? { color: '#22C55E' } : {})]}>{videoData?.data?.status || 'Not uploaded'} {videoData?.data?.status ? 'Review' : ''}</Text>
                   </View>
                 </View>
-              </View>
 
-              <View style={styles.socialLinkItem}>
-                <View style={styles.websiteIconBox}>
-                  <Globe fill={"#fff"} color={'#00A63E'} />
-                </View>
-                <View style={styles.socialLinkContent}>
-                  <Text style={styles.socialLinkLabel}>Personal Website</Text>
-                  <Text style={styles.socialLinkValue}>{userData?.website_url || 'Not provided'}</Text>
-                </View>
-              </View>
-            </>
-          )}
-
-          <View style={styles.socialProTipBox}>
-            <Text style={styles.socialProTipLabel}><Lightbulb fill={'#FBBF24'} color={'white'} size={20} /> Pro Tip:</Text>
-            <Text style={styles.socialProTipText}>
-              Complete your social links
-            </Text>
-            <Text style={styles.socialProTipDescription}>
-              Adding your LinkedIn and portfolio links increases your profile strength and helps employers get a complete picture of your professional presence.
-            </Text>
-          </View>
-        </View>
-
-        {/* Skills Section */}
-        <View style={styles.skillsSection}>
-          <View style={styles.skillsHeader}>
-            <Text style={styles.skillsTitle}>Skills</Text>
-            <TouchableOpacity style={styles.addSkillButton} onPress={handleOpenAddSkillModal}>
-              <Text style={styles.addSkillIcon}>+</Text>
-              <Text style={styles.addSkillText}>Add Skill</Text>
-            </TouchableOpacity>
-          </View>
-
-          {userSkillsList?.length > 0 ? (
-            <View style={styles.userSkillsList}>
-              {userSkillsList?.map((item: any, index: number) => {
-                const skillName = item?.skills?.name || 'Skill';
-                const rawLevel = item?.proficiency_level ?? item?.proficiencyLevel;
-                const numericLevel = Number(rawLevel);
-                const proficiencyLabel = !Number.isNaN(numericLevel) && rawLevel !== null && rawLevel !== ''
-                  ? (PROFICIENCY_LABEL_BY_LEVEL[numericLevel] || '')
-                  : (typeof rawLevel === 'string' ? rawLevel : '');
-                const years = item?.years_of_experience ?? item?.yearsOfExperience ?? item?.years;
-                const yearsLabel = years != null && years !== '' ? `${years} ${Number(years) === 1 ? 'year' : 'years'}` : '';
-                return (
-                  <View key={item?.id || `${skillName}-${index}`} style={styles.userSkillCard}>
-                    <View style={styles.userSkillCardTop}>
-                      <Text style={styles.userSkillName}>{skillName}</Text>
-                      <View style={styles.userSkillActions}>
-                        <TouchableOpacity style={styles.userSkillActionButton} onPress={() => handleOpenEditSkillModal(item)}>
-                          <SquarePen color={'#9810FA'} size={18} />
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.userSkillActionButton} onPress={() => handleDeleteSkill(item?.id)}>
-                          <Trash2 color={'#EF4444'} size={18} />
-                        </TouchableOpacity>
+                {hasVideo ? (
+                  <View style={styles.videoUploadedContainer}>
+                    {/* Review / Status Banner */}
+                    <View style={styles.videoReviewBanner}>
+                      <View style={styles.videoReviewIconCircle}>
+                        <Clock size={12} color="#FFFFFF" />
+                      </View>
+                      <View style={styles.videoReviewTextContainer}>
+                        <Text style={styles.videoReviewTitle}>
+                          Your video is being reviewed by our team. You'll be notified once it's approved.
+                        </Text>
                       </View>
                     </View>
-                    <View style={styles.userSkillMetaRow}>
-                      {!!proficiencyLabel && (
-                        <View style={styles.userSkillMetaItem}>
-                          <Star fill={'#9810FA'} color={'#9810FA'} size={14} />
-                          <Text style={styles.userSkillMetaText}>{proficiencyLabel}</Text>
-                        </View>
-                      )}
-                      {!!yearsLabel && (
-                        <View style={styles.userSkillMetaItem}>
-                          <Clock color={'#9810FA'} size={14} />
-                          <Text style={styles.userSkillMetaText}>{yearsLabel}</Text>
-                        </View>
-                      )}
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
-          ) : (
-            <View style={styles.emptySkillsBox}>
-              <CodeXml color={'#D1D5DC'} size={40} />
-              <Text style={styles.emptySkillsText}>
-                No skills added yet. Add your technical skills to showcase your expertise.
-              </Text>
-            </View>
-          )}
-        </View>
 
-        {/* Add Skill Modal */}
-        <Modal
-          visible={isAddSkillModalVisible}
-          transparent
-          animationType="fade"
-          onRequestClose={handleCloseAddSkillModal}
-        >
-          <View style={styles.modalOverlay}>
-            <TouchableOpacity style={styles.modalOverlayTouchable} activeOpacity={1} onPress={handleCloseAddSkillModal} />
-            <View style={styles.skillModalCard}>
-              <View style={styles.skillModalHeader}>
-                <Text style={styles.skillModalTitle}>{editingSkillId ? 'Edit Skill' : 'Add New Skill'}</Text>
-                <TouchableOpacity onPress={handleCloseAddSkillModal}>
-                  <X color={'#797979'} size={22} />
-                </TouchableOpacity>
-              </View>
+                    {/* Video Info Card */}
+                    <View style={styles.videoInfoCard}>
+                      <Text style={styles.uploadedVideoTitle}>
+                        {videoData?.data?.title || videoData?.title || 'My intro'}
+                      </Text>
 
-              <View style={styles.skillTabsRow}>
-                <TouchableOpacity
-                  style={[styles.skillTabButton, addSkillTab === 'list' && styles.skillTabButtonActive]}
-                  onPress={() => setAddSkillTab('list')}
-                >
-                  <Text style={[styles.skillTabButtonText, addSkillTab === 'list' && styles.skillTabButtonTextActive]}>
-                    Select from list
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.skillTabButton, addSkillTab === 'custom' && styles.skillTabButtonActive]}
-                  onPress={() => setAddSkillTab('custom')}
-                >
-                  <Text style={[styles.skillTabButtonText, addSkillTab === 'custom' && styles.skillTabButtonTextActive]}>
-                    Add custom skill
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {addSkillTab === 'list' ? (
-                <>
-                  <Text style={styles.skillFieldLabel}>Skill <Text style={styles.requiredAsterisk}>*</Text></Text>
-                  <View style={styles.skillPickerWrapper}>
-                    <Picker
-                      selectedValue={selectedSkillId}
-                      onValueChange={(value) => {
-                        setSelectedSkillId(value);
-                        const skill = allSkillsList.find((s: any) => s.id === value);
-                        setSelectedSkillName(skill?.name || '');
-                      }}
-                      style={styles.skillPicker}
-                    >
-                      <Picker.Item label="Select a skill" value="" />
-                      {allSkillsList.map((skill: any) => (
-                        <Picker.Item key={skill.id} label={skill.name} value={skill.id} />
-                      ))}
-                    </Picker>
-                  </View>
-                </>
-              ) : (
-                <>
-                  <Text style={styles.skillFieldLabel}>Skill Name <Text style={styles.requiredAsterisk}>*</Text></Text>
-                  <TextInput
-                    style={styles.socialInput}
-                    value={customSkillName}
-                    onChangeText={setCustomSkillName}
-                    placeholder="Enter skill name"
-                    placeholderTextColor="#9CA3AF"
-                  />
-                </>
-              )}
-
-              <Text style={styles.skillFieldLabel}>Proficiency Level <Text style={styles.requiredAsterisk}>*</Text></Text>
-              <View style={styles.skillPickerWrapper}>
-                <Picker
-                  selectedValue={proficiencyLevel}
-                  onValueChange={(value) => setProficiencyLevel(value)}
-                  style={styles.skillPicker}
-                >
-                  {PROFICIENCY_OPTIONS.map((level) => (
-                    <Picker.Item key={level} label={level} value={level} />
-                  ))}
-                </Picker>
-              </View>
-
-              <Text style={styles.skillFieldLabel}>Years of Experience <Text style={styles.requiredAsterisk}>*</Text></Text>
-              <TextInput
-                style={styles.socialInput}
-                value={yearsOfExperience}
-                onChangeText={setYearsOfExperience}
-                placeholder="1"
-                keyboardType="numeric"
-              />
-
-              <View style={styles.modalActionsRow}>
-                <TouchableOpacity style={styles.modalCancelButton} onPress={handleCloseAddSkillModal}>
-                  <Text style={styles.modalCancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.skillAddButton, isSavingSkill && styles.skillAddButtonDisabled]}
-                  onPress={handleAddSkill}
-                  disabled={isSavingSkill}
-                >
-                  {isSavingSkill ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                  ) : (
-                    <Text style={styles.modalSaveButtonText}>{editingSkillId ? 'Save Changes' : 'Save Skill'}</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
-
-        {/* Work Experience Section */}
-        <View style={styles.workExperienceSection}>
-          <View style={styles.experienceHeader}>
-            <View style={styles.experienceIconBox}>
-              <BriefcaseBusiness fill={'#F54800'} color={'#FFECD4'} size={20} />
-            </View>
-            <Text style={styles.experienceTitle}>Work Experience</Text>
-          </View>
-
-          <TouchableOpacity style={styles.addExperienceButton} onPress={handleOpenAddExperienceModal}>
-            <Text style={styles.addExperienceIcon}>+</Text>
-            <Text style={styles.addExperienceText}>Add Experience</Text>
-          </TouchableOpacity>
-
-          {workExperienceList?.length > 0 ? (
-            <View style={styles.experienceTimelineList}>
-              {workExperienceList.map((item: any, index: number) => {
-                const dateRangeLabel = `${formatMonthYear(item?.start_date)} - ${item?.is_current_job ? 'Present' : (formatMonthYear(item?.end_date) || 'Present')}`;
-                const durationLabel = getExperienceDuration(item?.start_date, item?.end_date, item?.is_current_job);
-                return (
-                  <View key={item?.id || index} style={styles.experienceItemRow}>
-                    <View style={styles.experienceTimelineColumn}>
-                      <View style={styles.experienceTimelineIconCircle}>
-                        <Building2 color={'#F97316'} size={20} />
+                      <View style={styles.videoUploadedDateRow}>
+                        <Calendar size={16} color="#475569" />
+                        <Text style={styles.videoUploadedDateText}>
+                          Uploaded: {formatVideoUploadDate(videoData?.data?.created_at || videoData?.created_at || videoData?.data?.upload_date || videoData?.upload_date)}
+                        </Text>
                       </View>
-                      {index !== workExperienceList.length - 1 && <View style={styles.experienceTimelineLine} />}
-                    </View>
-                    <View style={styles.experienceCard}>
-                      <View style={styles.experienceCardHeader}>
-                        <View style={styles.experienceCardTitleBox}>
-                          <Text style={styles.experienceCardTitle}>{item?.job_title}</Text>
-                          <Text style={styles.experienceCardCompany}>{item?.company_name}</Text>
-                        </View>
-                        <View style={styles.experienceCardActions}>
-                          <TouchableOpacity style={styles.userSkillActionButton} onPress={() => handleOpenEditExperienceModal(item)}>
-                            <SquarePen color={'#F97316'} size={18} />
+                      {
+                        Platform.OS === 'ios' ? (
+                          <TouchableOpacity
+                            style={styles.viewFullSizeButton}
+                            onPress={() => setIsFullVideoModalVisible(true)}
+                            activeOpacity={0.8}
+                          >
+                            <ExternalLink size={18} color="#FFFFFF" />
+                            <Text style={styles.viewFullSizeButtonText}>View Full Size</Text>
                           </TouchableOpacity>
-                          <TouchableOpacity style={styles.userSkillActionButton} onPress={() => handleDeleteExperience(item?.id)}>
-                            <Trash2 color={'#EF4444'} size={18} />
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                      <View style={styles.experienceCardMetaRow}>
-                        <Clock color={'#F97316'} size={14} />
-                        <Text style={styles.experienceCardMetaText}>{dateRangeLabel}</Text>
-                      </View>
-                      <View style={styles.experienceCardMetaRow}>
-                        <User color={'#F97316'} size={14} />
-                        <Text style={styles.experienceCardMetaText}>{formatEmploymentType(item?.employment_type)}</Text>
-                      </View>
-                      {!!item?.company_location && (
-                        <View style={styles.experienceCardMetaRow}>
-                          <MapPin color={'#F97316'} size={14} />
-                          <Text style={styles.experienceCardMetaText}>{item.company_location}</Text>
-                        </View>
-                      )}
-                      {!!durationLabel && (
-                        <View style={styles.experienceCardMetaRow}>
-                          <Hourglass color={'#F97316'} size={14} />
-                          <Text style={styles.experienceCardMetaText}>{durationLabel}</Text>
-                        </View>
-                      )}
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
-          )
-            :
-            (
-              <View style={styles.emptyExperienceBox}>
-                <BriefcaseBusiness color={'#D1D5DC'} size={40} />
-                <Text style={styles.emptyExperienceText}>
-                  No work experience added yet. Add your professional experience to showcase your career journey.
-                </Text>
-              </View>
-            )}
-        </View>
+                        ) : null
+                      }
 
-        {/* Add/Edit Experience Modal */}
-        <Modal
-          visible={isExperienceModalVisible}
-          transparent
-          animationType="fade"
-          onRequestClose={handleCloseExperienceModal}
-        >
-          <View style={styles.modalOverlay}>
-            <TouchableOpacity style={styles.modalOverlayTouchable} activeOpacity={1} onPress={handleCloseExperienceModal} />
-            <ScrollView style={styles.experienceModalCard} contentContainerStyle={styles.experienceModalCardContent}>
-              <View style={styles.skillModalHeader}>
-                <Text style={styles.skillModalTitle}>{editingExperienceId ? 'Edit Experience' : 'Add Work Experience'}</Text>
-                <TouchableOpacity onPress={handleCloseExperienceModal}>
-                  <X color={'#797979'} size={22} />
-                </TouchableOpacity>
-              </View>
-
-              <Text style={styles.skillFieldLabel}>Company Name <Text style={styles.requiredAsterisk}>*</Text></Text>
-              <TextInput
-                style={styles.socialInput}
-                value={experienceForm.company_name}
-                onChangeText={(text) => handleExperienceFieldChange('company_name', text)}
-                placeholder="Enter company name"
-                placeholderTextColor="#9CA3AF"
-              />
-
-              <Text style={styles.skillFieldLabel}>Job Title <Text style={styles.requiredAsterisk}>*</Text></Text>
-              <TextInput
-                style={styles.socialInput}
-                value={experienceForm.job_title}
-                onChangeText={(text) => handleExperienceFieldChange('job_title', text)}
-                placeholder="Enter job title"
-                placeholderTextColor="#9CA3AF"
-              />
-
-              <Text style={styles.skillFieldLabel}>Location</Text>
-              <TextInput
-                style={styles.socialInput}
-                value={experienceForm.company_location}
-                onChangeText={(text) => handleExperienceFieldChange('company_location', text)}
-                placeholder="City, Country"
-                placeholderTextColor="#9CA3AF"
-              />
-
-              <Text style={styles.skillFieldLabel}>Employment Type</Text>
-              <View style={styles.skillPickerWrapper}>
-                <Picker
-                  selectedValue={experienceForm.employment_type}
-                  onValueChange={(value) => handleExperienceFieldChange('employment_type', value)}
-                  style={styles.skillPicker}
-                >
-                  {EMPLOYMENT_TYPE_OPTIONS.map((type) => (
-                    <Picker.Item key={type} label={formatEmploymentType(type)} value={type} />
-                  ))}
-                </Picker>
-              </View>
-
-              <TouchableOpacity
-                style={styles.currentJobToggleRow}
-                onPress={() => handleExperienceFieldChange('is_current_job', !experienceForm.is_current_job)}
-              >
-                <View style={experienceForm.is_current_job ? styles.checkedBox : styles.uncheckedBox}>
-                  {experienceForm.is_current_job && <Text style={styles.checkmark}>✓</Text>}
-                </View>
-                <Text style={styles.skillFieldLabel}>I currently work here</Text>
-              </TouchableOpacity>
-
-              <Text style={styles.skillFieldLabel}>Start Date <Text style={styles.requiredAsterisk}>*</Text></Text>
-              <TextInput
-                style={styles.socialInput}
-                value={experienceForm.start_date}
-                onChangeText={(text) => handleExperienceFieldChange('start_date', text)}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor="#9CA3AF"
-              />
-
-              {!experienceForm.is_current_job && (
-                <>
-                  <Text style={styles.skillFieldLabel}>End Date</Text>
-                  <TextInput
-                    style={styles.socialInput}
-                    value={experienceForm.end_date}
-                    onChangeText={(text) => handleExperienceFieldChange('end_date', text)}
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor="#9CA3AF"
-                  />
-                </>
-              )}
-
-              <Text style={styles.skillFieldLabel}>Job Description</Text>
-              <TextInput
-                style={styles.bioTextArea}
-                value={experienceForm.job_description}
-                onChangeText={(text) => handleExperienceFieldChange('job_description', text)}
-                placeholder="Describe your responsibilities and achievements"
-                placeholderTextColor="#9CA3AF"
-                multiline
-              />
-
-              <View style={styles.modalActionsRow}>
-                <TouchableOpacity style={styles.modalCancelButton} onPress={handleCloseExperienceModal}>
-                  <Text style={styles.modalCancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.experienceSaveButton, isSavingExperience && styles.experienceSaveButtonDisabled]}
-                  onPress={handleSaveExperience}
-                  disabled={isSavingExperience}
-                >
-                  {isSavingExperience ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                  ) : (
-                    <Text style={styles.modalSaveButtonText}>{editingExperienceId ? 'Save Changes' : 'Add Experience'}</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </ScrollView>
-          </View>
-        </Modal>
-
-        {/* Education Section */}
-        <View style={styles.educationSection}>
-          <View style={styles.educationHeader}>
-            <View style={styles.educationIconBox}>
-              <GraduationCap color={'#165DFC'} size={20} />
-            </View>
-            <Text style={styles.educationTitle}>Education</Text>
-            <TouchableOpacity style={styles.addEducationButton} onPress={handleOpenAddEducationModal}>
-              <Text style={styles.addEducationIcon}>+</Text>
-              <Text style={styles.addEducationText}>Add</Text>
-            </TouchableOpacity>
-          </View>
-
-          {educationList?.length > 0 ? (
-            <View style={styles.educationTimelineList}>
-              {educationList.map((item: any, index: number) => {
-                const titleLabel = item?.field_of_study
-                  ? `${item?.degree || ''} in ${item?.field_of_study}`
-                  : (item?.degree || '');
-                const dateRangeLabel = `${formatMonthYear(item?.start_date)} - ${item?.is_current ? 'Present' : (formatMonthYear(item?.end_date) || 'Present')}`;
-                const durationLabel = getExperienceDuration(item?.start_date, item?.end_date, item?.is_current);
-                return (
-                  <View key={item?.id || index} style={styles.educationItemRow}>
-                    <View style={styles.educationTimelineColumn}>
-                      <View style={styles.educationTimelineDot} />
-                      {index !== educationList.length - 1 && <View style={styles.educationTimelineLine} />}
-                    </View>
-                    <View style={styles.educationCard}>
-                      <View style={styles.educationCardHeader}>
-                        <View style={styles.educationCardTitleBox}>
-                          <Text style={styles.educationCardTitle}>{titleLabel}</Text>
-                          <Text style={styles.educationCardSubtitle}>{item?.institution_name}</Text>
-                        </View>
-                        <View style={styles.educationCardActions}>
-                          <TouchableOpacity style={styles.userSkillActionButton} onPress={() => handleOpenEditEducationModal(item)}>
-                            <SquarePen color={'#165DFC'} size={18} />
-                          </TouchableOpacity>
-                          <TouchableOpacity style={styles.userSkillActionButton} onPress={() => handleDeleteEducation(item?.id)}>
-                            <Trash2 color={'#EF4444'} size={18} />
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                      <View style={styles.educationCardMetaRow}>
-                        <Clock color={'#797979'} size={14} />
-                        <Text style={styles.educationCardMetaText}>{dateRangeLabel}</Text>
-                        {!!durationLabel && (
+                      <TouchableOpacity
+                        style={[styles.deleteVideoButton, isDeletingVideo && styles.deleteVideoButtonDisabled]}
+                        onPress={handleDeleteVideo}
+                        activeOpacity={0.8}
+                        disabled={isDeletingVideo}
+                      >
+                        {isDeletingVideo ? (
+                          <ActivityIndicator size="small" color="#DC2626" />
+                        ) : (
                           <>
-                            <Text style={styles.educationCardMetaDot}>·</Text>
-                            <Text style={styles.educationCardMetaText}>{durationLabel}</Text>
+                            <Trash2 size={18} color="#DC2626" />
+                            <Text style={styles.deleteVideoButtonText}>Delete</Text>
                           </>
                         )}
-                      </View>
-                      {!!item?.grade && (
-                        <View style={styles.educationCardMetaRow}>
-                          <Award color={'#797979'} size={14} />
-                          <Text style={styles.educationCardMetaText}>{item.grade}</Text>
-                        </View>
-                      )}
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
-          ) : (
-            <View style={styles.emptyEducationBox}>
-              <GraduationCap color={'#D1D5DC'} size={40} />
-              <Text style={styles.noEducationText}>No education added yet</Text>
-              <TouchableOpacity style={styles.addFirstEducationButton} onPress={handleOpenAddEducationModal}>
-                <Text style={styles.addFirstEducationIcon}>+</Text>
-                <Text style={styles.addFirstEducationText}>Add Your First Education</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-
-        {/* Add/Edit Education Modal */}
-        <Modal
-          visible={isEducationModalVisible}
-          transparent
-          animationType="fade"
-          onRequestClose={handleCloseEducationModal}
-        >
-          <View style={styles.modalOverlay}>
-            <TouchableOpacity style={styles.modalOverlayTouchable} activeOpacity={1} onPress={handleCloseEducationModal} />
-            <ScrollView style={styles.experienceModalCard} contentContainerStyle={styles.experienceModalCardContent}>
-              <View style={styles.skillModalHeader}>
-                <Text style={styles.skillModalTitle}>{editingEducationId ? 'Edit Education' : 'Add Education'}</Text>
-                <TouchableOpacity onPress={handleCloseEducationModal}>
-                  <X color={'#797979'} size={22} />
-                </TouchableOpacity>
-              </View>
-
-              <Text style={styles.skillFieldLabel}>Institution Name <Text style={styles.requiredAsterisk}>*</Text></Text>
-              <TextInput
-                style={styles.socialInput}
-                value={educationForm.institution_name}
-                onChangeText={(text) => handleEducationFieldChange('institution_name', text)}
-                placeholder="e.g., Stanford University"
-                placeholderTextColor="#9CA3AF"
-              />
-
-              <Text style={styles.skillFieldLabel}>Degree <Text style={styles.requiredAsterisk}>*</Text></Text>
-              <View style={styles.skillPickerWrapper}>
-                <Picker
-                  selectedValue={educationForm.degree}
-                  onValueChange={(value) => handleEducationFieldChange('degree', value)}
-                  style={styles.skillPicker}
-                >
-                  <Picker.Item label="Select a degree" value="" />
-                  {DEGREE_OPTIONS.map((degree) => (
-                    <Picker.Item key={degree} label={degree} value={degree} style={{ color: 'blue' }} />
-                  ))}
-                </Picker>
-              </View>
-
-              <Text style={styles.skillFieldLabel}>Field of Study <Text style={styles.requiredAsterisk}>*</Text></Text>
-              <TextInput
-                style={styles.socialInput}
-                value={educationForm.field_of_study}
-                onChangeText={(text) => handleEducationFieldChange('field_of_study', text)}
-                placeholder="e.g., Computer Science"
-                placeholderTextColor="#9CA3AF"
-              />
-
-              <Text style={styles.skillFieldLabel}>Start Date <Text style={styles.requiredAsterisk}>*</Text></Text>
-              <TextInput
-                style={styles.socialInput}
-                value={educationForm.start_date}
-                onChangeText={(text) => handleEducationFieldChange('start_date', text)}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor="#9CA3AF"
-              />
-
-              {!educationForm.is_current && (
-                <>
-                  <Text style={styles.skillFieldLabel}>End Date</Text>
-                  <TextInput
-                    style={styles.socialInput}
-                    value={educationForm.end_date}
-                    onChangeText={(text) => handleEducationFieldChange('end_date', text)}
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor="#9CA3AF"
-                  />
-                </>
-              )}
-
-              <TouchableOpacity
-                style={styles.currentJobToggleRow}
-                onPress={() => handleEducationFieldChange('is_current', !educationForm.is_current)}
-              >
-                <View style={educationForm.is_current ? styles.checkedBox : styles.uncheckedBox}>
-                  {educationForm.is_current && <Text style={styles.checkmark}>✓</Text>}
-                </View>
-                <Text style={styles.skillFieldLabel}>I am currently studying here</Text>
-              </TouchableOpacity>
-
-              <Text style={styles.skillFieldLabel}>Grade / GPA (Optional)</Text>
-              <TextInput
-                style={styles.socialInput}
-                value={educationForm.grade}
-                onChangeText={(text) => handleEducationFieldChange('grade', text)}
-                placeholder="e.g., 3.8 GPA or First Class"
-                placeholderTextColor="#9CA3AF"
-              />
-
-              <Text style={styles.skillFieldLabel}>Description (Optional)</Text>
-              <TextInput
-                style={styles.bioTextArea}
-                value={educationForm.description}
-                onChangeText={(text) => handleEducationFieldChange('description', text)}
-                placeholder="Relevant coursework, thesis topic, or other details..."
-                placeholderTextColor="#9CA3AF"
-                multiline
-              />
-
-              <Text style={styles.skillFieldLabel}>Achievements & Honors (Optional)</Text>
-              <View style={styles.achievementInputRow}>
-                <TextInput
-                  style={styles.achievementInput}
-                  value={achievementInput}
-                  onChangeText={setAchievementInput}
-                  placeholder="e.g., Dean's List, Cum Laude"
-                  placeholderTextColor="#9CA3AF"
-                />
-                <TouchableOpacity style={styles.achievementAddButton} onPress={handleAddAchievement}>
-                  <Text style={styles.achievementAddButtonText}>Add</Text>
-                </TouchableOpacity>
-              </View>
-              {achievements.length > 0 && (
-                <View style={styles.achievementChipsWrap}>
-                  {achievements.map((achievement, index) => (
-                    <View key={`${achievement}-${index}`} style={styles.achievementChip}>
-                      <Text style={styles.achievementChipText}>{achievement}</Text>
-                      <TouchableOpacity onPress={() => handleRemoveAchievement(index)}>
-                        <X color={'#797979'} size={14} />
                       </TouchableOpacity>
                     </View>
-                  ))}
-                </View>
-              )}
-
-              <View style={styles.modalActionsRow}>
-                <TouchableOpacity style={styles.modalCancelButton} onPress={handleCloseEducationModal}>
-                  <Text style={styles.modalCancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.educationSaveButton, isSavingEducation && styles.educationSaveButtonDisabled]}
-                  onPress={handleSaveEducation}
-                  disabled={isSavingEducation}
-                >
-                  {isSavingEducation ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                  ) : (
-                    <Text style={styles.modalSaveButtonText}>{editingEducationId ? 'Save Changes' : 'Add Education'}</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </ScrollView>
-          </View>
-        </Modal>
-
-        {/* Resumes Section */}
-        <View style={styles.resumesSection}>
-          <View style={styles.resumesHeader}>
-            <View style={styles.resumesIconBox}>
-              <FileText color={'#165DFC'} size={20} />
-            </View>
-            <Text style={styles.resumesTitle}>Resumes</Text>
-            {resumesList?.length > 0 && (
-              <View style={styles.resumesCountBadge}>
-                <Text style={styles.resumesCountBadgeText}>{resumesList.length}</Text>
-              </View>
-            )}
-            <TouchableOpacity style={styles.addResumeButton} onPress={handleOpenResumeUpload}>
-              <Text style={styles.addResumeIcon}>+</Text>
-              <Text style={styles.addResumeText}>Add</Text>
-            </TouchableOpacity>
-          </View>
-
-          {resumesList?.length > 0 ? (
-            <View style={styles.resumeCardList}>
-              {resumesList.map((item: any, index: number) => (
-                <View key={item?.id || index} style={styles.resumeCard}>
-                  <View style={styles.resumeCardIconBox}>
-                    <FileText color={'#165DFC'} size={20} />
                   </View>
-                  <View style={styles.resumeCardContent}>
-                    <Text style={styles.resumeCardFileName} numberOfLines={1}>{item?.file_name}</Text>
-                    <Text style={styles.resumeCardMetaText}>
-                      {formatFileSize(item?.file_size)} · Uploaded {formatRelativeTime(item?.upload_date || item?.created_at)}
+                ) : (
+                  <View style={styles.videoInfoBox}>
+                    <Info fill={'#165DFC'} color={'white'} />
+                    <Text style={styles.videoInfoText}>
+                      Upload a video introduction to showcase your personality to employers.
                     </Text>
                   </View>
-                  <View style={styles.resumeCardActions}>
-                    <TouchableOpacity style={styles.userSkillActionButton}>
-                      {item?.is_primary ? <Star fill={'#F59E0B'} color={'#F59E0B'} size={18} /> : <StarOff color={'#9CA3AF'} size={18} />}
+                )}
+              </View>
+
+              {/* Personal Information Section */}
+              <View style={styles.personalInfoSection}>
+                <View style={styles.personalInfoHeader}>
+                  <View style={styles.personalInfoIcon}>
+                    <UserRound fill={'#165DFC'} color={'white'} />
+                  </View>
+                  <Text style={styles.personalInfoTitle}>Personal Information</Text>
+                </View>
+
+                {!isEditingPersonal && (
+                  <TouchableOpacity style={styles.editButton} onPress={handleEditPersonalDetails}>
+                    <SquarePen color={'#165DFC'} size={20} />
+                    <Text style={styles.editButtonText}>Edit</Text>
+                  </TouchableOpacity>
+                )}
+
+                <View style={styles.infoField}>
+                  <Text style={styles.fieldLabel}>Full Name</Text>
+                  {isEditingPersonal ? (
+                    <TextInput
+                      style={styles.fieldInput}
+                      value={personalForm.name}
+                      onChangeText={(text) => handlePersonalFieldChange('name', text)}
+                      placeholder="Full Name"
+                    />
+                  ) : (
+                    <Text style={styles.fieldValue}>{userData?.name || 'Not provided'}</Text>
+                  )}
+                </View>
+
+                <View style={styles.infoField}>
+                  <Text style={styles.fieldLabel}>Email</Text>
+                  {isEditingPersonal ? (
+                    <TextInput
+                      style={styles.fieldInput}
+                      value={personalForm.email}
+                      onChangeText={(text) => handlePersonalFieldChange('email', text)}
+                      placeholder="Email"
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                    />
+                  ) : (
+                    <Text style={styles.fieldValue}>{userData?.email || 'Not provided'}</Text>
+                  )}
+                </View>
+
+                <View style={styles.infoField}>
+                  <Text style={styles.fieldLabel}>Phone Number</Text>
+                  {isEditingPersonal ? (
+                    <TextInput
+                      style={styles.fieldInput}
+                      value={personalForm.phone}
+                      onChangeText={(text) => handlePersonalFieldChange('phone', text)}
+                      placeholder="Phone Number"
+                      keyboardType="phone-pad"
+                    />
+                  ) : (
+                    <Text style={styles.fieldValue}>{userData?.phone || 'Not provided'}</Text>
+                  )}
+                </View>
+
+                <View style={styles.infoField}>
+                  <Text style={styles.fieldLabel}>Location</Text>
+                  {isEditingPersonal ? (
+                    <TextInput
+                      style={styles.fieldInput}
+                      value={personalForm.location}
+                      onChangeText={(text) => handlePersonalFieldChange('location', text)}
+                      placeholder="Location"
+                    />
+                  ) : (
+                    <Text style={styles.fieldValue}>{userData?.location || 'Not provided'}</Text>
+                  )}
+                </View>
+                <View style={styles.infoField}>
+                  <Text style={styles.fieldLabel}>Role</Text>
+                  {isEditingPersonal ? (
+                    <TextInput
+                      style={styles.fieldInput}
+                      value={personalForm.current_role}
+                      onChangeText={(text) => handlePersonalFieldChange('current_role', text)}
+                      placeholder="Role"
+                    />
+                  ) : (
+                    <Text style={styles.fieldValue}>{userData?.current_role || 'Not provided'}</Text>
+                  )}
+                </View>
+
+                {isEditingPersonal && (
+                  <View style={styles.personalEditActions}>
+                    <TouchableOpacity style={styles.cancelButton} onPress={handleCancelPersonalDetails}>
+                      <Text style={styles.cancelButtonText}>Cancel</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.userSkillActionButton}>
-                      <Download color={'#165DFC'} size={18} />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.userSkillActionButton} onPress={() => handleDeleteResume(item?.id)}>
-                      <Trash2 color={'#EF4444'} size={18} />
+                    <TouchableOpacity
+                      style={[styles.submitButton, isUpdatingPersonal && styles.submitButtonDisabled]}
+                      onPress={handlePersonalDetailsUpdate}
+                      disabled={isUpdatingPersonal}
+                    >
+                      {isUpdatingPersonal ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                      ) : (
+                        <Text style={styles.submitButtonText}>Submit</Text>
+                      )}
                     </TouchableOpacity>
                   </View>
-                </View>
-              ))}
-            </View>
-          ) : (
-            <View style={styles.emptyResumeBox}>
-              <FileText color={'#D1D5DC'} size={40} />
-              <Text style={styles.noResumeText}>No resumes uploaded yet</Text>
-              <Text style={styles.resumeDescription}>
-                Upload your resume so employers can review your profile
-              </Text>
-              <TouchableOpacity style={styles.uploadResumeButton} onPress={handlePickResumeFile}>
-                <Upload color={'#165DFC'} size={14} />
-                <Text style={styles.uploadResumeText}>Upload Resume</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {isResumeUploadVisible && selectedResume && (
-            <View style={[styles.uploadResumeCard, styles.uploadResumeCardDashed]}>
-              <Text style={styles.uploadResumeCardTitle}>Upload a new resume</Text>
-              <View style={styles.selectedResumeRow}>
-                <View style={styles.selectedResumeIconBox}>
-                  <FileText color={'#165DFC'} size={20} />
-                </View>
-                <View style={styles.selectedResumeInfo}>
-                  <Text style={styles.selectedResumeName} numberOfLines={1}>{selectedResume.name || 'Selected file'}</Text>
-                  <Text style={styles.selectedResumeSize}>{formatFileSize(selectedResume.size)}</Text>
-                </View>
-                <TouchableOpacity onPress={handlePickResumeFile}>
-                  <Text style={styles.selectedResumeChangeText}>Change</Text>
-                </TouchableOpacity>
+                )}
               </View>
-              <View style={styles.uploadResumeActionsRow}>
-                <TouchableOpacity style={styles.uploadResumeCancelButton} onPress={handleCancelResumeUpload}>
-                  <Text style={styles.uploadResumeCancelButtonText}>Cancel</Text>
+
+              {/* About Me Section */}
+              <View style={styles.aboutMeSection}>
+                <View style={styles.aboutMeHeader}>
+                  <View style={styles.aboutMeIcon}>
+                    <FileText fill={'#9810FA'} color={'white'} />
+                  </View>
+                  <Text style={styles.aboutMeTitle}>About Me</Text>
+                </View>
+
+                {!isEditingBio && (
+                  <TouchableOpacity style={styles.aboutEditButton} onPress={handleEditBio}>
+                    <SquarePen color={'#9810FA'} size={20} />
+                    <Text style={styles.editButtonText}>Edit</Text>
+                  </TouchableOpacity>
+                )}
+
+                {isEditingBio ? (
+                  <>
+                    <TextInput
+                      style={styles.bioTextArea}
+                      value={bio}
+                      onChangeText={(text) => setBio(text.slice(0, BIO_MAX_LENGTH))}
+                      placeholder="Write 2-3 sentences highlighting your professional background and key strengths"
+                      placeholderTextColor="#9CA3AF"
+                      multiline
+                      maxLength={BIO_MAX_LENGTH}
+                    />
+                    <View style={styles.bioModalFooterRow}>
+                      <Text style={styles.bioHintText}>
+                        Write 2-3 sentences highlighting your{'\n'}professional background and key strengths
+                      </Text>
+                      <Text style={styles.bioCounterText}>{bio.length}/{BIO_MAX_LENGTH}</Text>
+                    </View>
+                    <View style={styles.modalActionsRow}>
+                      <TouchableOpacity style={styles.modalCancelButton} onPress={handleCancelBio}>
+                        <Text style={styles.modalCancelButtonText}>Cancel</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.bioSaveButton, isSavingBio && styles.bioSaveButtonDisabled]}
+                        onPress={handleSaveBio}
+                        disabled={isSavingBio}
+                      >
+                        {isSavingBio ? (
+                          <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : (
+                          <>
+                            <Save color={'#FFFFFF'} size={16} />
+                            <Text style={styles.modalSaveButtonText}>Save Bio</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                ) : userData?.bio ? (
+                  <Text style={[styles.fieldValue, { paddingVertical: 20 }]}>{userData?.bio}</Text>
+                ) : (
+                  <View style={styles.bioBox}>
+                    <UserRoundPen fill={'#D1D5DC'} color={'white'} size={45} />
+                    <Text style={styles.noBioText}>No bio added yet</Text>
+                    <Text style={styles.bioDescription}>
+                      Add a professional bio to help employers understand your background and expertise
+                    </Text>
+                  </View>
+                )}
+
+                <View style={styles.proTipBox}>
+                  <Lightbulb fill={'#FBBF24'} color={'white'} size={20} />
+                  <Text style={styles.proTipText}>
+                    A good bio includes your experience, skills, and career goals
+                  </Text>
+                </View>
+              </View>
+
+              {/* Social Links Section */}
+              <View style={styles.socialLinksSection}>
+                <View style={styles.socialLinksHeader}>
+                  <View style={styles.socialLinksIcon}>
+                    <Link color={'#00A73F'} size={20} />
+                  </View>
+                  <Text style={styles.socialLinksTitle}>Social Links</Text>
+                </View>
+
+                {!isEditingSocialLinks && (
+                  <TouchableOpacity style={styles.aboutEditButton} onPress={handleEditSocialLinks}>
+                    <SquarePen color={'#00A63E'} size={20} />
+                    <Text style={[styles.editButtonText, { color: '#00A63E' }]}>Edit</Text>
+                  </TouchableOpacity>
+                )}
+
+                {isEditingSocialLinks ? (
+                  <>
+                    <Text style={styles.fieldLabel}>LinkedIn Profile</Text>
+                    <TextInput
+                      style={styles.socialInput}
+                      value={linkedinDraft}
+                      onChangeText={setLinkedinDraft}
+                      placeholder="https://..."
+                      placeholderTextColor="#9CA3AF"
+                      autoCapitalize="none"
+                    />
+                    <Text style={styles.socialInputHint}>
+                      Your LinkedIn profile helps employers learn more about your professional background
+                    </Text>
+
+                    <Text style={[styles.fieldLabel, styles.socialSecondFieldLabel]}>Personal Website/Portfolio</Text>
+                    <TextInput
+                      style={styles.socialInput}
+                      value={websiteDraft}
+                      onChangeText={setWebsiteDraft}
+                      placeholder="https://..."
+                      placeholderTextColor="#9CA3AF"
+                      autoCapitalize="none"
+                    />
+                    <Text style={styles.socialInputHint}>
+                      Share your portfolio, blog, or personal website to showcase your work
+                    </Text>
+
+                    <View style={styles.modalActionsRow}>
+                      <TouchableOpacity style={styles.modalCancelButton} onPress={handleCancelSocialLinks}>
+                        <Text style={styles.modalCancelButtonText}>Cancel</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.socialSaveButton, isSavingSocialLinks && styles.socialSaveButtonDisabled]}
+                        onPress={handleSaveSocialLinks}
+                        disabled={isSavingSocialLinks}
+                      >
+                        {isSavingSocialLinks ? (
+                          <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : (
+                          <>
+                            <Save color={'#FFFFFF'} size={16} />
+                            <Text style={styles.modalSaveButtonText}>Save Links</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    <View style={styles.socialLinkItem}>
+                      <View style={styles.linkedinIconBox}>
+                        <Text style={styles.linkedinIcon}>in</Text>
+                      </View>
+                      <View style={styles.socialLinkContent}>
+                        <Text style={styles.socialLinkLabel}>LinkedIn Profile</Text>
+                        <View style={styles.socialLinkValueContainer}>
+
+                          <Text style={styles.socialLinkValue}>{userData?.linkedin_url || 'Not provided'}</Text>
+                          <ExternalLink size={20} color={'#0050F4'} onPress={() => Linking.openURL(userData?.linkedin_url || '')} />
+                        </View>
+                      </View>
+                    </View>
+
+                    <View style={styles.socialLinkItem}>
+                      <View style={styles.websiteIconBox}>
+                        <Globe fill={"#fff"} color={'#00A63E'} />
+                      </View>
+                      <View style={styles.socialLinkContent}>
+                        <Text style={styles.socialLinkLabel}>Personal Website</Text>
+                        <Text style={styles.socialLinkValue}>{userData?.website_url || 'Not provided'}</Text>
+                      </View>
+                    </View>
+                  </>
+                )}
+
+                <View style={styles.socialProTipBox}>
+                  <Text style={styles.socialProTipLabel}><Lightbulb fill={'#FBBF24'} color={'white'} size={20} /> Pro Tip:</Text>
+                  <Text style={styles.socialProTipText}>
+                    Complete your social links
+                  </Text>
+                  <Text style={styles.socialProTipDescription}>
+                    Adding your LinkedIn and portfolio links increases your profile strength and helps employers get a complete picture of your professional presence.
+                  </Text>
+                </View>
+              </View>
+
+              {/* Skills Section */}
+              <View style={styles.skillsSection}>
+                <View style={styles.skillsHeader}>
+                  <Text style={styles.skillsTitle}>Skills</Text>
+                  <TouchableOpacity style={styles.addSkillButton} onPress={handleOpenAddSkillModal}>
+                    <Text style={styles.addSkillIcon}>+</Text>
+                    <Text style={styles.addSkillText}>Add Skill</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {userSkillsList?.length > 0 ? (
+                  <View style={styles.userSkillsList}>
+                    {userSkillsList?.map((item: any, index: number) => {
+                      const skillName = item?.skills?.name || 'Skill';
+                      const rawLevel = item?.proficiency_level ?? item?.proficiencyLevel;
+                      const numericLevel = Number(rawLevel);
+                      const proficiencyLabel = !Number.isNaN(numericLevel) && rawLevel !== null && rawLevel !== ''
+                        ? (PROFICIENCY_LABEL_BY_LEVEL[numericLevel] || '')
+                        : (typeof rawLevel === 'string' ? rawLevel : '');
+                      const years = item?.years_of_experience ?? item?.yearsOfExperience ?? item?.years;
+                      const yearsLabel = years != null && years !== '' ? `${years} ${Number(years) === 1 ? 'year' : 'years'}` : '';
+                      return (
+                        <View key={item?.id || `${skillName}-${index}`} style={styles.userSkillCard}>
+                          <View style={styles.userSkillCardTop}>
+                            <Text style={styles.userSkillName}>{skillName}</Text>
+                            <View style={styles.userSkillActions}>
+                              <TouchableOpacity style={styles.userSkillActionButton} onPress={() => handleOpenEditSkillModal(item)}>
+                                <SquarePen color={'#9810FA'} size={18} />
+                              </TouchableOpacity>
+                              <TouchableOpacity style={styles.userSkillActionButton} onPress={() => handleDeleteSkill(item?.id)}>
+                                <Trash2 color={'#EF4444'} size={18} />
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                          <View style={styles.userSkillMetaRow}>
+                            {!!proficiencyLabel && (
+                              <View style={styles.userSkillMetaItem}>
+                                <Star fill={'#9810FA'} color={'#9810FA'} size={14} />
+                                <Text style={styles.userSkillMetaText}>{proficiencyLabel}</Text>
+                              </View>
+                            )}
+                            {!!yearsLabel && (
+                              <View style={styles.userSkillMetaItem}>
+                                <Clock color={'#9810FA'} size={14} />
+                                <Text style={styles.userSkillMetaText}>{yearsLabel}</Text>
+                              </View>
+                            )}
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </View>
+                ) : (
+                  <View style={styles.emptySkillsBox}>
+                    <CodeXml color={'#D1D5DC'} size={40} />
+                    <Text style={styles.emptySkillsText}>
+                      No skills added yet. Add your technical skills to showcase your expertise.
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              {/* Add Skill Modal */}
+              <Modal
+                visible={isAddSkillModalVisible}
+                transparent
+                animationType="fade"
+                onRequestClose={handleCloseAddSkillModal}
+              >
+                <View style={styles.modalOverlay}>
+                  <TouchableOpacity style={styles.modalOverlayTouchable} activeOpacity={1} onPress={handleCloseAddSkillModal} />
+                  <View style={styles.skillModalCard}>
+                    <View style={styles.skillModalHeader}>
+                      <Text style={styles.skillModalTitle}>{editingSkillId ? 'Edit Skill' : 'Add New Skill'}</Text>
+                      <TouchableOpacity onPress={handleCloseAddSkillModal}>
+                        <X color={'#797979'} size={22} />
+                      </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.skillTabsRow}>
+                      <TouchableOpacity
+                        style={[styles.skillTabButton, addSkillTab === 'list' && styles.skillTabButtonActive]}
+                        onPress={() => setAddSkillTab('list')}
+                      >
+                        <Text style={[styles.skillTabButtonText, addSkillTab === 'list' && styles.skillTabButtonTextActive]}>
+                          Select from list
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.skillTabButton, addSkillTab === 'custom' && styles.skillTabButtonActive]}
+                        onPress={() => setAddSkillTab('custom')}
+                      >
+                        <Text style={[styles.skillTabButtonText, addSkillTab === 'custom' && styles.skillTabButtonTextActive]}>
+                          Add custom skill
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {addSkillTab === 'list' ? (
+                      <>
+                        <Text style={styles.skillFieldLabel}>Skill <Text style={styles.requiredAsterisk}>*</Text></Text>
+                        <View style={styles.skillPickerWrapper}>
+                          <Picker
+                            selectedValue={selectedSkillId}
+                            onValueChange={(value) => {
+                              setSelectedSkillId(value);
+                              const skill = allSkillsList.find((s: any) => s.id === value);
+                              setSelectedSkillName(skill?.name || '');
+                            }}
+                            style={styles.skillPicker}
+                          >
+                            <Picker.Item label="Select a skill" value="" />
+                            {allSkillsList.map((skill: any) => (
+                              <Picker.Item key={skill.id} label={skill.name} value={skill.id} />
+                            ))}
+                          </Picker>
+                        </View>
+                      </>
+                    ) : (
+                      <>
+                        <Text style={styles.skillFieldLabel}>Skill Name <Text style={styles.requiredAsterisk}>*</Text></Text>
+                        <TextInput
+                          style={styles.socialInput}
+                          value={customSkillName}
+                          onChangeText={setCustomSkillName}
+                          placeholder="Enter skill name"
+                          placeholderTextColor="#9CA3AF"
+                        />
+                      </>
+                    )}
+
+                    <Text style={styles.skillFieldLabel}>Proficiency Level <Text style={styles.requiredAsterisk}>*</Text></Text>
+                    <View style={styles.skillPickerWrapper}>
+                      <Picker
+                        selectedValue={proficiencyLevel}
+                        onValueChange={(value) => setProficiencyLevel(value)}
+                        style={styles.skillPicker}
+                      >
+                        {PROFICIENCY_OPTIONS.map((level) => (
+                          <Picker.Item key={level} label={level} value={level} />
+                        ))}
+                      </Picker>
+                    </View>
+
+                    <Text style={styles.skillFieldLabel}>Years of Experience <Text style={styles.requiredAsterisk}>*</Text></Text>
+                    <TextInput
+                      style={styles.socialInput}
+                      value={yearsOfExperience}
+                      onChangeText={setYearsOfExperience}
+                      placeholder="1"
+                      keyboardType="numeric"
+                    />
+
+                    <View style={styles.modalActionsRow}>
+                      <TouchableOpacity style={styles.modalCancelButton} onPress={handleCloseAddSkillModal}>
+                        <Text style={styles.modalCancelButtonText}>Cancel</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.skillAddButton, isSavingSkill && styles.skillAddButtonDisabled]}
+                        onPress={handleAddSkill}
+                        disabled={isSavingSkill}
+                      >
+                        {isSavingSkill ? (
+                          <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : (
+                          <Text style={styles.modalSaveButtonText}>{editingSkillId ? 'Save Changes' : 'Save Skill'}</Text>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              </Modal>
+
+              {/* Work Experience Section */}
+              <View style={styles.workExperienceSection}>
+                <View style={styles.experienceHeader}>
+                  <View style={styles.experienceIconBox}>
+                    <BriefcaseBusiness fill={'#F54800'} color={'#FFECD4'} size={20} />
+                  </View>
+                  <Text style={styles.experienceTitle}>Work Experience</Text>
+                </View>
+
+                <TouchableOpacity style={styles.addExperienceButton} onPress={handleOpenAddExperienceModal}>
+                  <Text style={styles.addExperienceIcon}>+</Text>
+                  <Text style={styles.addExperienceText}>Add Experience</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.uploadResumeUploadButton, (!!selectedResume && !isResumeUploading) && styles.uploadResumeUploadButtonActive]}
-                  onPress={handleResumeUpload}
-                  disabled={!selectedResume || isResumeUploading}
-                >
-                  {isResumeUploading ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                  ) : (
-                    <>
-                      <Upload color={'#FFFFFF'} size={16} />
-                      <Text style={styles.uploadResumeUploadButtonText}>Upload</Text>
-                    </>
+
+                {workExperienceList?.length > 0 ? (
+                  <View style={styles.experienceTimelineList}>
+                    {workExperienceList.map((item: any, index: number) => {
+                      const dateRangeLabel = `${formatMonthYear(item?.start_date)} - ${item?.is_current_job ? 'Present' : (formatMonthYear(item?.end_date) || 'Present')}`;
+                      const durationLabel = getExperienceDuration(item?.start_date, item?.end_date, item?.is_current_job);
+                      return (
+                        <View key={item?.id || index} style={styles.experienceItemRow}>
+                          <View style={styles.experienceTimelineColumn}>
+                            <View style={styles.experienceTimelineIconCircle}>
+                              <Building2 color={'#F97316'} size={20} />
+                            </View>
+                            {index !== workExperienceList.length - 1 && <View style={styles.experienceTimelineLine} />}
+                          </View>
+                          <View style={styles.experienceCard}>
+                            <View style={styles.experienceCardHeader}>
+                              <View style={styles.experienceCardTitleBox}>
+                                <Text style={styles.experienceCardTitle}>{item?.job_title}</Text>
+                                <Text style={styles.experienceCardCompany}>{item?.company_name}</Text>
+                              </View>
+                              <View style={styles.experienceCardActions}>
+                                <TouchableOpacity style={styles.userSkillActionButton} onPress={() => handleOpenEditExperienceModal(item)}>
+                                  <SquarePen color={'#F97316'} size={18} />
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.userSkillActionButton} onPress={() => handleDeleteExperience(item?.id)}>
+                                  <Trash2 color={'#EF4444'} size={18} />
+                                </TouchableOpacity>
+                              </View>
+                            </View>
+                            <View style={styles.experienceCardMetaRow}>
+                              <Clock color={'#F97316'} size={14} />
+                              <Text style={styles.experienceCardMetaText}>{dateRangeLabel}</Text>
+                            </View>
+                            <View style={styles.experienceCardMetaRow}>
+                              <User color={'#F97316'} size={14} />
+                              <Text style={styles.experienceCardMetaText}>{formatEmploymentType(item?.employment_type)}</Text>
+                            </View>
+                            {!!item?.company_location && (
+                              <View style={styles.experienceCardMetaRow}>
+                                <MapPin color={'#F97316'} size={14} />
+                                <Text style={styles.experienceCardMetaText}>{item.company_location}</Text>
+                              </View>
+                            )}
+                            {!!durationLabel && (
+                              <View style={styles.experienceCardMetaRow}>
+                                <Hourglass color={'#F97316'} size={14} />
+                                <Text style={styles.experienceCardMetaText}>{durationLabel}</Text>
+                              </View>
+                            )}
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </View>
+                )
+                  :
+                  (
+                    <View style={styles.emptyExperienceBox}>
+                      <BriefcaseBusiness color={'#D1D5DC'} size={40} />
+                      <Text style={styles.emptyExperienceText}>
+                        No work experience added yet. Add your professional experience to showcase your career journey.
+                      </Text>
+                    </View>
                   )}
-                </TouchableOpacity>
               </View>
-            </View>
-          )}
 
-          {!!resumeUploadSuccessMsg && (
-            <View style={styles.resumeSuccessBanner}>
-              <CircleCheck color={'#16A34A'} size={18} />
-              <Text style={styles.resumeSuccessBannerText}>{resumeUploadSuccessMsg}</Text>
-            </View>
-          )}
-        </View>
+              {/* Add/Edit Experience Modal */}
+              <Modal
+                visible={isExperienceModalVisible}
+                transparent
+                animationType="fade"
+                onRequestClose={handleCloseExperienceModal}
+              >
+                <View style={styles.modalOverlay}>
+                  <TouchableOpacity style={styles.modalOverlayTouchable} activeOpacity={1} onPress={handleCloseExperienceModal} />
+                  <ScrollView style={styles.experienceModalCard} contentContainerStyle={styles.experienceModalCardContent}>
+                    <View style={styles.skillModalHeader}>
+                      <Text style={styles.skillModalTitle}>{editingExperienceId ? 'Edit Experience' : 'Add Work Experience'}</Text>
+                      <TouchableOpacity onPress={handleCloseExperienceModal}>
+                        <X color={'#797979'} size={22} />
+                      </TouchableOpacity>
+                    </View>
 
-        {/* Course Progress Section */}
-        <View style={styles.courseProgressSection}>
-          <View style={styles.courseProgressHeader}>
-            <View style={styles.courseProgressIconBox}>
-              <GraduationCap color={'#165DFC'} size={20} />
-            </View>
-            <Text style={styles.courseProgressTitle}>Course Progress</Text>
-          </View>
+                    <Text style={styles.skillFieldLabel}>Company Name <Text style={styles.requiredAsterisk}>*</Text></Text>
+                    <TextInput
+                      style={styles.socialInput}
+                      value={experienceForm.company_name}
+                      onChangeText={(text) => handleExperienceFieldChange('company_name', text)}
+                      placeholder="Enter company name"
+                      placeholderTextColor="#9CA3AF"
+                    />
 
-          <View style={styles.emptyCourseBox}>
-            <BookText color={'#D1D5DC'} size={40} />
-            <Text style={styles.noCourseText}>No courses enrolled yet</Text>
-            <Text style={styles.courseDescription}>
-              Enroll in courses to boost your skills and career prospects. Complete courses to unlock job opportunities!
-            </Text>
-            <TouchableOpacity style={styles.browseCourseButton}>
-              <Text style={styles.browseCourseButtonText}>Browse Courses</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.viewRecommendationsButton}>
-              <Text style={styles.viewRecommendationsButtonText}>View Recommendations</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+                    <Text style={styles.skillFieldLabel}>Job Title <Text style={styles.requiredAsterisk}>*</Text></Text>
+                    <TextInput
+                      style={styles.socialInput}
+                      value={experienceForm.job_title}
+                      onChangeText={(text) => handleExperienceFieldChange('job_title', text)}
+                      placeholder="Enter job title"
+                      placeholderTextColor="#9CA3AF"
+                    />
 
-        {/* Password & Security Section */}
-        <View style={styles.passwordSecuritySection}>
-          <View style={styles.passwordSecurityHeader}>
-            <View style={styles.passwordSecurityIconBox}>
-              <Shield color={'#165DFC'} size={20} />
-            </View>
-            <Text style={styles.passwordSecurityTitle}>Password & Security</Text>
-          </View>
+                    <Text style={styles.skillFieldLabel}>Location</Text>
+                    <TextInput
+                      style={styles.socialInput}
+                      value={experienceForm.company_location}
+                      onChangeText={(text) => handleExperienceFieldChange('company_location', text)}
+                      placeholder="City, Country"
+                      placeholderTextColor="#9CA3AF"
+                    />
 
-          <View style={styles.securityInfoBox}>
-            <View style={styles.securityInfoIconBox}>
-              <Info color={'#165DFC'} size={20} />
-            </View>
-            <View style={styles.securityInfoContent}>
-              <Text style={styles.securityInfoTitle}>You're signed in with Google</Text>
-              <Text style={styles.securityInfoText}>
-                Your account uses Google authentication. To change your password, please visit your{' '}
-                <Text style={styles.googleAccountLink}>Google Account settings</Text>.
-              </Text>
-            </View>
-          </View>
+                    <Text style={styles.skillFieldLabel}>Employment Type</Text>
+                    <View style={styles.skillPickerWrapper}>
+                      <Picker
+                        selectedValue={experienceForm.employment_type}
+                        onValueChange={(value) => handleExperienceFieldChange('employment_type', value)}
+                        style={styles.skillPicker}
+                      >
+                        {EMPLOYMENT_TYPE_OPTIONS.map((type) => (
+                          <Picker.Item key={type} label={formatEmploymentType(type)} value={type} />
+                        ))}
+                      </Picker>
+                    </View>
 
-          <Text style={styles.securityTipsHeading}>Security Tips:</Text>
-          <View style={styles.securityTipsContainer}>
-            <View style={styles.tipItem}>
-              <Text style={styles.tipBullet}>•</Text>
-              <Text style={styles.tipText}>
-                Enable two-factor authentication on your Google account
-              </Text>
-            </View>
-            <View style={styles.tipItem}>
-              <Text style={styles.tipBullet}>•</Text>
-              <Text style={styles.tipText}>
-                Regularly review connected apps and devices
-              </Text>
-            </View>
-            <View style={styles.tipItem}>
-              <Text style={styles.tipBullet}>•</Text>
-              <Text style={styles.tipText}>
-                Use a strong, unique password for your Google account
-              </Text>
-            </View>
-          </View>
-        </View>
+                    <TouchableOpacity
+                      style={styles.currentJobToggleRow}
+                      onPress={() => handleExperienceFieldChange('is_current_job', !experienceForm.is_current_job)}
+                    >
+                      <View style={experienceForm.is_current_job ? styles.checkedBox : styles.uncheckedBox}>
+                        {experienceForm.is_current_job && <Text style={styles.checkmark}>✓</Text>}
+                      </View>
+                      <Text style={styles.skillFieldLabel}>I currently work here</Text>
+                    </TouchableOpacity>
 
-        {/* Complete Your Profile Section */}
-        <View style={styles.completeProfileSection}>
-          <Text style={styles.completeProfileHeading}>Complete Your Profile</Text>
+                    <Text style={styles.skillFieldLabel}>Start Date <Text style={styles.requiredAsterisk}>*</Text></Text>
+                    <TextInput
+                      style={styles.socialInput}
+                      value={experienceForm.start_date}
+                      onChangeText={(text) => handleExperienceFieldChange('start_date', text)}
+                      placeholder="YYYY-MM-DD"
+                      placeholderTextColor="#9CA3AF"
+                    />
 
-          <View style={styles.checklistContainer}>
-            <View style={styles.checklistItem}>
-              {userData?.profile_picture_url ?
-                <View style={styles.checkedBox}>
-                  <Text style={styles.checkmark}>✓</Text>
-                </View> :
-                <View style={styles.uncheckedBox} />
-              }
-              <Text style={[styles.checklistText, userData?.profile_picture_url && styles.completedText]}>Add profile photo</Text>
-            </View>
+                    {!experienceForm.is_current_job && (
+                      <>
+                        <Text style={styles.skillFieldLabel}>End Date</Text>
+                        <TextInput
+                          style={styles.socialInput}
+                          value={experienceForm.end_date}
+                          onChangeText={(text) => handleExperienceFieldChange('end_date', text)}
+                          placeholder="YYYY-MM-DD"
+                          placeholderTextColor="#9CA3AF"
+                        />
+                      </>
+                    )}
 
-            <View style={styles.checklistItem}>
-              {videoData?.data?.video_url ?
-                <View style={styles.checkedBox}>
-                  <Text style={styles.checkmark}>✓</Text>
-                </View> :
-                <View style={styles.uncheckedBox} />
-              }
-              <Text style={[styles.checklistText, videoData?.data?.video_url && styles.completedText]}>Record video introduction</Text>
-            </View>
+                    <Text style={styles.skillFieldLabel}>Job Description</Text>
+                    <TextInput
+                      style={styles.bioTextArea}
+                      value={experienceForm.job_description}
+                      onChangeText={(text) => handleExperienceFieldChange('job_description', text)}
+                      placeholder="Describe your responsibilities and achievements"
+                      placeholderTextColor="#9CA3AF"
+                      multiline
+                    />
 
-            <View style={styles.checklistItem}>
-              <View style={styles.checkedBox}>
-                <Text style={styles.checkmark}>✓</Text>
+                    <View style={styles.modalActionsRow}>
+                      <TouchableOpacity style={styles.modalCancelButton} onPress={handleCloseExperienceModal}>
+                        <Text style={styles.modalCancelButtonText}>Cancel</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.experienceSaveButton, isSavingExperience && styles.experienceSaveButtonDisabled]}
+                        onPress={handleSaveExperience}
+                        disabled={isSavingExperience}
+                      >
+                        {isSavingExperience ? (
+                          <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : (
+                          <Text style={styles.modalSaveButtonText}>{editingExperienceId ? 'Save Changes' : 'Add Experience'}</Text>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  </ScrollView>
+                </View>
+              </Modal>
+
+              {/* Education Section */}
+              <View style={styles.educationSection}>
+                <View style={styles.educationHeader}>
+                  <View style={styles.educationIconBox}>
+                    <GraduationCap color={'#165DFC'} size={20} />
+                  </View>
+                  <Text style={styles.educationTitle}>Education</Text>
+                  <TouchableOpacity style={styles.addEducationButton} onPress={handleOpenAddEducationModal}>
+                    <Text style={styles.addEducationIcon}>+</Text>
+                    <Text style={styles.addEducationText}>Add</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {educationList?.length > 0 ? (
+                  <View style={styles.educationTimelineList}>
+                    {educationList.map((item: any, index: number) => {
+                      const titleLabel = item?.field_of_study
+                        ? `${item?.degree || ''} in ${item?.field_of_study}`
+                        : (item?.degree || '');
+                      const dateRangeLabel = `${formatMonthYear(item?.start_date)} - ${item?.is_current ? 'Present' : (formatMonthYear(item?.end_date) || 'Present')}`;
+                      const durationLabel = getExperienceDuration(item?.start_date, item?.end_date, item?.is_current);
+                      return (
+                        <View key={item?.id || index} style={styles.educationItemRow}>
+                          <View style={styles.educationTimelineColumn}>
+                            <View style={styles.educationTimelineDot} />
+                            {index !== educationList.length - 1 && <View style={styles.educationTimelineLine} />}
+                          </View>
+                          <View style={styles.educationCard}>
+                            <View style={styles.educationCardHeader}>
+                              <View style={styles.educationCardTitleBox}>
+                                <Text style={styles.educationCardTitle}>{titleLabel}</Text>
+                                <Text style={styles.educationCardSubtitle}>{item?.institution_name}</Text>
+                              </View>
+                              <View style={styles.educationCardActions}>
+                                <TouchableOpacity style={styles.userSkillActionButton} onPress={() => handleOpenEditEducationModal(item)}>
+                                  <SquarePen color={'#165DFC'} size={18} />
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.userSkillActionButton} onPress={() => handleDeleteEducation(item?.id)}>
+                                  <Trash2 color={'#EF4444'} size={18} />
+                                </TouchableOpacity>
+                              </View>
+                            </View>
+                            <View style={styles.educationCardMetaRow}>
+                              <Clock color={'#797979'} size={14} />
+                              <Text style={styles.educationCardMetaText}>{dateRangeLabel}</Text>
+                              {!!durationLabel && (
+                                <>
+                                  <Text style={styles.educationCardMetaDot}>·</Text>
+                                  <Text style={styles.educationCardMetaText}>{durationLabel}</Text>
+                                </>
+                              )}
+                            </View>
+                            {!!item?.grade && (
+                              <View style={styles.educationCardMetaRow}>
+                                <Award color={'#797979'} size={14} />
+                                <Text style={styles.educationCardMetaText}>{item.grade}</Text>
+                              </View>
+                            )}
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </View>
+                ) : (
+                  <View style={styles.emptyEducationBox}>
+                    <GraduationCap color={'#D1D5DC'} size={40} />
+                    <Text style={styles.noEducationText}>No education added yet</Text>
+                    <TouchableOpacity style={styles.addFirstEducationButton} onPress={handleOpenAddEducationModal}>
+                      <Text style={styles.addFirstEducationIcon}>+</Text>
+                      <Text style={styles.addFirstEducationText}>Add Your First Education</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </View>
-              <Text style={[styles.checklistText, styles.completedText]}>Add personal information</Text>
-            </View>
 
-            <View style={styles.checklistItem}>
-              {userData?.bio ?
-                <View style={styles.checkedBox}>
-                  <Text style={styles.checkmark}>✓</Text>
-                </View> :
-                <View style={styles.uncheckedBox} />
-              }
-              <Text style={[styles.checklistText, userData?.bio && styles.completedText]}>Add professional bio</Text>
-            </View>
+              {/* Add/Edit Education Modal */}
+              <Modal
+                visible={isEducationModalVisible}
+                transparent
+                animationType="fade"
+                onRequestClose={handleCloseEducationModal}
+              >
+                <View style={styles.modalOverlay}>
+                  <TouchableOpacity style={styles.modalOverlayTouchable} activeOpacity={1} onPress={handleCloseEducationModal} />
+                  <ScrollView style={styles.experienceModalCard} contentContainerStyle={styles.experienceModalCardContent}>
+                    <View style={styles.skillModalHeader}>
+                      <Text style={styles.skillModalTitle}>{editingEducationId ? 'Edit Education' : 'Add Education'}</Text>
+                      <TouchableOpacity onPress={handleCloseEducationModal}>
+                        <X color={'#797979'} size={22} />
+                      </TouchableOpacity>
+                    </View>
 
-            <View style={styles.checklistItem}>
-              {userData?.linkedin_url || userData?.website_url ?
-                <View style={styles.checkedBox}>
-                  <Text style={styles.checkmark}>✓</Text>
-                </View> :
-                <View style={styles.uncheckedBox} />
-              }
-              <Text style={[styles.checklistText, (userData?.linkedin_url || userData?.website_url) && styles.completedText]}>Add social links</Text>
-            </View>
+                    <Text style={styles.skillFieldLabel}>Institution Name <Text style={styles.requiredAsterisk}>*</Text></Text>
+                    <TextInput
+                      style={styles.socialInput}
+                      value={educationForm.institution_name}
+                      onChangeText={(text) => handleEducationFieldChange('institution_name', text)}
+                      placeholder="e.g., Stanford University"
+                      placeholderTextColor="#9CA3AF"
+                    />
 
-            <View style={styles.checklistItem}>
-              {workExperienceList.length > 0 ?
-                <View style={styles.checkedBox}>
-                  <Text style={styles.checkmark}>✓</Text>
-                </View> :
-                <View style={styles.uncheckedBox} />
-              }
-              <Text style={[styles.checklistText, workExperienceList.length > 0 && styles.completedText]}>Add work experience</Text>
-            </View>
+                    <Text style={styles.skillFieldLabel}>Degree <Text style={styles.requiredAsterisk}>*</Text></Text>
+                    <View style={styles.skillPickerWrapper}>
+                      <Picker
+                        selectedValue={educationForm.degree}
+                        onValueChange={(value) => handleEducationFieldChange('degree', value)}
+                        style={styles.skillPicker}
+                      >
+                        <Picker.Item label="Select a degree" value="" />
+                        {DEGREE_OPTIONS.map((degree) => (
+                          <Picker.Item key={degree} label={degree} value={degree} style={{ color: 'blue' }} />
+                        ))}
+                      </Picker>
+                    </View>
 
-            <View style={styles.checklistItem}>
-              {userSkillsList.length > 0 ?
-                <View style={styles.checkedBox}>
-                  <Text style={styles.checkmark}>✓</Text>
-                </View> :
-                <View style={styles.uncheckedBox} />
-              }
-              <Text style={[styles.checklistText, userSkillsList.length > 0 && styles.completedText]}>Add skills & technologies</Text>
-            </View>
+                    <Text style={styles.skillFieldLabel}>Field of Study <Text style={styles.requiredAsterisk}>*</Text></Text>
+                    <TextInput
+                      style={styles.socialInput}
+                      value={educationForm.field_of_study}
+                      onChangeText={(text) => handleEducationFieldChange('field_of_study', text)}
+                      placeholder="e.g., Computer Science"
+                      placeholderTextColor="#9CA3AF"
+                    />
 
-            <View style={styles.checklistItem}>
-              {resumesList.length > 0 ?
-                <View style={styles.checkedBox}>
-                  <Text style={styles.checkmark}>✓</Text>
-                </View> :
-                <View style={styles.uncheckedBox} />
-              }
-              <Text style={[styles.checklistText, resumesList.length > 0 && styles.completedText]}>Upload resume</Text>
-            </View>
+                    <Text style={styles.skillFieldLabel}>Start Date <Text style={styles.requiredAsterisk}>*</Text></Text>
+                    <TextInput
+                      style={styles.socialInput}
+                      value={educationForm.start_date}
+                      onChangeText={(text) => handleEducationFieldChange('start_date', text)}
+                      placeholder="YYYY-MM-DD"
+                      placeholderTextColor="#9CA3AF"
+                    />
+
+                    {!educationForm.is_current && (
+                      <>
+                        <Text style={styles.skillFieldLabel}>End Date</Text>
+                        <TextInput
+                          style={styles.socialInput}
+                          value={educationForm.end_date}
+                          onChangeText={(text) => handleEducationFieldChange('end_date', text)}
+                          placeholder="YYYY-MM-DD"
+                          placeholderTextColor="#9CA3AF"
+                        />
+                      </>
+                    )}
+
+                    <TouchableOpacity
+                      style={styles.currentJobToggleRow}
+                      onPress={() => handleEducationFieldChange('is_current', !educationForm.is_current)}
+                    >
+                      <View style={educationForm.is_current ? styles.checkedBox : styles.uncheckedBox}>
+                        {educationForm.is_current && <Text style={styles.checkmark}>✓</Text>}
+                      </View>
+                      <Text style={styles.skillFieldLabel}>I am currently studying here</Text>
+                    </TouchableOpacity>
+
+                    <Text style={styles.skillFieldLabel}>Grade / GPA (Optional)</Text>
+                    <TextInput
+                      style={styles.socialInput}
+                      value={educationForm.grade}
+                      onChangeText={(text) => handleEducationFieldChange('grade', text)}
+                      placeholder="e.g., 3.8 GPA or First Class"
+                      placeholderTextColor="#9CA3AF"
+                    />
+
+                    <Text style={styles.skillFieldLabel}>Description (Optional)</Text>
+                    <TextInput
+                      style={styles.bioTextArea}
+                      value={educationForm.description}
+                      onChangeText={(text) => handleEducationFieldChange('description', text)}
+                      placeholder="Relevant coursework, thesis topic, or other details..."
+                      placeholderTextColor="#9CA3AF"
+                      multiline
+                    />
+
+                    <Text style={styles.skillFieldLabel}>Achievements & Honors (Optional)</Text>
+                    <View style={styles.achievementInputRow}>
+                      <TextInput
+                        style={styles.achievementInput}
+                        value={achievementInput}
+                        onChangeText={setAchievementInput}
+                        placeholder="e.g., Dean's List, Cum Laude"
+                        placeholderTextColor="#9CA3AF"
+                      />
+                      <TouchableOpacity style={styles.achievementAddButton} onPress={handleAddAchievement}>
+                        <Text style={styles.achievementAddButtonText}>Add</Text>
+                      </TouchableOpacity>
+                    </View>
+                    {achievements.length > 0 && (
+                      <View style={styles.achievementChipsWrap}>
+                        {achievements.map((achievement, index) => (
+                          <View key={`${achievement}-${index}`} style={styles.achievementChip}>
+                            <Text style={styles.achievementChipText}>{achievement}</Text>
+                            <TouchableOpacity onPress={() => handleRemoveAchievement(index)}>
+                              <X color={'#797979'} size={14} />
+                            </TouchableOpacity>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+
+                    <View style={styles.modalActionsRow}>
+                      <TouchableOpacity style={styles.modalCancelButton} onPress={handleCloseEducationModal}>
+                        <Text style={styles.modalCancelButtonText}>Cancel</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.educationSaveButton, isSavingEducation && styles.educationSaveButtonDisabled]}
+                        onPress={handleSaveEducation}
+                        disabled={isSavingEducation}
+                      >
+                        {isSavingEducation ? (
+                          <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : (
+                          <Text style={styles.modalSaveButtonText}>{editingEducationId ? 'Save Changes' : 'Add Education'}</Text>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  </ScrollView>
+                </View>
+              </Modal>
+
+              {/* Resumes Section */}
+              <View style={styles.resumesSection}>
+                <View style={styles.resumesHeader}>
+                  <View style={styles.resumesIconBox}>
+                    <FileText color={'#165DFC'} size={20} />
+                  </View>
+                  <Text style={styles.resumesTitle}>Resumes</Text>
+                  {resumesList?.length > 0 && (
+                    <View style={styles.resumesCountBadge}>
+                      <Text style={styles.resumesCountBadgeText}>{resumesList.length}</Text>
+                    </View>
+                  )}
+                  <TouchableOpacity style={styles.addResumeButton} onPress={handleOpenResumeUpload}>
+                    <Text style={styles.addResumeIcon}>+</Text>
+                    <Text style={styles.addResumeText}>Add</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {resumesList?.length > 0 ? (
+                  <View style={styles.resumeCardList}>
+                    {resumesList.map((item: any, index: number) => (
+                      <View key={item?.id || index} style={styles.resumeCard}>
+                        <View style={styles.resumeCardIconBox}>
+                          <FileText color={'#165DFC'} size={20} />
+                        </View>
+                        <View style={styles.resumeCardContent}>
+                          <Text style={styles.resumeCardFileName} numberOfLines={1}>{item?.file_name}</Text>
+                          <Text style={styles.resumeCardMetaText}>
+                            {formatFileSize(item?.file_size)} · Uploaded {formatRelativeTime(item?.upload_date || item?.created_at)}
+                          </Text>
+                        </View>
+                        <View style={styles.resumeCardActions}>
+                          <TouchableOpacity style={styles.userSkillActionButton}>
+                            {item?.is_primary ? <Star fill={'#F59E0B'} color={'#F59E0B'} size={18} /> : <StarOff color={'#9CA3AF'} size={18} />}
+                          </TouchableOpacity>
+                          <TouchableOpacity style={styles.userSkillActionButton}>
+                            <Download color={'#165DFC'} size={18} />
+                          </TouchableOpacity>
+                          <TouchableOpacity style={styles.userSkillActionButton} onPress={() => handleDeleteResume(item?.id)}>
+                            <Trash2 color={'#EF4444'} size={18} />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                ) : (
+                  <View style={styles.emptyResumeBox}>
+                    <FileText color={'#D1D5DC'} size={40} />
+                    <Text style={styles.noResumeText}>No resumes uploaded yet</Text>
+                    <Text style={styles.resumeDescription}>
+                      Upload your resume so employers can review your profile
+                    </Text>
+                    <TouchableOpacity style={styles.uploadResumeButton} onPress={handlePickResumeFile}>
+                      <Upload color={'#165DFC'} size={14} />
+                      <Text style={styles.uploadResumeText}>Upload Resume</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                {isResumeUploadVisible && selectedResume && (
+                  <View style={[styles.uploadResumeCard, styles.uploadResumeCardDashed]}>
+                    <Text style={styles.uploadResumeCardTitle}>Upload a new resume</Text>
+                    <View style={styles.selectedResumeRow}>
+                      <View style={styles.selectedResumeIconBox}>
+                        <FileText color={'#165DFC'} size={20} />
+                      </View>
+                      <View style={styles.selectedResumeInfo}>
+                        <Text style={styles.selectedResumeName} numberOfLines={1}>{selectedResume.name || 'Selected file'}</Text>
+                        <Text style={styles.selectedResumeSize}>{formatFileSize(selectedResume.size)}</Text>
+                      </View>
+                      <TouchableOpacity onPress={handlePickResumeFile}>
+                        <Text style={styles.selectedResumeChangeText}>Change</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <View style={styles.uploadResumeActionsRow}>
+                      <TouchableOpacity style={styles.uploadResumeCancelButton} onPress={handleCancelResumeUpload}>
+                        <Text style={styles.uploadResumeCancelButtonText}>Cancel</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.uploadResumeUploadButton, (!!selectedResume && !isResumeUploading) && styles.uploadResumeUploadButtonActive]}
+                        onPress={handleResumeUpload}
+                        disabled={!selectedResume || isResumeUploading}
+                      >
+                        {isResumeUploading ? (
+                          <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : (
+                          <>
+                            <Upload color={'#FFFFFF'} size={16} />
+                            <Text style={styles.uploadResumeUploadButtonText}>Upload</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+
+                {!!resumeUploadSuccessMsg && (
+                  <View style={styles.resumeSuccessBanner}>
+                    <CircleCheck color={'#16A34A'} size={18} />
+                    <Text style={styles.resumeSuccessBannerText}>{resumeUploadSuccessMsg}</Text>
+                  </View>
+                )}
+              </View>
+
+              {/* Course Progress Section */}
+              <View style={styles.courseProgressSection}>
+                <View style={styles.courseProgressHeader}>
+                  <View style={styles.courseProgressIconBox}>
+                    <GraduationCap color={'#165DFC'} size={20} />
+                  </View>
+                  <Text style={styles.courseProgressTitle}>Course Progress</Text>
+                </View>
+
+                <View style={styles.emptyCourseBox}>
+                  <BookText color={'#D1D5DC'} size={40} />
+                  <Text style={styles.noCourseText}>No courses enrolled yet</Text>
+                  <Text style={styles.courseDescription}>
+                    Enroll in courses to boost your skills and career prospects. Complete courses to unlock job opportunities!
+                  </Text>
+                  <TouchableOpacity style={styles.browseCourseButton}>
+                    <Text style={styles.browseCourseButtonText}>Browse Courses</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.viewRecommendationsButton}>
+                    <Text style={styles.viewRecommendationsButtonText}>View Recommendations</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Password & Security Section */}
+              <View style={styles.passwordSecuritySection}>
+                <View style={styles.passwordSecurityHeader}>
+                  <View style={styles.passwordSecurityIconBox}>
+                    {manualUserLogin
+                      ? <Lock color={'#165DFC'} size={18} />
+                      : <Shield color={'#165DFC'} size={20} />}
+                  </View>
+                  <Text style={styles.passwordSecurityTitle}>Password & Security</Text>
+                </View>
+                {manualUserLogin ? (
+                  <>
+                    {!isPasswordFormVisible ? (
+                      <>
+                        <TouchableOpacity
+                          style={styles.changePasswordButton}
+                          onPress={() => setIsPasswordFormVisible(true)}
+                          activeOpacity={0.8}
+                        >
+                          <Lock color="#FFFFFF" size={14} />
+                          <Text style={styles.changePasswordButtonText}>Change Password</Text>
+                        </TouchableOpacity>
+                        <View style={styles.passwordRequirementsBox}>
+                          <Text style={styles.passwordRequirementsTitle}>Password Requirements:</Text>
+                          <Text style={styles.passwordRequirement}>· Minimum 8 characters (12+ recommended)</Text>
+                          <Text style={styles.passwordRequirement}>· Mix of uppercase and lowercase letters</Text>
+                          <Text style={styles.passwordRequirement}>· At least one number and one special character</Text>
+                          <Text style={styles.passwordRequirement}>· Must be different from current password</Text>
+                        </View>
+                        <View style={styles.passwordTip}>
+                          <Lightbulb color="#F59E0B" size={14} />
+                          <Text style={styles.passwordTipText}>Tip: Change your password regularly to keep your account secure</Text>
+                        </View>
+                      </>
+                    ) : (
+                      <>
+                        {[
+                          {
+                            label: 'Current Password',
+                            value: currentPassword,
+                            onChangeText: setCurrentPassword,
+                            visible: showCurrentPassword,
+                            toggleVisibility: () => setShowCurrentPassword(value => !value),
+                            placeholder: 'Enter your current password',
+                          },
+                          {
+                            label: 'New Password',
+                            value: newPassword,
+                            onChangeText: setNewPassword,
+                            visible: showNewPassword,
+                            toggleVisibility: () => setShowNewPassword(value => !value),
+                            placeholder: 'Enter your new password',
+                          },
+                          {
+                            label: 'Confirm New Password',
+                            value: confirmNewPassword,
+                            onChangeText: setConfirmNewPassword,
+                            visible: showConfirmPassword,
+                            toggleVisibility: () => setShowConfirmPassword(value => !value),
+                            placeholder: 'Confirm your new password',
+                          },
+                        ].map(field => (
+                          <View key={field.label} style={styles.passwordField}>
+                            <Text style={styles.passwordFieldLabel}>
+                              {field.label} <Text style={styles.requiredAsterisk}>*</Text>
+                            </Text>
+                            <View style={styles.passwordInputRow}>
+                              <TextInput
+                                style={styles.passwordInput}
+                                value={field.value}
+                                onChangeText={field.onChangeText}
+                                placeholder={field.placeholder}
+                                placeholderTextColor="#797979"
+                                secureTextEntry={!field.visible}
+                                autoCapitalize="none"
+                                autoCorrect={false}
+                              />
+                              <TouchableOpacity
+                                style={styles.passwordVisibilityButton}
+                                onPress={field.toggleVisibility}
+                                accessibilityLabel={`${field.visible ? 'Hide' : 'Show'} ${field.label.toLowerCase()}`}
+                              >
+                                {field.visible ? <EyeOff color="#334155" size={16} /> : <Eye color="#334155" size={16} />}
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                        ))}
+                        <View style={styles.passwordFormActions}>
+                          <TouchableOpacity
+                            style={[
+                              styles.updatePasswordButton,
+                              canUpdatePassword && styles.updatePasswordButtonEnabled,
+                              isUpdatingPassword && styles.updatePasswordButtonDisabled,
+                            ]}
+                            onPress={handleChangePassword}
+                            disabled={!canUpdatePassword || isUpdatingPassword}
+                          >
+                            {isUpdatingPassword ? (
+                              <ActivityIndicator size="small" color="#FFFFFF" />
+                            ) : (
+                              <>
+                                <Lock color="#FFFFFF" size={14} />
+                                <Text style={styles.updatePasswordButtonText}>Update Password</Text>
+                              </>
+                            )}
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.cancelPasswordButton}
+                            onPress={() => {
+                              setIsPasswordFormVisible(false);
+                              setCurrentPassword('');
+                              setNewPassword('');
+                              setConfirmNewPassword('');
+                            }}
+                            disabled={isUpdatingPassword}
+                          >
+                            <Text style={styles.cancelPasswordButtonText}>Cancel</Text>
+                          </TouchableOpacity>
+                        </View>
+                        <View style={styles.passwordRequirementsBox}>
+                          <Text style={styles.passwordRequirementsTitle}>Password Requirements:</Text>
+                          <Text style={styles.passwordRequirement}>· Minimum 8 characters (12+ recommended)</Text>
+                          <Text style={styles.passwordRequirement}>· Mix of uppercase and lowercase letters</Text>
+                          <Text style={styles.passwordRequirement}>· At least one number and one special character</Text>
+                          <Text style={styles.passwordRequirement}>· Must be different from current password</Text>
+                        </View>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <View style={styles.securityInfoBox}>
+                      <View style={styles.securityInfoIconBox}>
+                        <Info color={'#165DFC'} size={20} />
+                      </View>
+                      <View style={styles.securityInfoContent}>
+                        <Text style={styles.securityInfoTitle}>You're signed in with Google</Text>
+                        <Text style={styles.securityInfoText}>
+                          Your account uses Google authentication. To change your password, please visit your{' '}
+                          <Text style={styles.googleAccountLink}>Google Account settings</Text>.
+                        </Text>
+                      </View>
+                    </View>
+
+                    <Text style={styles.securityTipsHeading}>Security Tips:</Text>
+                    <View style={styles.securityTipsContainer}>
+                      <View style={styles.tipItem}>
+                        <Text style={styles.tipBullet}>•</Text>
+                        <Text style={styles.tipText}>Enable two-factor authentication on your Google account</Text>
+                      </View>
+                      <View style={styles.tipItem}>
+                        <Text style={styles.tipBullet}>•</Text>
+                        <Text style={styles.tipText}>Regularly review connected apps and devices</Text>
+                      </View>
+                      <View style={styles.tipItem}>
+                        <Text style={styles.tipBullet}>•</Text>
+                        <Text style={styles.tipText}>Use a strong, unique password for your Google account</Text>
+                      </View>
+                    </View>
+                  </>
+                )}
+              </View>
+
+              {/* Complete Your Profile Section */}
+              <View style={styles.completeProfileSection}>
+                <Text style={styles.completeProfileHeading}>Complete Your Profile</Text>
+
+                <View style={styles.checklistContainer}>
+                  <View style={styles.checklistItem}>
+                    {userData?.profile_picture_url ?
+                      <View style={styles.checkedBox}>
+                        <Text style={styles.checkmark}>✓</Text>
+                      </View> :
+                      <View style={styles.uncheckedBox} />
+                    }
+                    <Text style={[styles.checklistText, userData?.profile_picture_url && styles.completedText]}>Add profile photo</Text>
+                  </View>
+
+                  <View style={styles.checklistItem}>
+                    {videoData?.data?.video_url ?
+                      <View style={styles.checkedBox}>
+                        <Text style={styles.checkmark}>✓</Text>
+                      </View> :
+                      <View style={styles.uncheckedBox} />
+                    }
+                    <Text style={[styles.checklistText, videoData?.data?.video_url && styles.completedText]}>Record video introduction</Text>
+                  </View>
+
+                  <View style={styles.checklistItem}>
+                    <View style={styles.checkedBox}>
+                      <Text style={styles.checkmark}>✓</Text>
+                    </View>
+                    <Text style={[styles.checklistText, styles.completedText]}>Add personal information</Text>
+                  </View>
+
+                  <View style={styles.checklistItem}>
+                    {userData?.bio ?
+                      <View style={styles.checkedBox}>
+                        <Text style={styles.checkmark}>✓</Text>
+                      </View> :
+                      <View style={styles.uncheckedBox} />
+                    }
+                    <Text style={[styles.checklistText, userData?.bio && styles.completedText]}>Add professional bio</Text>
+                  </View>
+
+                  <View style={styles.checklistItem}>
+                    {userData?.linkedin_url || userData?.website_url ?
+                      <View style={styles.checkedBox}>
+                        <Text style={styles.checkmark}>✓</Text>
+                      </View> :
+                      <View style={styles.uncheckedBox} />
+                    }
+                    <Text style={[styles.checklistText, (userData?.linkedin_url || userData?.website_url) && styles.completedText]}>Add social links</Text>
+                  </View>
+
+                  <View style={styles.checklistItem}>
+                    {workExperienceList.length > 0 ?
+                      <View style={styles.checkedBox}>
+                        <Text style={styles.checkmark}>✓</Text>
+                      </View> :
+                      <View style={styles.uncheckedBox} />
+                    }
+                    <Text style={[styles.checklistText, workExperienceList.length > 0 && styles.completedText]}>Add work experience</Text>
+                  </View>
+
+                  <View style={styles.checklistItem}>
+                    {userSkillsList.length > 0 ?
+                      <View style={styles.checkedBox}>
+                        <Text style={styles.checkmark}>✓</Text>
+                      </View> :
+                      <View style={styles.uncheckedBox} />
+                    }
+                    <Text style={[styles.checklistText, userSkillsList.length > 0 && styles.completedText]}>Add skills & technologies</Text>
+                  </View>
+
+                  <View style={styles.checklistItem}>
+                    {resumesList.length > 0 ?
+                      <View style={styles.checkedBox}>
+                        <Text style={styles.checkmark}>✓</Text>
+                      </View> :
+                      <View style={styles.uncheckedBox} />
+                    }
+                    <Text style={[styles.checklistText, resumesList.length > 0 && styles.completedText]}>Upload resume</Text>
+                  </View>
+                </View>
+              </View>
+
+            </ScrollView>
           </View>
-        </View>
-
-      </ScrollView>
-      </View>
-     }
+      }
       {/* // )} */}
 
       {/* Full Video Modal */}
@@ -4113,9 +4288,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   passwordSecurityIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
+    width: 34,
+    height: 34,
+    borderRadius: 8,
     backgroundColor: '#E0F2FE',
     justifyContent: 'center',
     alignItems: 'center',
@@ -4125,6 +4300,134 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: '#363535',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  changePasswordButton: {
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: '#064FF5',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  changePasswordButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '600',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  passwordRequirementsBox: {
+    backgroundColor: '#F7F8FA',
+    borderRadius: 9,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    gap: 4,
+    marginTop: 12,
+  },
+  passwordRequirementsTitle: {
+    fontSize: 10,
+    color: '#111827',
+    fontFamily: 'Geist-VariableFont_wght',
+    marginBottom: 2,
+  },
+  passwordRequirement: {
+    fontSize: 10,
+    lineHeight: 14,
+    color: '#374151',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  passwordTip: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 5,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    marginTop: 12,
+    paddingTop: 10,
+  },
+  passwordTipText: {
+    flex: 1,
+    fontSize: 10,
+    lineHeight: 14,
+    color: '#64748B',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  passwordField: {
+    marginBottom: 12,
+  },
+  passwordFieldLabel: {
+    fontSize: 11,
+    color: '#111827',
+    fontFamily: 'Geist-VariableFont_wght',
+    marginBottom: 6,
+  },
+  passwordInputRow: {
+    height: 38,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 9,
+    backgroundColor: '#FFFFFF',
+  },
+  passwordInput: {
+    flex: 1,
+    height: '100%',
+    paddingHorizontal: 12,
+    paddingVertical: 0,
+    fontSize: 12,
+    color: '#111827',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  passwordVisibilityButton: {
+    height: '100%',
+    paddingHorizontal: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  passwordFormActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+    marginTop: 2,
+  },
+  updatePasswordButton: {
+    height: 38,
+    flex: 1,
+    borderRadius: 8,
+    backgroundColor: '#8B95A3',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+  },
+  updatePasswordButtonEnabled: {
+    backgroundColor: '#064FF5',
+  },
+  updatePasswordButtonDisabled: {
+    opacity: 0.75,
+  },
+  updatePasswordButtonText: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  cancelPasswordButton: {
+    height: 38,
+    minWidth: 78,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelPasswordButtonText: {
+    fontSize: 12,
+    color: '#111827',
     fontFamily: 'Geist-VariableFont_wght',
   },
   securityInfoIconBox: {
