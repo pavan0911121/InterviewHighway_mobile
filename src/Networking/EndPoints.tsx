@@ -100,6 +100,8 @@ export const SKILLS_ENDPOINTS = {
 
   addOrGetSkills: (userId: string) =>
     `${RAILWAY_API_BASE_URL}/api/skills/user/${userId}`,
+  addCustomSkill: (userId: string) =>
+    `${RAILWAY_API_BASE_URL}/api/skills/user/${userId}/custom`,
   deleteSkill: (userId: string, skillId: string) =>
     `${RAILWAY_API_BASE_URL}/api/skills/user/${userId}/${skillId}`,
 };

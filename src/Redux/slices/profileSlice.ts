@@ -27,6 +27,7 @@ interface profileState {
     isUserSkillsLoading: boolean;
     isWorkexperienceLoading: boolean;
     isEducationLoading: boolean;
+    errorAddingSkillData: any | null;
 }
 
 const initialState: profileState = {
@@ -53,6 +54,7 @@ const initialState: profileState = {
     isWorkexperienceLoading: false,
     isEducationLoading: false,
     isVideoDataLoading: false,
+    errorAddingSkillData: null,
 };
 type Config = {
   headers?: string;
@@ -216,7 +218,23 @@ export const addSkill = createAsyncThunk(
         } catch (error: any) {
             console.log('Error adding skill:', error);
             return rejectWithValue({
-                message: error?.message || 'Failed to add skill',
+                message: error?.response?.data?.message || error?.response?.data?.error || error?.message || 'Failed to add skill',
+                code: error?.code || 'ERROR',
+            });
+        }
+    }
+);
+//Add Custom Skill API call
+export const addCustomSkill = createAsyncThunk(
+    "profile/addCustomSkill",
+    async ({ userId, payload }: { userId: string; payload: any }, { rejectWithValue }) => {
+        try {
+            const response = await client.post(SKILLS_ENDPOINTS.addCustomSkill(userId), payload);
+            return response.data || response;
+        } catch (error: any) {
+            console.log('Error adding custom skill:', error);
+            return rejectWithValue({
+                message: error?.response?.data?.message || error?.response?.data?.error || error?.message || 'Failed to add custom skill',
                 code: error?.code || 'ERROR',
             });
         }
@@ -578,15 +596,18 @@ const profileSlice = createSlice({
             .addCase(addSkill.pending, (state) => {
                 state.isLoading = true;
                 state.error = null;
+                state.errorAddingSkillData = null;
             })
             .addCase(addSkill.fulfilled, (state, action) => {
                 state.isLoading = false;
                 state.addedSkillData = action.payload; // Assuming the API returns updated skills data
                 state.error = null;
+                state.errorAddingSkillData = null;
             })
             .addCase(addSkill.rejected, (state, action) => {
                 state.isLoading = false;
                 state.error = action.payload as string;
+                state.errorAddingSkillData = (action.payload as any)?.message || action.error.message;
             });
             //getAllSkills async thunk handlers
             builder
@@ -704,6 +725,25 @@ const profileSlice = createSlice({
             .addCase(deleteResume.rejected, (state, action) => {
                 state.isLoading = false;
                 state.error = action.payload as string;
+            });
+            //add custom skill async thunk handlers
+            builder
+            .addCase(addCustomSkill.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+                state.errorAddingSkillData = null;
+            })
+            .addCase(addCustomSkill.fulfilled, (state, action) => {
+                state.isLoading = false;
+                state.addedSkillData = action.payload; // Assuming the API returns updated skills data
+                state.error = null;
+                state.errorAddingSkillData = null;
+            })
+            .addCase(addCustomSkill.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.payload as string;
+                console.log('Error adding custom skill:', action.payload);
+                state.errorAddingSkillData = (action.payload as any)?.message || action.error.message;
             });
     }
 });

@@ -1,17 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, TextInput, Modal, Alert, Image, StatusBar, Linking, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, TextInput, Modal, Alert, Image, StatusBar, Linking, Platform, useWindowDimensions } from 'react-native';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { JobSeekerBottomTabParamList } from '../../../types/navigation';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Picker } from '@react-native-picker/picker';
 import { Award, BookText, BriefcaseBusiness, Building2, Calendar, Camera, CircleCheck, Clock, CodeXml, Download, ExternalLink, Eye, EyeOff, FileText, Globe, GraduationCap, HardDriveUpload, Hourglass, Info, Lightbulb, Link, Lock, MapPin, Save, Shield, SquarePen, Star, StarOff, Trash2, Upload, User, UserRound, UserRoundPen, Video as VideoIcon, VideoOff, X } from 'lucide-react-native';
+import DatePicker from 'react-native-date-picker';
 import { useDispatch, useSelector } from 'react-redux';
 import UploadVideo from '../../components/UploadVideo';
 import DocumentPicker, { types } from 'react-native-document-picker';
 import { launchImageLibrary } from 'react-native-image-picker';
 import * as AsyncStore from "../../../AsyncStore";
-import { addEducation, addSkill, deleteEducation, deleteSkill, deleteWorkExperience, getAllSkills, getEducation, getPersonalData, getProfileData, getResumes, getUserSkills, getVideoData, getWorkExperience, updateBio, uploadResume, addWorkExperience, deleteResume, addUpdateProfilePhoto, deleteProfilePhoto, deleteVideo, updateSocialLinks, changePassword } from '../../../Redux/slices/profileSlice';
+import { addEducation, addSkill, deleteEducation, deleteSkill, deleteWorkExperience, getAllSkills, getEducation, getPersonalData, getProfileData, getResumes, getUserSkills, getVideoData, getWorkExperience, updateBio, uploadResume, addWorkExperience, deleteResume, addUpdateProfilePhoto, deleteProfilePhoto, deleteVideo, updateSocialLinks, changePassword, addCustomSkill } from '../../../Redux/slices/profileSlice';
 import Video from 'react-native-video';
 import { RadialSlider } from 'react-native-radial-slider';
 import ProfileSkeleton from './ProfileSkeleton';
@@ -114,7 +115,21 @@ const formatVideoUploadDate = (dateStr?: string | null) => {
   return `${dd}/${mm}/${yyyy}`;
 };
 
+const formatDatePickerValue = (date: Date) => {
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+};
+
+const parseDatePickerValue = (value?: string) => {
+  if (!value) { return new Date(); }
+  const [year, month, day] = value.slice(0, 10).split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
+
 export default function ProfileTabScreen({ navigation }: Props) {
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const isCompactIOS = Platform.OS === 'ios' && windowWidth < 390;
   const [videoTitle, setVideoTitle] = useState('');
   const [isFullVideoModalVisible, setIsFullVideoModalVisible] = useState(false);
   const [isDeletingVideo, setIsDeletingVideo] = useState(false);
@@ -149,6 +164,7 @@ export default function ProfileTabScreen({ navigation }: Props) {
   const [yearsOfExperience, setYearsOfExperience] = useState('1');
   const [isExperienceModalVisible, setIsExperienceModalVisible] = useState(false);
   const [isSavingExperience, setIsSavingExperience] = useState(false);
+  const [activeExperienceDatePicker, setActiveExperienceDatePicker] = useState<'start_date' | 'end_date' | null>(null);
   const [editingExperienceId, setEditingExperienceId] = useState<string | null>(null);
   const [workExperienceItems, setWorkExperienceItems] = useState<any[]>([]);
   const [experienceForm, setExperienceForm] = useState({
@@ -163,6 +179,7 @@ export default function ProfileTabScreen({ navigation }: Props) {
   });
   const [isEducationModalVisible, setIsEducationModalVisible] = useState(false);
   const [isSavingEducation, setIsSavingEducation] = useState(false);
+  const [activeEducationDatePicker, setActiveEducationDatePicker] = useState<'start_date' | 'end_date' | null>(null);
   const [editingEducationId, setEditingEducationId] = useState<string | null>(null);
   const [educationForm, setEducationForm] = useState({
     institution_name: '',
@@ -244,6 +261,7 @@ export default function ProfileTabScreen({ navigation }: Props) {
   const resumesList = selector?.resumes?.resumes || [];
   const apiSpeed = userData?.profile_completion_percentage;
   const targetSpeed = Number(apiSpeed) || 0;
+  const skillAlreadyExistsError = selector?.errorAddingSkillData
 
   // useEffect(() => {
   //   setWorkExperienceItems(workExperienceList);
@@ -571,18 +589,31 @@ export default function ProfileTabScreen({ navigation }: Props) {
       const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
       if (userId) {
         const resultId = userId.replace(/"/g, '');
-        const payload = {
+       if(addSkillTab === 'list') {
+         const payload = {
           skillId: selectedSkillId,
           proficiencyLevel: PROFICIENCY_LEVEL_MAP[proficiencyLevel] || 1,
           yearsOfExperience: Number(yearsOfExperience) || 0,
         };
-        await dispatch(addSkill({ userId: resultId, payload }) as any);
+        await dispatch(addSkill({ userId: resultId, payload }) as any).unwrap();
+       }else{
+         const payload = {
+          customSkillName: customSkillName,
+          proficiencyLevel: PROFICIENCY_LEVEL_MAP[proficiencyLevel] || 1,
+          yearsOfExperience: Number(yearsOfExperience) || 0,
+        };
+        await dispatch(addCustomSkill({ userId: resultId, payload }) as any).unwrap();
+       }
         dispatch(getUserSkills({ userId: resultId }) as any);
       }
       setEditingSkillId(null);
       setIsAddSkillModalVisible(false);
-    } catch (error) {
+    } catch (error: any) {
       console.log('Error adding skill:', error);
+      const errorMessage = typeof error === 'string' ? error : error?.message || '';
+      if (/already|exists|duplicate/i.test(errorMessage)) {
+        Alert.alert('Skill already exists', 'You have already added this skill.');
+      }
     } finally {
       setIsSavingSkill(false);
     }
@@ -620,11 +651,22 @@ export default function ProfileTabScreen({ navigation }: Props) {
 
   const handleCloseExperienceModal = () => {
     setEditingExperienceId(null);
+    setActiveExperienceDatePicker(null);
     setIsExperienceModalVisible(false);
   };
 
   const handleExperienceFieldChange = (field: keyof typeof experienceForm, value: string | boolean) => {
     setExperienceForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleExperienceDateChange = (field: 'start_date' | 'end_date', date: Date) => {
+    const selectedDate = formatDatePickerValue(date);
+    setExperienceForm(prev => ({
+      ...prev,
+      [field]: selectedDate,
+      ...(field === 'start_date' && prev.end_date && prev.end_date < selectedDate ? { end_date: '' } : {}),
+    }));
+    setActiveExperienceDatePicker(null);
   };
 
   const handleSaveExperience = async () => {
@@ -754,11 +796,22 @@ export default function ProfileTabScreen({ navigation }: Props) {
 
   const handleCloseEducationModal = () => {
     setEditingEducationId(null);
+    setActiveEducationDatePicker(null);
     setIsEducationModalVisible(false);
   };
 
   const handleEducationFieldChange = (field: keyof typeof educationForm, value: string | boolean) => {
     setEducationForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleEducationDateChange = (field: 'start_date' | 'end_date', date: Date) => {
+    const selectedDate = formatDatePickerValue(date);
+    setEducationForm(prev => ({
+      ...prev,
+      [field]: selectedDate,
+      ...(field === 'start_date' && prev.end_date && prev.end_date < selectedDate ? { end_date: '' } : {}),
+    }));
+    setActiveEducationDatePicker(null);
   };
 
   const handleAddAchievement = () => {
@@ -1562,7 +1615,12 @@ export default function ProfileTabScreen({ navigation }: Props) {
               >
                 <View style={styles.modalOverlay}>
                   <TouchableOpacity style={styles.modalOverlayTouchable} activeOpacity={1} onPress={handleCloseAddSkillModal} />
-                  <View style={styles.skillModalCard}>
+                  <ScrollView
+                    style={[styles.skillModalCard, isCompactIOS && { maxHeight: windowHeight * 0.78 }]}
+                    contentContainerStyle={styles.skillModalCardContent}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                  >
                     <View style={styles.skillModalHeader}>
                       <Text style={styles.skillModalTitle}>{editingSkillId ? 'Edit Skill' : 'Add New Skill'}</Text>
                       <TouchableOpacity onPress={handleCloseAddSkillModal}>
@@ -1660,7 +1718,7 @@ export default function ProfileTabScreen({ navigation }: Props) {
                         )}
                       </TouchableOpacity>
                     </View>
-                  </View>
+                  </ScrollView>
                 </View>
               </Modal>
 
@@ -1811,23 +1869,51 @@ export default function ProfileTabScreen({ navigation }: Props) {
                     </TouchableOpacity>
 
                     <Text style={styles.skillFieldLabel}>Start Date <Text style={styles.requiredAsterisk}>*</Text></Text>
-                    <TextInput
-                      style={styles.socialInput}
-                      value={experienceForm.start_date}
-                      onChangeText={(text) => handleExperienceFieldChange('start_date', text)}
-                      placeholder="YYYY-MM-DD"
-                      placeholderTextColor="#9CA3AF"
+                    <TouchableOpacity
+                      style={styles.experienceDateButton}
+                      onPress={() => setActiveExperienceDatePicker(current => current === 'start_date' ? null : 'start_date')}
+                      accessibilityRole="button"
+                      accessibilityLabel="Choose start date"
+                    >
+                      <Calendar size={16} color="#64748B" />
+                      <Text style={experienceForm.start_date ? styles.experienceDateText : styles.experienceDatePlaceholder}>
+                        {experienceForm.start_date || 'Select start date'}
+                      </Text>
+                    </TouchableOpacity>
+                    <DatePicker
+                      modal
+                      open={activeExperienceDatePicker === 'start_date'}
+                      mode="date"
+                      date={parseDatePickerValue(experienceForm.start_date)}
+                      maximumDate={experienceForm.end_date ? parseDatePickerValue(experienceForm.end_date) : undefined}
+                      onConfirm={date => handleExperienceDateChange('start_date', date)}
+                      onCancel={() => setActiveExperienceDatePicker(null)}
                     />
 
                     {!experienceForm.is_current_job && (
                       <>
                         <Text style={styles.skillFieldLabel}>End Date</Text>
-                        <TextInput
-                          style={styles.socialInput}
-                          value={experienceForm.end_date}
-                          onChangeText={(text) => handleExperienceFieldChange('end_date', text)}
-                          placeholder="YYYY-MM-DD"
-                          placeholderTextColor="#9CA3AF"
+                        <TouchableOpacity
+                          style={[styles.experienceDateButton, !experienceForm.start_date && styles.experienceDateButtonDisabled]}
+                          onPress={() => setActiveExperienceDatePicker(current => current === 'end_date' ? null : 'end_date')}
+                          disabled={!experienceForm.start_date}
+                          accessibilityRole="button"
+                          accessibilityLabel="Choose end date"
+                        >
+                          <Calendar size={16} color="#64748B" />
+                          <Text style={experienceForm.end_date ? styles.experienceDateText : styles.experienceDatePlaceholder}>
+                            {experienceForm.end_date || (experienceForm.start_date ? 'Select end date' : 'Select start date first')}
+                          </Text>
+                        </TouchableOpacity>
+                        <DatePicker
+                          modal
+                          open={activeExperienceDatePicker === 'end_date' && !!experienceForm.start_date}
+                          mode="date"
+                          date={parseDatePickerValue(experienceForm.end_date || experienceForm.start_date)}
+                          minimumDate={parseDatePickerValue(experienceForm.start_date || undefined)}
+                          maximumDate={new Date()}
+                          onConfirm={date => handleExperienceDateChange('end_date', date)}
+                          onCancel={() => setActiveExperienceDatePicker(null)}
                         />
                       </>
                     )}
@@ -1987,23 +2073,50 @@ export default function ProfileTabScreen({ navigation }: Props) {
                     />
 
                     <Text style={styles.skillFieldLabel}>Start Date <Text style={styles.requiredAsterisk}>*</Text></Text>
-                    <TextInput
-                      style={styles.socialInput}
-                      value={educationForm.start_date}
-                      onChangeText={(text) => handleEducationFieldChange('start_date', text)}
-                      placeholder="YYYY-MM-DD"
-                      placeholderTextColor="#9CA3AF"
+                    <TouchableOpacity
+                      style={styles.experienceDateButton}
+                      onPress={() => setActiveEducationDatePicker(current => current === 'start_date' ? null : 'start_date')}
+                      accessibilityRole="button"
+                      accessibilityLabel="Choose education start date"
+                    >
+                      <Calendar size={16} color="#64748B" />
+                      <Text style={educationForm.start_date ? styles.experienceDateText : styles.experienceDatePlaceholder}>
+                        {educationForm.start_date || 'Select start date'}
+                      </Text>
+                    </TouchableOpacity>
+                    <DatePicker
+                      modal
+                      open={activeEducationDatePicker === 'start_date'}
+                      mode="date"
+                      date={parseDatePickerValue(educationForm.start_date)}
+                      maximumDate={educationForm.end_date ? parseDatePickerValue(educationForm.end_date) : undefined}
+                      onConfirm={date => handleEducationDateChange('start_date', date)}
+                      onCancel={() => setActiveEducationDatePicker(null)}
                     />
 
                     {!educationForm.is_current && (
                       <>
                         <Text style={styles.skillFieldLabel}>End Date</Text>
-                        <TextInput
-                          style={styles.socialInput}
-                          value={educationForm.end_date}
-                          onChangeText={(text) => handleEducationFieldChange('end_date', text)}
-                          placeholder="YYYY-MM-DD"
-                          placeholderTextColor="#9CA3AF"
+                        <TouchableOpacity
+                          style={[styles.experienceDateButton, !educationForm.start_date && styles.experienceDateButtonDisabled]}
+                          onPress={() => setActiveEducationDatePicker(current => current === 'end_date' ? null : 'end_date')}
+                          disabled={!educationForm.start_date}
+                          accessibilityRole="button"
+                          accessibilityLabel="Choose education end date"
+                        >
+                          <Calendar size={16} color="#64748B" />
+                          <Text style={educationForm.end_date ? styles.experienceDateText : styles.experienceDatePlaceholder}>
+                            {educationForm.end_date || (educationForm.start_date ? 'Select end date' : 'Select start date first')}
+                          </Text>
+                        </TouchableOpacity>
+                        <DatePicker
+                          modal
+                          open={activeEducationDatePicker === 'end_date' && !!educationForm.start_date}
+                          mode="date"
+                          date={parseDatePickerValue(educationForm.end_date || educationForm.start_date)}
+                          minimumDate={parseDatePickerValue(educationForm.start_date || undefined)}
+                          onConfirm={date => handleEducationDateChange('end_date', date)}
+                          onCancel={() => setActiveEducationDatePicker(null)}
                         />
                       </>
                     )}
@@ -2176,6 +2289,13 @@ export default function ProfileTabScreen({ navigation }: Props) {
                         )}
                       </TouchableOpacity>
                     </View>
+                    {!!skillAlreadyExistsError && (
+                      <Text style={styles.skillSaveErrorText} accessibilityRole="alert">
+                        {/already|exists|duplicate/i.test(String(skillAlreadyExistsError))
+                          ? 'You have already added this skill.'
+                          : String(skillAlreadyExistsError)}
+                      </Text>
+                    )}
                   </View>
                 )}
 
@@ -3457,6 +3577,8 @@ const styles = StyleSheet.create({
     maxWidth: 400,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
+  },
+  skillModalCardContent: {
     padding: 20,
   },
   skillModalHeader: {
@@ -3526,6 +3648,12 @@ const styles = StyleSheet.create({
   },
   skillAddButtonDisabled: {
     opacity: 0.7,
+  },
+  skillSaveErrorText: {
+    marginTop: 10,
+    color: '#DC2626',
+    fontSize: 12,
+    fontFamily: 'Geist-VariableFont_wght',
   },
   workExperienceSection: {
     width: '100%',
@@ -3683,6 +3811,31 @@ const styles = StyleSheet.create({
     maxHeight: '85%',
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
+  },
+  experienceDateButton: {
+    minHeight: 42,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12,
+    marginTop: 6,
+  },
+  experienceDateButtonDisabled: {
+    backgroundColor: '#F3F4F6',
+  },
+  experienceDateText: {
+    fontSize: 14,
+    color: '#363535',
+    fontFamily: 'Geist-VariableFont_wght',
+  },
+  experienceDatePlaceholder: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    fontFamily: 'Geist-VariableFont_wght',
   },
   experienceModalCardContent: {
     padding: 20,
