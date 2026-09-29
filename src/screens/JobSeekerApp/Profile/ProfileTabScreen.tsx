@@ -118,6 +118,8 @@ export default function ProfileTabScreen({ navigation }: Props) {
   const [videoTitle, setVideoTitle] = useState('');
   const [isFullVideoModalVisible, setIsFullVideoModalVisible] = useState(false);
   const [isDeletingVideo, setIsDeletingVideo] = useState(false);
+  const [isProfilePhotoUploading, setIsProfilePhotoUploading] = useState(false);
+  const [isDeletingProfilePhoto, setIsDeletingProfilePhoto] = useState(false);
   const [isEditingPersonal, setIsEditingPersonal] = useState(false);
   const [isUpdatingPersonal, setIsUpdatingPersonal] = useState(false);
   const [personalForm, setPersonalForm] = useState({
@@ -258,15 +260,20 @@ export default function ProfileTabScreen({ navigation }: Props) {
           type: image.type || 'image/jpeg',
           name: image.name || 'profile.jpg',
         } as any);
-        await dispatch(addUpdateProfilePhoto({ userId: resultId, payload: formData }) as any);
-        fetchProfileData('onlyProfile');
+        await dispatch(addUpdateProfilePhoto({ userId: resultId, payload: formData }) as any).unwrap();
+        await fetchProfileData('onlyProfile');
       }
     } catch (error) {
-      console.log('Error updating profile photo:', error);
+      Alert.alert('Upload failed', (error as any)?.message || 'Unable to update your profile photo.');
     }
   };
 
   const handlePickProfilePhoto = async () => {
+    if (isProfilePhotoUploading) {
+      return;
+    }
+
+    setIsProfilePhotoUploading(true);
     try {
       const response = await launchImageLibrary({ mediaType: 'photo', selectionLimit: 1 });
       if (response.didCancel) { return; }
@@ -283,6 +290,8 @@ export default function ProfileTabScreen({ navigation }: Props) {
       });
     } catch (err: any) {
       Alert.alert('Error', err?.message || 'Unable to select image.');
+    } finally {
+      setIsProfilePhotoUploading(false);
     }
   };
 
@@ -296,15 +305,22 @@ export default function ProfileTabScreen({ navigation }: Props) {
           text: 'Remove',
           style: 'destructive',
           onPress: async () => {
+            if (isDeletingProfilePhoto) {
+              return;
+            }
+
+            setIsDeletingProfilePhoto(true);
             try {
               const userId = await AsyncStore.getData(AsyncStore?.Keys?.USER_ID);
               if (userId) {
                 const resultId = userId.replace(/"/g, '');
-                await dispatch(deleteProfilePhoto({ userId: resultId }) as any);
-                fetchProfileData('onlyProfile');
+                await dispatch(deleteProfilePhoto({ userId: resultId }) as any).unwrap();
+                await fetchProfileData('onlyProfile');
               }
             } catch (error) {
-              console.log('Error deleting profile photo:', error);
+              Alert.alert('Delete failed', (error as any)?.message || 'Unable to remove your profile photo.');
+            } finally {
+              setIsDeletingProfilePhoto(false);
             }
           },
         },
@@ -374,11 +390,21 @@ export default function ProfileTabScreen({ navigation }: Props) {
   };
 
   const handlePersonalFieldChange = (field: keyof typeof personalForm, value: string) => {
-    setPersonalForm(prev => ({ ...prev, [field]: value }));
+    const sanitizedValue = field === 'phone'
+      ? value.replace(/\D/g, '').slice(0, 10)
+      : field === 'location' || field === 'current_role'
+        ? value.replace(/[^a-zA-Z\s]/g, '')
+        : value;
+    setPersonalForm(prev => ({ ...prev, [field]: sanitizedValue }));
   };
 
   const handlePersonalDetailsUpdate = async () => {
     if (isUpdatingPersonal) {
+      return;
+    }
+
+    if (personalForm.phone && !/^\d{10}$/.test(personalForm.phone)) {
+      Alert.alert('Invalid phone number', 'Enter a 10-digit phone number.');
       return;
     }
 
@@ -969,16 +995,34 @@ export default function ProfileTabScreen({ navigation }: Props) {
                   {userData?.profile_picture_url ? (
                     <>
                       <Image source={{ uri: userData.profile_picture_url }} style={styles.avatarImage} />
-                      <TouchableOpacity style={styles.removePhotoIcon} onPress={handleDeleteProfilePhoto}>
-                        <X size={14} color="#ffff" />
+                      <TouchableOpacity
+                        style={styles.removePhotoIcon}
+                        onPress={handleDeleteProfilePhoto}
+                        disabled={isDeletingProfilePhoto}
+                        accessibilityRole="button"
+                        accessibilityLabel="Remove profile photo"
+                      >
+                        {isDeletingProfilePhoto
+                          ? <ActivityIndicator size="small" color="#FFFFFF" />
+                          : <X size={14} color="#ffff" />}
                       </TouchableOpacity>
                     </>
                   ) : (
-                    <Text style={styles.avatarText}>{userData?.name?.charAt(0)?.toUpperCase() || 'U'}</Text>
+                    <Text style={styles.avatarText}>{userData?.name?.charAt(0)?.toUpperCase()}</Text>
                   )}
-                  <TouchableOpacity style={styles.cameraIcon} onPress={handlePickProfilePhoto}>
-                    <Camera size={12} color="#ffff" />
-                  </TouchableOpacity>
+                  {!userData?.profile_picture_url && (
+                    <TouchableOpacity
+                      style={styles.cameraIcon}
+                      onPress={handlePickProfilePhoto}
+                      disabled={isProfilePhotoUploading}
+                      accessibilityRole="button"
+                      accessibilityLabel="Upload profile photo"
+                    >
+                      {isProfilePhotoUploading
+                        ? <ActivityIndicator size="small" color="#FFFFFF" />
+                        : <Camera size={12} color="#ffff" />}
+                    </TouchableOpacity>
+                  )}
                 </View>
 
                 <Text style={styles.uploadDescription}>
@@ -1201,14 +1245,7 @@ export default function ProfileTabScreen({ navigation }: Props) {
                 <View style={styles.infoField}>
                   <Text style={styles.fieldLabel}>Email</Text>
                   {isEditingPersonal ? (
-                    <TextInput
-                      style={styles.fieldInput}
-                      value={personalForm.email}
-                      onChangeText={(text) => handlePersonalFieldChange('email', text)}
-                      placeholder="Email"
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                    />
+                    <Text style={styles.readOnlyEmail}>{personalForm.email || 'Not provided'}</Text>
                   ) : (
                     <Text style={styles.fieldValue}>{userData?.email || 'Not provided'}</Text>
                   )}
@@ -1223,6 +1260,7 @@ export default function ProfileTabScreen({ navigation }: Props) {
                       onChangeText={(text) => handlePersonalFieldChange('phone', text)}
                       placeholder="Phone Number"
                       keyboardType="phone-pad"
+                      maxLength={10}
                     />
                   ) : (
                     <Text style={styles.fieldValue}>{userData?.phone || 'Not provided'}</Text>
@@ -1237,6 +1275,7 @@ export default function ProfileTabScreen({ navigation }: Props) {
                       value={personalForm.location}
                       onChangeText={(text) => handlePersonalFieldChange('location', text)}
                       placeholder="Location"
+                      autoCapitalize="words"
                     />
                   ) : (
                     <Text style={styles.fieldValue}>{userData?.location || 'Not provided'}</Text>
@@ -2549,7 +2588,7 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: '#EF4444',
+    backgroundColor: '#000000',
     borderWidth: 2,
     borderColor: '#FFFFFF',
     justifyContent: 'center',
@@ -2905,6 +2944,12 @@ const styles = StyleSheet.create({
   fieldValue: {
     fontSize: 14,
     color: '#363535',
+    fontFamily: 'Geist-VariableFont_wght',
+    fontWeight: '500',
+  },
+  readOnlyEmail: {
+    fontSize: 14,
+    color: '#9CA3AF',
     fontFamily: 'Geist-VariableFont_wght',
     fontWeight: '500',
   },

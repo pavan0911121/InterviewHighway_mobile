@@ -10,7 +10,7 @@ import {
   Alert,
   Platform,
 } from 'react-native';
-// import { launchImageLibrary, ImageLibraryOptions } from 'react-native-image-picker';
+import { launchImageLibrary } from 'react-native-image-picker';
 import DocumentPicker, { types } from 'react-native-document-picker';
 import { CloudUpload, HardDriveUpload, Lightbulb, RotateCw } from 'lucide-react-native';
 import { uploadVideo } from '../../Redux/slices/profileSlice';
@@ -70,38 +70,52 @@ export default function UploadVideo({
       return;
     }
 
-    const asset = response.assets && response.assets[0];
-    if (asset) {
-      setSelectedFileName(asset.fileName || asset.uri || 'Selected file');
-    }
-  };
-
-  //   const pickFromGallery = () => {
-  //     const options: ImageLibraryOptions = {
-  //       mediaType: 'video',
-  //       selectionLimit: 1,
-  //     };
-  //     launchImageLibrary(options, handlePickerResponse);
-  //   };
-
-  const pickFromFiles = async () => {
-    try {
-      const result = await DocumentPicker.pickSingle({
-        type: [types.pdf, types.doc, types.docx, types.video, types.images, types.plainText],
+    const asset = response.assets?.[0];
+    if (asset?.uri) {
+      const name = asset.fileName || 'video.mp4';
+      setSelectedFileName(asset.fileName || 'Selected video');
+      setSelectedFile({
+        uri: asset.uri,
+        type: asset.type || 'video/mp4',
+        name,
       });
-      setSelectedFileName(result.name ?? result.uri ?? 'Selected file');
-      setSelectedFile(result);
-      if (!videoTitle && result.name) {
-        setVideoTitle(result.name);
-        onVideoTitleChange?.(result.name);
+      if (!videoTitle) {
+        setVideoTitle(name);
+        onVideoTitleChange?.(name);
       }
-    } catch (err: any) {
-      if (DocumentPicker.isCancel(err)) {
-        return;
-      }
-      Alert.alert('Error', err.message || 'Unable to select file.');
     }
   };
+
+  const pickFromGallery = async () => {
+    try {
+      const response = await launchImageLibrary({
+        mediaType: 'video',
+        selectionLimit: 1,
+      });
+      handlePickerResponse(response);
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'Unable to select video.');
+    }
+  };
+
+  // const pickFromFiles = async () => {
+  //   try {
+  //     const result = await DocumentPicker.pickSingle({
+  //       type: [types.video],
+  //     });
+  //     setSelectedFileName(result.name ?? result.uri ?? 'Selected file');
+  //     setSelectedFile(result);
+  //     if (!videoTitle && result.name) {
+  //       setVideoTitle(result.name);
+  //       onVideoTitleChange?.(result.name);
+  //     }
+  //   } catch (err: any) {
+  //     if (DocumentPicker.isCancel(err)) {
+  //       return;
+  //     }
+  //     Alert.alert('Error', err.message || 'Unable to select file.');
+  //   }
+  // };
 
   const handleUpload = async () => {
     if (!selectedFile) {
@@ -144,19 +158,26 @@ export default function UploadVideo({
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
         {
-          options: ['Cancel', 'Choose from Gallery', 'Choose from Files'],
+          // options: ['Cancel', 'Choose from Gallery', 'Choose from Files'],
+           options: ['Cancel', 'Choose from Gallery'],
           cancelButtonIndex: 0,
         },
         (buttonIndex) => {
           if (buttonIndex === 1) {
-            // pickFromGallery();
-          } else if (buttonIndex === 2) {
-            pickFromFiles();
-          }
+            pickFromGallery();
+          } 
+          // else if (buttonIndex === 2) {
+          //   // pickFromFiles();
+          // }
         }
       );
     } else {
-      //   pickFromGallery();
+      // Alert.alert('Select Video', 'Choose a video source', [
+      //   { text: 'Cancel', style: 'cancel' },
+      //   { text: 'Choose from Gallery', onPress: pickFromGallery },
+      //   // { text: 'Choose from Files', onPress: pickFromFiles },
+      // ]);
+      pickFromGallery();
     }
   };
   return (
