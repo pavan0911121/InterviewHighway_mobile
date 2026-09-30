@@ -9,6 +9,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { StatusBar, View, ActivityIndicator, AppState, Text, Button, StyleSheet } from 'react-native';
 import AppNavigator from './src/navigation/AppNavigator';
 import SplashScreen from './src/screens/SplashScreen';
+import InAppUpdateChecker from './src/components/InAppUpdateChecker';
 import { useSelector, useDispatch } from 'react-redux';
 import * as AsyncStore from "./src/AsyncStore";
 import { getUserRole, loginSuccess, clearUserData } from './src/Redux/slices/loginSlice';
@@ -99,16 +100,20 @@ function App() {
 
   if (startupError) {
     return (
-      <View style={styles.centered}>
-        <Text>Unable to connect. Please try again.</Text>
-        <Button title="Retry" onPress={() => setStartupAttempt(attempt => attempt + 1)} />
-      </View>
+      <>
+        <InAppUpdateChecker />
+        <View style={styles.centered}>
+          <Text>Unable to connect. Please try again.</Text>
+          <Button title="Retry" onPress={() => setStartupAttempt(attempt => attempt + 1)} />
+        </View>
+      </>
     );
   }
 
   if (showSplash) {
     return (
       <>
+        <InAppUpdateChecker />
         <StatusBar barStyle="dark-content" />
         <SplashScreen />
       </>
@@ -116,6 +121,7 @@ function App() {
   }
   return (
     <>
+      <InAppUpdateChecker />
       {/* <StatusBar barStyle="dark-content" /> */}
       {isLoggedIn && role ? (
         <AppNavigator isUserLoggedIn={isLoggedIn} userType={role as any} />
